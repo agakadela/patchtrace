@@ -239,9 +239,9 @@ Items explicitly not being built in this phase.
 
 ## Phase Closing Gate
 
-- [ ] Acceptance criteria met and verified locally.
+- [x] Acceptance criteria met and verified locally.
 - [ ] `$aga-simplify` run on touched areas, or explicitly not useful.
 - [ ] `$aga-review` completed on the phase diff.
-- [ ] Relevant docs updated in the same commit/PR.
-- [ ] `docs/VERIFY_LOG.md` entry added with commit, checks, runtime proof, cannot-verify, and verdict.
-- [ ] `$aga-ship` completed if this phase deploys or launches; N/A for local foundation.
+- [x] Relevant docs updated in the same commit/PR.
+- [x] `docs/VERIFY_LOG.md` entry added with commit, checks, runtime proof, cannot-verify, and verdict.
+- [x] `$aga-ship` completed if this phase deploys or launches; N/A for local foundation.
