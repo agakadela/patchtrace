@@ -127,7 +127,7 @@ The foundation decisions optimize for:
 - Lint: `pnpm lint` after scaffold.
 - Test runner: `pnpm test` after scaffold.
 - Build: `pnpm build` after scaffold.
-- CI: typecheck, lint, tests, build, and fixture checks before release/PR merge after scaffold.
+- CI: install, lint, typecheck, tests, build, and fixture checks before release/PR merge after scaffold.
 - Error monitoring: N/A for V0.
 - Seed data / two test accounts: N/A for V0.
 
@@ -164,7 +164,7 @@ The foundation decisions optimize for:
 - Create fixtures before broad analyzer behavior.
 - Keep all report claims evidence-backed.
 - Require explicit approval before adding external services or LLM calls.
-- Run typecheck, lint, tests, build, and fixture checks once the scaffold exists.
+- Run lint, typecheck, tests, build, and fixture checks once the scaffold exists.
 
 ## Follow-Up Docs Triggered
 

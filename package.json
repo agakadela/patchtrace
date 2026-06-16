@@ -9,6 +9,7 @@
     "patchtrace": "./dist/cli/index.js"
   },
   "scripts": {
+    "lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\" \"vitest.config.ts\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json"
@@ -17,8 +18,11 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^25.9.3",
+    "eslint": "^10.5.0",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.61.1",
     "vitest": "^4.1.9"
   }
 }

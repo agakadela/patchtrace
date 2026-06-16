@@ -45,13 +45,13 @@
 
 ## Commands
 
-- dev: `[fill in]`
-- test: `[fill in]`
-- typecheck: `[fill in]`
-- lint: `[fill in]`
-- build: `[fill in]`
-- db:migrate: `[fill in]`
-- db:seed: `[fill in]`
+- dev: N/A; Phase 2 has no dev server.
+- test: `pnpm test`
+- typecheck: `pnpm typecheck`
+- lint: `pnpm lint`
+- build: `pnpm build`
+- db:migrate: N/A; V0 has no database.
+- db:seed: N/A; V0 has no database.
 
 ## Skill routing
 
