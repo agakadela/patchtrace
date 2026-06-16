@@ -1,0 +1,11 @@
+> app@0.1.0 test /workspace/demo-app
+> vitest run tests/api/ai-ticket-summary.test.ts
+
+ RUN  v2.1.1 /workspace/demo-app
+
+ ✓ tests/api/ai-ticket-summary.test.ts (1 test) 22ms
+   ✓ POST /api/ai/ticket-summary > returns a generated summary 14ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Duration  355ms

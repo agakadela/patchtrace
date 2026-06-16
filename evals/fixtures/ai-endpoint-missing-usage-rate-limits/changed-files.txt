@@ -1,0 +1,3 @@
+app/api/ai/ticket-summary/route.ts
+src/lib/ai/provider.ts
+tests/api/ai-ticket-summary.test.ts

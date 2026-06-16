@@ -1,0 +1,75 @@
+diff --git a/src/checkout/confirm-payment.ts b/src/checkout/confirm-payment.ts
+index c4b2603..9c787bd 100644
+--- a/src/checkout/confirm-payment.ts
++++ b/src/checkout/confirm-payment.ts
+@@ -1,12 +1,23 @@
+ import { capturePayment } from "./payments";
+-import { markReservationPaid } from "./reservations";
++import { markReservationPaid, releaseReservation } from "./reservations";
+ 
+ export async function confirmPayment(input: { reservationId: string; paymentId: string }) {
+-  const payment = await capturePayment(input.paymentId);
++  let payment;
++
++  try {
++    payment = await capturePayment(input.paymentId);
++  } catch (error) {
++    await releaseReservation(input.reservationId);
++    throw error;
++  }
+ 
+   if (payment.status !== "paid") {
++    await releaseReservation(input.reservationId);
+     throw new Error("payment failed");
+   }
+ 
+   await markReservationPaid(input.reservationId);
+ }
+diff --git a/src/checkout/reservations.ts b/src/checkout/reservations.ts
+index 5772a9b..99e56ac 100644
+--- a/src/checkout/reservations.ts
++++ b/src/checkout/reservations.ts
+@@ -1,8 +1,16 @@
+ import { db } from "../db";
+ 
+ export async function markReservationPaid(reservationId: string) {
+   await db.reservation.update({
+     where: { id: reservationId },
+     data: { status: "paid" },
+   });
+ }
++
++export async function releaseReservation(reservationId: string) {
++  await db.reservation.update({
++    where: { id: reservationId },
++    data: { status: "released", releasedAt: new Date() },
++  });
++}
+diff --git a/tests/checkout/reservations.test.ts b/tests/checkout/reservations.test.ts
+index 11e9c27..7bf77dc 100644
+--- a/tests/checkout/reservations.test.ts
++++ b/tests/checkout/reservations.test.ts
+@@ -1,5 +1,21 @@
+ import { describe, expect, it, vi } from "vitest";
+ 
+ import { confirmPayment } from "@/src/checkout/confirm-payment";
++import { releaseReservation } from "@/src/checkout/reservations";
++
++vi.mock("@/src/checkout/reservations", () => ({
++  markReservationPaid: vi.fn(),
++  releaseReservation: vi.fn(),
++}));
+ 
+ describe("confirmPayment", () => {
++  it("releases the reservation when payment fails", async () => {
++    await expect(
++      confirmPayment({ reservationId: "res_123", paymentId: "pay_failed" }),
++    ).rejects.toThrow("payment failed");
++
++    expect(releaseReservation).toHaveBeenCalledWith("res_123");
++  });
++
+   it("marks reservation paid when payment succeeds", async () => {
+     await confirmPayment({ reservationId: "res_123", paymentId: "pay_paid" });
+   });
+ });

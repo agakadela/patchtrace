@@ -1,0 +1,79 @@
+diff --git a/app/api/ai/ticket-summary/route.ts b/app/api/ai/ticket-summary/route.ts
+new file mode 100644
+index 0000000..8c47ef1
+--- /dev/null
++++ b/app/api/ai/ticket-summary/route.ts
+@@ -0,0 +1,24 @@
++import { NextResponse } from "next/server";
++
++import { summarizeTicket } from "@/src/lib/ai/provider";
++
++export async function POST(request: Request) {
++  const body = await request.json();
++
++  const summary = await summarizeTicket({
++    ticketId: String(body.ticketId),
++    transcript: String(body.transcript),
++  });
++
++  return NextResponse.json({
++    summary,
++  });
++}
+diff --git a/src/lib/ai/provider.ts b/src/lib/ai/provider.ts
+new file mode 100644
+index 0000000..f9e1e24
+--- /dev/null
++++ b/src/lib/ai/provider.ts
+@@ -0,0 +1,25 @@
++import OpenAI from "openai";
++
++const client = new OpenAI({
++  apiKey: process.env.OPENAI_API_KEY,
++});
++
++export async function summarizeTicket(input: { ticketId: string; transcript: string }) {
++  const response = await client.responses.create({
++    model: "gpt-4.1",
++    input: [
++      {
++        role: "user",
++        content: `Summarize this support ticket for an agent:\n\n${input.transcript}`,
++      },
++    ],
++  });
++
++  return response.output_text;
++}
+diff --git a/tests/api/ai-ticket-summary.test.ts b/tests/api/ai-ticket-summary.test.ts
+new file mode 100644
+index 0000000..ef8c409
+--- /dev/null
++++ b/tests/api/ai-ticket-summary.test.ts
+@@ -0,0 +1,25 @@
++import { describe, expect, it, vi } from "vitest";
++
++import { POST } from "@/app/api/ai/ticket-summary/route";
++import { summarizeTicket } from "@/src/lib/ai/provider";
++
++vi.mock("@/src/lib/ai/provider", () => ({
++  summarizeTicket: vi.fn().mockResolvedValue("Customer needs a refund follow-up."),
++}));
++
++describe("POST /api/ai/ticket-summary", () => {
++  it("returns a generated summary", async () => {
++    const response = await POST(
++      new Request("https://app.test/api/ai/ticket-summary", {
++        method: "POST",
++        body: JSON.stringify({
++          ticketId: "ticket_123",
++          transcript: "The customer says they were double charged.",
++        }),
++      }),
++    );
++
++    await expect(response.json()).resolves.toEqual({
++      summary: "Customer needs a refund follow-up.",
++    });
++  });
++});

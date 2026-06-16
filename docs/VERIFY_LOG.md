@@ -104,6 +104,36 @@ Rules:
 
 ---
 
+### 2026-06-16 — standard — Phase 3 Task 1: Freeze the five V0 fixture scenarios — this task commit
+
+- Environment: local CLI workspace
+- Checked:
+  - `evals/fixtures/` contains five fixture folders: payment/webhook/idempotency, auth/session/ownership, weak-or-missing test-claim evidence, failed tests vs agent "done", and AI endpoint without usage/rate-limit evidence.
+  - Each fixture contains local input material and a hand-written expected `VERIFICATION_BRIEF.md`.
+  - Fixture discovery tests assert all five folders exist and each expected brief contains scenario-specific conservative signals.
+  - Manual read confirmed the four new expected briefs are evidence-linked and not generic checklists.
+- Commands run:
+  - `pnpm test -- tests/fixtures.test.ts` -> pass; 4 test files, 5 tests.
+  - `pnpm typecheck` -> pass.
+  - `pnpm lint` -> pass.
+  - `pnpm test` -> pass; 4 test files, 5 tests.
+  - `pnpm build` -> pass.
+- Runtime proof:
+  - Fixture/manual proof: expected briefs were read directly for scenario specificity, conservative verdicts, review-first files, and explicit evidence gaps.
+  - CLI flow: N/A, Task 1 freezes fixtures only and does not implement analyzer behavior.
+  - Browser flow: N/A, V0 has no browser UI.
+  - Database proof: N/A, V0 has no database or migrations.
+  - Provider/dashboard proof: N/A, provider-related scenarios are static fixtures only.
+- Cannot verify:
+  - Generated analyzer output for the new fixtures, because analyzer implementation is deferred to later Phase 3 tasks.
+  - Runtime auth, payment, provider, or AI controls, because these are fixture scenarios rather than this repo's runtime behavior.
+- Docs updated:
+  - `docs/PLAN.md`
+  - `docs/VERIFY_LOG.md`
+- Verdict: SHIP for Task 1 acceptance criteria.
+
+---
+
 ### YYYY-MM-DD — `standard | high-risk | phase close | ship` — `[feature/task/phase]` — `[commit SHA]`
 
 - Environment: `local | preview/staging | production`

@@ -1,0 +1,17 @@
+> app@0.1.0 test /workspace/demo-app
+> vitest run tests/checkout/reservations.test.ts
+
+ RUN  v2.1.1 /workspace/demo-app
+
+ ❯ tests/checkout/reservations.test.ts (2 tests | 1 failed) 18ms
+   × confirmPayment > releases the reservation when payment fails 10ms
+   ✓ confirmPayment > marks reservation paid when payment succeeds 3ms
+
+ FAIL  tests/checkout/reservations.test.ts > confirmPayment > releases the reservation when payment fails
+AssertionError: expected "spy" to be called with arguments: [ 'res_123' ]
+
+Number of calls: 0
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Duration  386ms

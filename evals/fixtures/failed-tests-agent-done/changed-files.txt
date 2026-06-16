@@ -1,0 +1,3 @@
+src/checkout/confirm-payment.ts
+src/checkout/reservations.ts
+tests/checkout/reservations.test.ts
