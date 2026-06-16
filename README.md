@@ -56,6 +56,7 @@ The CLI scaffold currently supports `analyze --help`. Full analyzer behavior is 
 
 ```bash
 pnpm install
+pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build

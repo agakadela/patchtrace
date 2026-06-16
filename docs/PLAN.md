@@ -18,15 +18,15 @@ PatchTrace becomes a real git-backed local CLI project in this `patchtrace/` dir
 - Project files have been moved into `patchtrace/`.
 - `patchtrace/` is initialized as the target git repository.
 - Node/TypeScript package scaffold exists with a minimal `patchtrace` CLI help path.
-- A placeholder CI file exists at `workflows/ci.yml`; the accepted target is `.github/workflows/ci.yml` with `pnpm`.
+- CI exists at `.github/workflows/ci.yml` with `pnpm`.
 
 ### Acceptance Criteria
 
 - [x] Current directory is initialized as the target `patchtrace` git repository.
 - [x] Existing accepted docs remain in place and are included in the initial repo history.
 - [x] Node/TypeScript package scaffold exists with `pnpm`, TypeScript, Vitest, Zod, and a `patchtrace` CLI binary target.
-- [x] `pnpm typecheck`, `pnpm test`, and `pnpm build` pass locally.
-- [x] CI workflow runs typecheck, tests, and build.
+- [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` pass locally.
+- [x] CI workflow runs lint, typecheck, tests, and build.
 - [x] `patchtrace analyze --help` or equivalent local CLI help works.
 - [x] First payment/webhook/idempotency fixture has local input files and a hand-written expected `VERIFICATION_BRIEF.md`.
 
@@ -105,9 +105,9 @@ Task 3 and Task 4 can be done after Task 2. They do not depend on each other.
   - [x] TypeScript config builds `src/`.
   - [x] Vitest has at least one smoke test.
   - [x] Minimal CLI supports help for `analyze` without implementing analysis.
-  - [x] `pnpm typecheck`, `pnpm test`, and `pnpm build` pass.
+  - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` pass.
 - Verification:
-  - Automated: `pnpm typecheck`, `pnpm test`, `pnpm build`
+  - Automated: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`
   - Runtime/manual: `node dist/cli/index.js analyze --help`
   - Data/provider proof: N/A.
 - Likely touched files:
@@ -137,7 +137,7 @@ Task 3 and Task 4 can be done after Task 2. They do not depend on each other.
 - Acceptance criteria:
   - [x] CI workflow lives under `.github/workflows/ci.yml`.
   - [x] CI installs with `pnpm`.
-  - [x] CI runs typecheck, tests, and build.
+  - [x] CI runs lint, typecheck, tests, and build.
   - [x] Existing nonstandard `workflows/ci.yml`, if present, is migrated or removed only with clear explanation.
 - Verification:
   - Automated: inspect workflow syntax and run local commands matching CI.
@@ -216,6 +216,7 @@ Items intentionally delayed but still plausible later.
 ### Checkpoint: After Tasks 2-3
 
 - [x] `pnpm typecheck` passes.
+- [x] `pnpm lint` passes.
 - [x] `pnpm test` passes.
 - [x] `pnpm build` passes.
 - [x] CI workflow matches the local commands.
@@ -241,7 +242,7 @@ Items explicitly not being built in this phase.
 
 - [x] Acceptance criteria met and verified locally.
 - [ ] `$aga-simplify` run on touched areas, or explicitly not useful.
-- [ ] `$aga-review` completed on the phase diff.
+- [x] `$aga-review` completed on the phase diff; fix-now findings addressed in `agent/fix-phase-2-review-gates`.
 - [x] Relevant docs updated in the same commit/PR.
 - [x] `docs/VERIFY_LOG.md` entry added with commit, checks, runtime proof, cannot-verify, and verdict.
 - [x] `$aga-ship` completed if this phase deploys or launches; N/A for local foundation.

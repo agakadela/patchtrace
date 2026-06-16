@@ -111,7 +111,7 @@ Accepted product-level constraints:
 
 ## Commands
 
-These are the intended command contracts for the implementation repo. They become executable after the foundation scaffold exists.
+These are the current Phase 2 scaffold commands plus the intended analyzer command shape.
 
 ```bash
 # install dependencies
@@ -136,7 +136,7 @@ patchtrace analyze --base main --summary .patchtrace/agent-summary.md --test-out
 patchtrace analyze --diff patch.diff --summary agent-summary.md --test-output test-output.txt --out VERIFICATION_BRIEF.md
 ```
 
-Until the package is scaffolded, these commands are specification targets, not current repo commands.
+The scaffold currently supports install, typecheck, lint, tests, build, and `analyze --help`. Full analyzer behavior remains deferred until fixture expectations exist.
 
 ## Project Structure
 
