@@ -35,11 +35,7 @@ export function main(argv = process.argv.slice(2), io: CliIo = processIo): numbe
     return 1;
   }
 
-  if (parsedCommand.data === "analyze") {
-    return runAnalyze(args, io);
-  }
-
-  return 1;
+  return runAnalyze(args, io);
 }
 
 function isDirectEntry(): boolean {
