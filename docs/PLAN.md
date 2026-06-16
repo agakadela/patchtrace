@@ -17,17 +17,17 @@ PatchTrace becomes a real git-backed local CLI project in this `patchtrace/` dir
 
 - Project files have been moved into `patchtrace/`.
 - `patchtrace/` is initialized as the target git repository.
-- No Node/TypeScript package scaffold exists yet.
+- Node/TypeScript package scaffold exists with a minimal `patchtrace` CLI help path.
 - A placeholder CI file exists at `workflows/ci.yml`; the accepted target is `.github/workflows/ci.yml` with `pnpm`.
 
 ### Acceptance Criteria
 
 - [x] Current directory is initialized as the target `patchtrace` git repository.
 - [x] Existing accepted docs remain in place and are included in the initial repo history.
-- [ ] Node/TypeScript package scaffold exists with `pnpm`, TypeScript, Vitest, Zod, and a `patchtrace` CLI binary target.
-- [ ] `pnpm typecheck`, `pnpm test`, and `pnpm build` pass locally.
+- [x] Node/TypeScript package scaffold exists with `pnpm`, TypeScript, Vitest, Zod, and a `patchtrace` CLI binary target.
+- [x] `pnpm typecheck`, `pnpm test`, and `pnpm build` pass locally.
 - [ ] CI workflow runs typecheck, tests, and build.
-- [ ] `patchtrace analyze --help` or equivalent local CLI help works.
+- [x] `patchtrace analyze --help` or equivalent local CLI help works.
 - [ ] First payment/webhook/idempotency fixture has local input files and a hand-written expected `VERIFICATION_BRIEF.md`.
 
 ### Not Building In This Phase
@@ -98,17 +98,17 @@ Task 3 and Task 4 can be done after Task 2. They do not depend on each other.
 
 ### Task 2 - Scaffold TypeScript CLI Feedback Loops
 
-- Status: not started
+- Status: complete
 - User-visible result: a minimal local `patchtrace` CLI package with passing typecheck, tests, and build.
 - Acceptance criteria:
-  - [ ] `package.json` exposes planned scripts and a `patchtrace` binary.
-  - [ ] TypeScript config builds `src/`.
-  - [ ] Vitest has at least one smoke test.
-  - [ ] Minimal CLI supports help for `analyze` without implementing analysis.
-  - [ ] `pnpm typecheck`, `pnpm test`, and `pnpm build` pass.
+  - [x] `package.json` exposes planned scripts and a `patchtrace` binary.
+  - [x] TypeScript config builds `src/`.
+  - [x] Vitest has at least one smoke test.
+  - [x] Minimal CLI supports help for `analyze` without implementing analysis.
+  - [x] `pnpm typecheck`, `pnpm test`, and `pnpm build` pass.
 - Verification:
   - Automated: `pnpm typecheck`, `pnpm test`, `pnpm build`
-  - Runtime/manual: run local CLI help command.
+  - Runtime/manual: `node dist/cli/index.js analyze --help`
   - Data/provider proof: N/A.
 - Likely touched files:
   - `package.json`
@@ -215,9 +215,9 @@ Items intentionally delayed but still plausible later.
 
 ### Checkpoint: After Tasks 2-3
 
-- [ ] `pnpm typecheck` passes.
-- [ ] `pnpm test` passes.
-- [ ] `pnpm build` passes.
+- [x] `pnpm typecheck` passes.
+- [x] `pnpm test` passes.
+- [x] `pnpm build` passes.
 - [ ] CI workflow matches the local commands.
 
 ### Checkpoint: After Task 4

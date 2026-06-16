@@ -10,7 +10,7 @@ PatchTrace does not replace human code review. It helps you start review with be
 
 ## Status
 
-- Stage: framing / foundation docs
+- Stage: TypeScript CLI foundation scaffold
 - Current phase: see `docs/PLAN.md`
 - Product spec: see `docs/SPEC.md`
 - Architecture: see `docs/ARCHITECTURE.md`
@@ -50,20 +50,16 @@ V0 is a local CLI:
 patchtrace analyze --base main --summary .patchtrace/agent-summary.md --test-output .patchtrace/test-output.txt --out VERIFICATION_BRIEF.md
 ```
 
-The CLI is not scaffolded yet. Current work is the accepted spec and foundation decision gate before implementation.
+The CLI scaffold currently supports `analyze --help`. Full analyzer behavior is intentionally deferred until fixture expectations exist.
 
 ## Setup
-
-N/A until the implementation package is scaffolded.
-
-Planned foundation:
 
 ```bash
 pnpm install
 pnpm typecheck
-pnpm lint
 pnpm test
 pnpm build
+node dist/cli/index.js analyze --help
 ```
 
 ## Environment

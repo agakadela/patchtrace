@@ -1,0 +1,24 @@
+{
+  "name": "patchtrace",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local-first CLI for evidence-backed AI-agent patch verification briefs.",
+  "type": "module",
+  "packageManager": "pnpm@10.2.0",
+  "bin": {
+    "patchtrace": "./dist/cli/index.js"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}
