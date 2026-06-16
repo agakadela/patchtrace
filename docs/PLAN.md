@@ -26,7 +26,7 @@ PatchTrace becomes a real git-backed local CLI project in this `patchtrace/` dir
 - [x] Existing accepted docs remain in place and are included in the initial repo history.
 - [x] Node/TypeScript package scaffold exists with `pnpm`, TypeScript, Vitest, Zod, and a `patchtrace` CLI binary target.
 - [x] `pnpm typecheck`, `pnpm test`, and `pnpm build` pass locally.
-- [ ] CI workflow runs typecheck, tests, and build.
+- [x] CI workflow runs typecheck, tests, and build.
 - [x] `patchtrace analyze --help` or equivalent local CLI help works.
 - [ ] First payment/webhook/idempotency fixture has local input files and a hand-written expected `VERIFICATION_BRIEF.md`.
 
@@ -132,13 +132,13 @@ Task 3 and Task 4 can be done after Task 2. They do not depend on each other.
 
 ### Task 3 - Add CI For Foundation Checks
 
-- Status: not started
+- Status: complete
 - User-visible result: repo has CI that runs the same foundation checks expected locally.
 - Acceptance criteria:
-  - [ ] CI workflow lives under `.github/workflows/ci.yml`.
-  - [ ] CI installs with `pnpm`.
-  - [ ] CI runs typecheck, tests, and build.
-  - [ ] Existing nonstandard `workflows/ci.yml`, if present, is migrated or removed only with clear explanation.
+  - [x] CI workflow lives under `.github/workflows/ci.yml`.
+  - [x] CI installs with `pnpm`.
+  - [x] CI runs typecheck, tests, and build.
+  - [x] Existing nonstandard `workflows/ci.yml`, if present, is migrated or removed only with clear explanation.
 - Verification:
   - Automated: inspect workflow syntax and run local commands matching CI.
   - Runtime/manual: N/A until a remote exists.
@@ -218,7 +218,7 @@ Items intentionally delayed but still plausible later.
 - [x] `pnpm typecheck` passes.
 - [x] `pnpm test` passes.
 - [x] `pnpm build` passes.
-- [ ] CI workflow matches the local commands.
+- [x] CI workflow matches the local commands.
 
 ### Checkpoint: After Task 4
 
