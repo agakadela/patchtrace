@@ -1,0 +1,4 @@
+app/api/stripe/webhook/route.ts
+src/lib/billing/entitlements.ts
+src/lib/billing/stripe-events.ts
+tests/api/stripe-webhook.test.ts

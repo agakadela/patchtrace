@@ -1,0 +1,116 @@
+diff --git a/app/api/stripe/webhook/route.ts b/app/api/stripe/webhook/route.ts
+index 91dd41a..5d8c128 100644
+--- a/app/api/stripe/webhook/route.ts
++++ b/app/api/stripe/webhook/route.ts
+@@ -1,13 +1,26 @@
+ import { NextResponse } from "next/server";
+ import Stripe from "stripe";
+ 
+ import { grantPaidAccess } from "@/src/lib/billing/entitlements";
++import { hasProcessedEvent, markEventProcessed } from "@/src/lib/billing/stripe-events";
+ import { stripe } from "@/src/lib/stripe";
+ 
+ export async function POST(request: Request) {
+   const body = await request.text();
+   const signature = request.headers.get("stripe-signature");
+   const event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET);
+ 
++  if (await hasProcessedEvent(event.id)) {
++    return NextResponse.json({ received: true, duplicate: true });
++  }
++
+   if (event.type === "checkout.session.completed") {
+     const session = event.data.object as Stripe.Checkout.Session;
+     await grantPaidAccess({
+       customerId: String(session.customer),
+       userId: String(session.metadata?.userId),
+     });
+   }
+ 
++  await markEventProcessed(event.id);
++
+   return NextResponse.json({ received: true });
+ }
+diff --git a/src/lib/billing/entitlements.ts b/src/lib/billing/entitlements.ts
+index 25c922a..3ed540c 100644
+--- a/src/lib/billing/entitlements.ts
++++ b/src/lib/billing/entitlements.ts
+@@ -1,7 +1,11 @@
+ import { db } from "@/src/lib/db";
+ 
+ export async function grantPaidAccess(input: { customerId: string; userId: string }) {
+   await db.user.update({
+     where: { id: input.userId },
+-    data: { plan: "pro" },
++    data: {
++      plan: "pro",
++      stripeCustomerId: input.customerId,
++      paidAccessGrantedAt: new Date(),
++    },
+   });
+ }
+diff --git a/src/lib/billing/stripe-events.ts b/src/lib/billing/stripe-events.ts
+new file mode 100644
+index 0000000..e213f9d
+--- /dev/null
++++ b/src/lib/billing/stripe-events.ts
+@@ -0,0 +1,19 @@
++import { db } from "@/src/lib/db";
++
++export async function hasProcessedEvent(eventId: string): Promise<boolean> {
++  const existing = await db.stripeEvent.findFirst({
++    where: { eventId },
++  });
++
++  return existing !== null;
++}
++
++export async function markEventProcessed(eventId: string): Promise<void> {
++  await db.stripeEvent.create({
++    data: {
++      eventId,
++      processedAt: new Date(),
++    },
++  });
++}
+diff --git a/tests/api/stripe-webhook.test.ts b/tests/api/stripe-webhook.test.ts
+index 12dc72e..d581a07 100644
+--- a/tests/api/stripe-webhook.test.ts
++++ b/tests/api/stripe-webhook.test.ts
+@@ -1,8 +1,38 @@
+ import { describe, expect, it, vi } from "vitest";
+ 
+ import { POST } from "@/app/api/stripe/webhook/route";
++import { grantPaidAccess } from "@/src/lib/billing/entitlements";
+ 
+ vi.mock("@/src/lib/stripe", () => ({
+   stripe: {
+     webhooks: {
+       constructEvent: vi.fn(),
+     },
+   },
+ }));
++
++vi.mock("@/src/lib/billing/entitlements", () => ({
++  grantPaidAccess: vi.fn(),
++}));
++
++describe("POST /api/stripe/webhook", () => {
++  it("grants paid access for checkout.session.completed", async () => {
++    const response = await POST(buildStripeRequest("evt_123", "checkout.session.completed"));
++
++    expect(response.status).toBe(200);
++    expect(grantPaidAccess).toHaveBeenCalledWith({
++      customerId: "cus_123",
++      userId: "user_123",
++    });
++  });
++
++  it("does not grant paid access twice for the same event", async () => {
++    await POST(buildStripeRequest("evt_duplicate", "checkout.session.completed"));
++    const duplicateResponse = await POST(buildStripeRequest("evt_duplicate", "checkout.session.completed"));
++
++    expect(duplicateResponse.status).toBe(200);
++    expect(grantPaidAccess).toHaveBeenCalledTimes(1);
++  });
++});

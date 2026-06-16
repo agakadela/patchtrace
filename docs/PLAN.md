@@ -28,7 +28,7 @@ PatchTrace becomes a real git-backed local CLI project in this `patchtrace/` dir
 - [x] `pnpm typecheck`, `pnpm test`, and `pnpm build` pass locally.
 - [x] CI workflow runs typecheck, tests, and build.
 - [x] `patchtrace analyze --help` or equivalent local CLI help works.
-- [ ] First payment/webhook/idempotency fixture has local input files and a hand-written expected `VERIFICATION_BRIEF.md`.
+- [x] First payment/webhook/idempotency fixture has local input files and a hand-written expected `VERIFICATION_BRIEF.md`.
 
 ### Not Building In This Phase
 
@@ -160,12 +160,12 @@ Task 3 and Task 4 can be done after Task 2. They do not depend on each other.
 
 ### Task 4 - Create First Payment/Webhook Fixture
 
-- Status: not started
+- Status: complete
 - User-visible result: the first demo-quality fixture defines the expected Markdown brief before analyzer behavior exists.
 - Acceptance criteria:
-  - [ ] Fixture folder contains agent summary, changed files, patch diff, test output, optional notes, and expected `VERIFICATION_BRIEF.md`.
-  - [ ] Expected brief shows partially supported duplicate-webhook claim, weak/missing duplicate-event test evidence, payment/webhook/access risk, cannot-verify Stripe production settings, review-first files, and conservative verdict.
-  - [ ] Fixture is referenced by tests or documented as the first analyzer target.
+  - [x] Fixture folder contains agent summary, changed files, patch diff, test output, optional notes, and expected `VERIFICATION_BRIEF.md`.
+  - [x] Expected brief shows partially supported duplicate-webhook claim, weak/missing duplicate-event test evidence, payment/webhook/access risk, cannot-verify Stripe production settings, review-first files, and conservative verdict.
+  - [x] Fixture is referenced by tests or documented as the first analyzer target.
 - Verification:
   - Automated: fixture files are included in test fixture discovery or a placeholder fixture test.
   - Runtime/manual: read expected brief for usefulness and specificity.
@@ -222,9 +222,9 @@ Items intentionally delayed but still plausible later.
 
 ### Checkpoint: After Task 4
 
-- [ ] First fixture can be discovered by tests or explicit fixture check.
-- [ ] Expected `VERIFICATION_BRIEF.md` is specific, evidence-backed, and conservative.
-- [ ] Full analyzer implementation is still deferred.
+- [x] First fixture can be discovered by tests or explicit fixture check.
+- [x] Expected `VERIFICATION_BRIEF.md` is specific, evidence-backed, and conservative.
+- [x] Full analyzer implementation is still deferred.
 
 ## Rejected For This Phase
 

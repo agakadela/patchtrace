@@ -1,0 +1,12 @@
+> app@0.1.0 test /workspace/demo-app
+> vitest run tests/api/stripe-webhook.test.ts
+
+ RUN  v2.1.1 /workspace/demo-app
+
+ ✓ tests/api/stripe-webhook.test.ts (2 tests) 28ms
+   ✓ POST /api/stripe/webhook > grants paid access for checkout.session.completed 16ms
+   ✓ POST /api/stripe/webhook > does not grant paid access twice for the same event 6ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Duration  384ms
