@@ -91,6 +91,7 @@ describe("patchtrace CLI", () => {
     expect(brief).toContain("changed-files.txt");
     expect(brief).toContain("agent-summary.md");
     expect(brief).toContain("test-output.txt");
+    expect(brief).toContain("--changed-files: `evals/fixtures/payment-webhook-idempotency/changed-files.txt` (130 bytes, 4 lines)");
   });
 
   it("fails with an actionable error when a local input path is missing", () => {
@@ -118,5 +119,31 @@ describe("patchtrace CLI", () => {
     expect(buffered.stderr()).toContain("Input file not found for --diff");
     expect(buffered.stderr()).toContain("evals/fixtures/payment-webhook-idempotency/missing.diff");
     expect(existsSync(outPath)).toBe(false);
+  });
+
+  it("fails with an actionable error when the output path cannot be written", () => {
+    const buffered = createBufferedIo();
+    const outPath = createTempDir();
+
+    const exitCode = main(
+      [
+        "analyze",
+        "--diff",
+        join(paymentFixture, "patch.diff"),
+        "--changed-files",
+        join(paymentFixture, "changed-files.txt"),
+        "--summary",
+        join(paymentFixture, "agent-summary.md"),
+        "--test-output",
+        join(paymentFixture, "test-output.txt"),
+        "--out",
+        outPath,
+      ],
+      buffered.io,
+    );
+
+    expect(exitCode).toBe(1);
+    expect(buffered.stdout()).toBe("");
+    expect(buffered.stderr()).toContain(`Could not write verification brief to ${outPath}`);
   });
 });

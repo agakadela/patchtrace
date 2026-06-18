@@ -50,7 +50,13 @@ function countLines(text: string): number {
     return 0;
   }
 
-  return text.split(/\r?\n/).length;
+  const lines = text.split(/\r?\n/);
+
+  if (lines.at(-1) === "") {
+    return lines.length - 1;
+  }
+
+  return lines.length;
 }
 
 function readMaterial(option: ReviewedInput["option"], path: string) {

@@ -29,6 +29,13 @@ interface AnalyzeOptionError {
   error: string;
 }
 
+class VerificationBriefWriteError extends Error {
+  constructor(path: string, causeMessage: string) {
+    super(`Could not write verification brief to ${path}: ${causeMessage}`);
+    this.name = "VerificationBriefWriteError";
+  }
+}
+
 const optionNames = new Map<string, AnalyzeOptionName>([
   ["--base", "base"],
   ["--changed-files", "changedFiles"],
@@ -126,6 +133,23 @@ function resolveRequiredMaterialOptions(options: AnalyzeOptions): RequiredMateri
   };
 }
 
+function formatUnknownError(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return "unknown filesystem error";
+}
+
+function writeVerificationBrief(path: string, brief: string): void {
+  try {
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, brief, "utf8");
+  } catch (error) {
+    throw new VerificationBriefWriteError(path, formatUnknownError(error));
+  }
+}
+
 export function runAnalyze(args: string[], io: CliIo): number {
   if (args.includes("--help") || args.includes("-h")) {
     io.stdout.write(`${buildAnalyzeHelp()}\n`);
@@ -155,13 +179,17 @@ export function runAnalyze(args: string[], io: CliIo): number {
     });
     const brief = renderBriefShell(buildBriefShellInput(materials));
 
-    mkdirSync(dirname(materialOptions.out), { recursive: true });
-    writeFileSync(materialOptions.out, brief, "utf8");
+    writeVerificationBrief(materialOptions.out, brief);
     io.stdout.write(`Wrote verification brief to ${materialOptions.out}\n`);
 
     return 0;
   } catch (error) {
     if (error instanceof LocalMaterialReadError) {
+      io.stderr.write(`${error.message}\n`);
+      return 1;
+    }
+
+    if (error instanceof VerificationBriefWriteError) {
       io.stderr.write(`${error.message}\n`);
       return 1;
     }
