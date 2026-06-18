@@ -137,14 +137,14 @@ Implementation order follows this graph while keeping each task user-visible.
 **Description:** Extend the same CLI path to extract explicit claims from the agent summary and compare them to patch/test evidence for the payment fixture. Add a test-quality section that distinguishes passing test output from strong behavioral proof.
 
 **Acceptance criteria:**
-- [ ] Generated output includes `## Agent claims and support` with the four payment fixture claims represented using the accepted claim-support taxonomy: supported, partially supported, unsupported, contradicted, or cannot-determine.
-- [ ] Generated output includes `## Test quality` with observed test command/result and weak or missing duplicate-event coverage notes.
-- [ ] The analyzer does not infer unstated claims; each claim is traceable to the provided summary or notes.
+- [x] Generated output includes `## Agent claims and support` with the four payment fixture claims represented using the accepted claim-support taxonomy: supported, partially supported, unsupported, contradicted, or cannot-determine.
+- [x] Generated output includes `## Test quality` with observed test command/result and weak or missing duplicate-event coverage notes.
+- [x] The analyzer does not infer unstated claims; each claim is traceable to the provided summary or notes.
 
 **Verification method:**
-- [ ] `pnpm test -- tests/fixtures.test.ts`
-- [ ] `pnpm test -- tests/cli.test.ts`
-- [ ] Manual CLI smoke confirms claim-support and test-quality sections are present and conservative.
+- [x] `pnpm test -- tests/fixtures.test.ts`
+- [x] `pnpm test -- tests/cli.test.ts`
+- [x] Manual CLI smoke confirms claim-support and test-quality sections are present and conservative.
 
 **Dependencies:** Task 3.
 

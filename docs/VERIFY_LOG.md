@@ -197,6 +197,39 @@ Rules:
 
 ---
 
+### 2026-06-18 — standard — Phase 3 Task 4: Agent claims and test-quality evidence — this task branch
+
+- Environment: local CLI workspace
+- Checked:
+  - Generated payment fixture brief now includes `## Agent claims and support` with four explicit summary claims and support values `partially_supported`, `supported`, and `cannot_determine`.
+  - Generated payment fixture brief now includes `## Test quality` with observed command/result and weak duplicate-event coverage notes.
+  - Claim extraction is limited to statements present in `agent-summary.md`; risk and test-quality notes still come from local diff/test evidence rather than treating the summary as truth.
+- Commands run:
+  - `pnpm test -- tests/fixtures.test.ts` -> red for missing Task 4 sections, then pass after implementation; 4 test files, 11 tests.
+  - `pnpm test -- tests/cli.test.ts` -> pass after implementation; 4 test files, 11 tests.
+  - `pnpm typecheck` -> pass.
+  - `pnpm lint` -> pass.
+  - `pnpm test` -> pass; 4 test files, 11 tests.
+  - `pnpm build` -> pass.
+  - `node dist/cli/index.js analyze --diff evals/fixtures/payment-webhook-idempotency/patch.diff --changed-files evals/fixtures/payment-webhook-idempotency/changed-files.txt --summary evals/fixtures/payment-webhook-idempotency/agent-summary.md --test-output evals/fixtures/payment-webhook-idempotency/test-output.txt --out /private/tmp/patchtrace-task4-smoke/VERIFICATION_BRIEF.md` -> pass.
+- Runtime proof:
+  - CLI flow: built CLI writes `/private/tmp/patchtrace-task4-smoke/VERIFICATION_BRIEF.md` from the payment fixture.
+  - Output proof: generated brief includes the four payment claim assessments plus test-quality proof/weakness bullets for sequential duplicates, concurrent duplicates, database uniqueness, and partial failures.
+  - Browser flow: N/A, V0 has no browser UI.
+  - Database proof: N/A, V0 has no database or migrations.
+  - Provider/dashboard proof: N/A, provider-related scenarios are static fixtures only.
+- Cannot verify:
+  - Cannot-verify generation and final verdict selection, because those analyzer slices are deferred to Phase 3 Task 5.
+  - Stripe dashboard, provider replay, deployed environment, production database constraints, or production payment behavior, because Task 4 only analyzes local fixture material.
+  - Broad Codex/Cursor/Claude/Copilot session-log parsing, because it is out of scope for this task.
+- Docs updated:
+  - `docs/PLAN.md`
+  - `docs/ARCHITECTURE.md`
+  - `docs/VERIFY_LOG.md`
+- Verdict: SHIP for Task 4 acceptance criteria.
+
+---
+
 ### YYYY-MM-DD — `standard | high-risk | phase close | ship` — `[feature/task/phase]` — `[commit SHA]`
 
 - Environment: `local | preview/staging | production`

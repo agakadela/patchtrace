@@ -124,4 +124,37 @@ describe("fixture discovery", () => {
     expect(brief).toContain("3. `src/lib/billing/entitlements.ts`");
     expect(brief).toContain("4. `tests/api/stripe-webhook.test.ts`");
   });
+
+  it("generates payment fixture claim-support and test-quality assessments", () => {
+    const paymentFixturePath = join(fixturesRoot, "payment-webhook-idempotency");
+    const materials = readSavedMaterials({
+      changedFiles: join(paymentFixturePath, "changed-files.txt"),
+      diff: join(paymentFixturePath, "patch.diff"),
+      summary: join(paymentFixturePath, "agent-summary.md"),
+      testOutput: join(paymentFixturePath, "test-output.txt"),
+    });
+
+    const brief = renderBriefShell(buildBriefShellInput(materials));
+
+    expect(brief).toContain("## Agent claims and support");
+    expect(brief).toContain(
+      "| Duplicate Stripe webhooks do not double-grant paid access. | partially_supported | Duplicate webhook claim: partially supported.",
+    );
+    expect(brief).toContain(
+      "| Already-processed events return `200`. | supported | `app/api/stripe/webhook/route.ts` returns JSON for an already processed event before the entitlement branch.",
+    );
+    expect(brief).toContain(
+      "| Tests cover duplicate webhook deliveries. | partially_supported | Weak or missing duplicate-event test evidence.",
+    );
+    expect(brief).toContain(
+      "| No Stripe production dashboard changes are needed. | cannot_determine | Cannot verify Stripe production settings from local diff, agent summary, or test output.",
+    );
+    expect(brief).toContain("## Test quality");
+    expect(brief).toContain("Observed test command:");
+    expect(brief).toContain("pnpm test tests/api/stripe-webhook.test.ts");
+    expect(brief).toContain("Result: pass.");
+    expect(brief).toContain("A repeated event ID can avoid a second entitlement grant in the tested setup.");
+    expect(brief).toContain("Duplicate events arriving concurrently.");
+    expect(brief).toContain("Database-level uniqueness for Stripe event IDs.");
+  });
 });
