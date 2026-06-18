@@ -1,0 +1,50 @@
+diff --git a/src/lib/csv/import-rows.ts b/src/lib/csv/import-rows.ts
+index 1f50a0d..3156d03 100644
+--- a/src/lib/csv/import-rows.ts
++++ b/src/lib/csv/import-rows.ts
+@@ -1,8 +1,27 @@
+ export type ImportedUser = {
+   email: string;
+   plan: "free" | "pro";
+ };
+ 
+ export function importRows(rows: Array<Record<string, string>>): ImportedUser[] {
+-  return rows.map((row) => ({ email: row.email, plan: row.plan as "free" | "pro" }));
++  return rows.map((row, index) => {
++    const email = row.email?.trim().toLowerCase();
++    const plan = row.plan?.trim().toLowerCase();
++
++    if (!email) {
++      throw new Error(`row ${index + 1} is missing email`);
++    }
++
++    if (plan !== "free" && plan !== "pro") {
++      throw new Error(`row ${index + 1} has invalid plan`);
++    }
++
++    return {
++      email,
++      plan,
++    };
++  });
+ }
+diff --git a/tests/csv/import-rows.test.ts b/tests/csv/import-rows.test.ts
+new file mode 100644
+index 0000000..3b4f6e4
+--- /dev/null
++++ b/tests/csv/import-rows.test.ts
+@@ -0,0 +1,13 @@
++import { describe, expect, it } from "vitest";
++
++import { importRows } from "@/src/lib/csv/import-rows";
++
++describe("importRows", () => {
++  it("normalizes a valid row", () => {
++    expect(importRows([{ email: " TEST@EXAMPLE.COM ", plan: "pro" }])).toEqual([
++      {
++        email: "test@example.com",
++        plan: "pro",
++      },
++    ]);
++  });
++});

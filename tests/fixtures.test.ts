@@ -5,7 +5,69 @@ import { describe, expect, it } from "vitest";
 
 const repoRoot = process.cwd();
 const fixturesRoot = join(repoRoot, "evals", "fixtures");
-const paymentWebhookFixture = "payment-webhook-idempotency";
+
+const expectedFixtures = [
+  {
+    name: "payment-webhook-idempotency",
+    signals: [
+      "Duplicate webhook claim: partially supported",
+      "Weak or missing duplicate-event test evidence",
+      "Payment/webhook/access risk",
+      "Cannot verify Stripe production settings",
+      "Review first",
+      "Conservative verdict: needs_human_review",
+    ],
+  },
+  {
+    name: "auth-session-ownership",
+    signals: [
+      "Auth/session ownership claim: partially supported",
+      "Cannot verify server-side ownership enforcement",
+      "Access-control risk",
+      "Manual two-user test is missing",
+      "Conservative verdict: needs_human_review",
+    ],
+  },
+  {
+    name: "weak-or-missing-test-claim-evidence",
+    signals: [
+      "Test coverage claim: weak",
+      "Cannot verify behavior from typecheck-only evidence",
+      "Weak or missing behavioral test evidence",
+      "Review first",
+      "Conservative verdict: insufficient_material",
+    ],
+  },
+  {
+    name: "failed-tests-agent-done",
+    signals: [
+      "Agent done claim: contradicted",
+      "Failed test evidence",
+      "Cannot verify completion while tests are failing",
+      "Review first",
+      "Conservative verdict: send_agent_back",
+    ],
+  },
+  {
+    name: "ai-endpoint-missing-usage-rate-limits",
+    signals: [
+      "AI endpoint safety claim: unsupported",
+      "Cannot verify usage or rate-limit controls",
+      "AI cost/control risk",
+      "Failure path is not evidenced",
+      "Conservative verdict: needs_human_review",
+    ],
+  },
+];
+
+const requiredFixtureFiles = [
+  "agent-summary.md",
+  "changed-files.txt",
+  "patch.diff",
+  "test-output.txt",
+  "notes.md",
+  "VERIFICATION_BRIEF.md",
+];
 
 function discoverFixtureNames(): string[] {
   if (!existsSync(fixturesRoot)) {
@@ -19,29 +81,21 @@ function discoverFixtureNames(): string[] {
 }
 
 describe("fixture discovery", () => {
-  it("discovers the payment webhook idempotency fixture and expected brief", () => {
-    expect(discoverFixtureNames()).toContain(paymentWebhookFixture);
+  it("discovers all five V0 fixture scenarios and their expected briefs", () => {
+    expect(discoverFixtureNames()).toEqual(expectedFixtures.map((fixture) => fixture.name).sort());
 
-    const fixturePath = join(fixturesRoot, paymentWebhookFixture);
+    for (const fixture of expectedFixtures) {
+      const fixturePath = join(fixturesRoot, fixture.name);
 
-    for (const fileName of [
-      "agent-summary.md",
-      "changed-files.txt",
-      "patch.diff",
-      "test-output.txt",
-      "notes.md",
-      "VERIFICATION_BRIEF.md",
-    ]) {
-      expect(existsSync(join(fixturePath, fileName)), `${fileName} should exist`).toBe(true);
+      for (const fileName of requiredFixtureFiles) {
+        expect(existsSync(join(fixturePath, fileName)), `${fixture.name}/${fileName} should exist`).toBe(true);
+      }
+
+      const expectedBrief = readFileSync(join(fixturePath, "VERIFICATION_BRIEF.md"), "utf8");
+
+      for (const signal of fixture.signals) {
+        expect(expectedBrief, `${fixture.name} should contain ${signal}`).toContain(signal);
+      }
     }
-
-    const expectedBrief = readFileSync(join(fixturePath, "VERIFICATION_BRIEF.md"), "utf8");
-
-    expect(expectedBrief).toContain("Duplicate webhook claim: partially supported");
-    expect(expectedBrief).toContain("Weak or missing duplicate-event test evidence");
-    expect(expectedBrief).toContain("Payment/webhook/access risk");
-    expect(expectedBrief).toContain("Cannot verify Stripe production settings");
-    expect(expectedBrief).toContain("Review first");
-    expect(expectedBrief).toContain("Conservative verdict: needs_human_review");
   });
 });

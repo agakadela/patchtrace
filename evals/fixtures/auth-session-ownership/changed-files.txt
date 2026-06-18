@@ -1,0 +1,4 @@
+app/api/projects/[projectId]/route.ts
+src/lib/auth/session.ts
+src/lib/projects.ts
+tests/api/projects.test.ts

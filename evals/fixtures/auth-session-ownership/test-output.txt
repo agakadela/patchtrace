@@ -1,0 +1,12 @@
+> app@0.1.0 test /workspace/demo-app
+> vitest run tests/api/projects.test.ts
+
+ RUN  v2.1.1 /workspace/demo-app
+
+ ✓ tests/api/projects.test.ts (2 tests) 31ms
+   ✓ PATCH /api/projects/:projectId > renames a project for a signed-in user 18ms
+   ✓ PATCH /api/projects/:projectId > returns 401 without a session 4ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Duration  402ms

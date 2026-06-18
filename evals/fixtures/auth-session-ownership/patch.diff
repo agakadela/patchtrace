@@ -1,0 +1,125 @@
+diff --git a/app/api/projects/[projectId]/route.ts b/app/api/projects/[projectId]/route.ts
+index d47ac41..b2a9f7b 100644
+--- a/app/api/projects/[projectId]/route.ts
++++ b/app/api/projects/[projectId]/route.ts
+@@ -1,13 +1,25 @@
+ import { NextResponse } from "next/server";
+ 
++import { getSessionUser } from "@/src/lib/auth/session";
+ import { updateProject } from "@/src/lib/projects";
+ 
+ export async function PATCH(
+   request: Request,
+   { params }: { params: { projectId: string } },
+ ) {
++  const user = await getSessionUser();
++
++  if (!user) {
++    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
++  }
++
+   const body = await request.json();
+ 
+-  const project = await updateProject(params.projectId, {
++  const project = await updateProject({
++    projectId: params.projectId,
++    userId: user.id,
+     name: body.name,
+   });
+ 
+   return NextResponse.json({ project });
+ }
+diff --git a/src/lib/auth/session.ts b/src/lib/auth/session.ts
+new file mode 100644
+index 0000000..9c3d955
+--- /dev/null
++++ b/src/lib/auth/session.ts
+@@ -0,0 +1,13 @@
++import { auth } from "@/src/lib/auth/provider";
++
++export async function getSessionUser(): Promise<{ id: string } | null> {
++  const session = await auth();
++
++  if (!session?.user?.id) {
++    return null;
++  }
++
++  return {
++    id: session.user.id,
++  };
++}
+diff --git a/src/lib/projects.ts b/src/lib/projects.ts
+index 92c0bd1..7b75099 100644
+--- a/src/lib/projects.ts
++++ b/src/lib/projects.ts
+@@ -1,11 +1,14 @@
+ import { db } from "@/src/lib/db";
+ 
+-export async function updateProject(projectId: string, input: { name: string }) {
++export async function updateProject(input: {
++  projectId: string;
++  userId: string;
++  name: string;
++}) {
+   return db.project.update({
+-    where: { id: projectId },
++    where: { id: input.projectId },
+     data: {
+-      name: input.name,
++      name: input.name,
+     },
+   });
+ }
+diff --git a/tests/api/projects.test.ts b/tests/api/projects.test.ts
+index 0ed9172..fe2ac81 100644
+--- a/tests/api/projects.test.ts
++++ b/tests/api/projects.test.ts
+@@ -1,8 +1,44 @@
+ import { describe, expect, it, vi } from "vitest";
+ 
+ import { PATCH } from "@/app/api/projects/[projectId]/route";
++import { getSessionUser } from "@/src/lib/auth/session";
+ import { updateProject } from "@/src/lib/projects";
+ 
++vi.mock("@/src/lib/auth/session", () => ({
++  getSessionUser: vi.fn(),
++}));
++
+ vi.mock("@/src/lib/projects", () => ({
+   updateProject: vi.fn(),
+ }));
++
++describe("PATCH /api/projects/:projectId", () => {
++  it("renames a project for a signed-in user", async () => {
++    vi.mocked(getSessionUser).mockResolvedValue({ id: "user_123" });
++    vi.mocked(updateProject).mockResolvedValue({
++      id: "project_123",
++      name: "Launch plan",
++    });
++
++    const response = await PATCH(
++      new Request("https://app.test/api/projects/project_123", {
++        method: "PATCH",
++        body: JSON.stringify({ name: "Launch plan" }),
++      }),
++      { params: { projectId: "project_123" } },
++    );
++
++    expect(response.status).toBe(200);
++    expect(updateProject).toHaveBeenCalledWith({
++      projectId: "project_123",
++      userId: "user_123",
++      name: "Launch plan",
++    });
++  });
++
++  it("returns 401 without a session", async () => {
++    vi.mocked(getSessionUser).mockResolvedValue(null);
++
++    const response = await PATCH(new Request("https://app.test/api/projects/project_123"), {
++      params: { projectId: "project_123" },
++    });
++
++    expect(response.status).toBe(401);
++  });
++});
