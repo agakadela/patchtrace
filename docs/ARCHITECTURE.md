@@ -39,7 +39,7 @@ Default principle: organize code by product/domain ownership, not by technical l
 - Chosen convention: `modules`
 - Exact root path: `src/modules`
 - Reason: PatchTrace is a domain engine/devtool with stable product concepts: claims, evidence, patch material, risk, test quality, reports, and verdicts.
-- Existing repo convention, if any: Phase 2 currently has a thin `src/cli/` scaffold; analyzer domain modules under `src/modules/` are deferred until analyzer work begins.
+- Existing repo convention, if any: Phase 3 now has a thin `src/cli/` entrypoint plus first analyzer modules under `src/modules/patch`, `src/modules/evidence`, and `src/modules/report`.
 
 Global technical folders policy:
 
@@ -48,7 +48,7 @@ Global technical folders policy:
 - Application logic belongs in product/domain modules under `src/modules/`.
 - Avoid global `core/`, `rules/`, `schemas/`, `services/`, `types/`, or `utils/` dumping grounds for PatchTrace logic.
 
-Current scaffold structure:
+Current implementation structure:
 
 ```text
 src/
@@ -57,13 +57,20 @@ src/
     io.ts
     commands/
       analyze.ts
+  modules/
+    evidence/
+      local-materials.ts
+    patch/
+      changed-files.ts
+    report/
+      brief-shell.ts
 evals/
   fixtures/
 tests/
 docs/
 ```
 
-Target analyzer module structure once analyzer behavior begins:
+Target analyzer module structure as later Phase 3 behavior lands:
 
 ```text
 src/
@@ -175,3 +182,4 @@ Future optional integrations such as LLM extraction, GitHub PR integration, pack
 |---|---|---|---|
 | 2026-06-15 | Initial accepted architecture | Project foundation | N/A |
 | 2026-06-16 | Recorded Phase 2 CLI scaffold, fixture, lint gate, and pinned CI actions | Keep project truth aligned after review fixes | `agent/fix-phase-2-review-gates` |
+| 2026-06-18 | Recorded Phase 3 saved-material brief shell under `src/modules/patch`, `src/modules/evidence`, and `src/modules/report` | Analyzer module work has begun with local CLI proof | `agent/task-2-brief-shell` |

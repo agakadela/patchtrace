@@ -10,7 +10,7 @@ PatchTrace does not replace human code review. It helps you start review with be
 
 ## Status
 
-- Stage: TypeScript CLI foundation scaffold
+- Stage: Phase 3 local CLI walking skeleton
 - Current phase: see `docs/PLAN.md`
 - Product spec: see `docs/SPEC.md`
 - Architecture: see `docs/ARCHITECTURE.md`
@@ -47,10 +47,10 @@ Risk-triggered docs are created only when triggered:
 V0 is a local CLI:
 
 ```bash
-patchtrace analyze --base main --summary .patchtrace/agent-summary.md --test-output .patchtrace/test-output.txt --out VERIFICATION_BRIEF.md
+patchtrace analyze --diff patch.diff --changed-files changed-files.txt --summary agent-summary.md --test-output test-output.txt --out VERIFICATION_BRIEF.md
 ```
 
-The CLI scaffold currently supports `analyze --help`. Full analyzer behavior is intentionally deferred until fixture expectations exist.
+The CLI currently reads saved local material and writes a conservative Markdown brief shell. Detailed risk, claim-support, test-quality, and cannot-verify analysis is intentionally deferred to later Phase 3 tasks.
 
 ## Setup
 
@@ -60,7 +60,7 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
-node dist/cli/index.js analyze --help
+node dist/cli/index.js analyze --diff evals/fixtures/payment-webhook-idempotency/patch.diff --changed-files evals/fixtures/payment-webhook-idempotency/changed-files.txt --summary evals/fixtures/payment-webhook-idempotency/agent-summary.md --test-output evals/fixtures/payment-webhook-idempotency/test-output.txt --out /tmp/VERIFICATION_BRIEF.md
 ```
 
 ## Environment

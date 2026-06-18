@@ -10,16 +10,19 @@ function readRepoFile(path: string): string {
 }
 
 describe("project truth docs", () => {
-  it("describe the current Phase 2 scaffold truthfully", () => {
+  it("describe the current Phase 3 walking skeleton truthfully", () => {
     const plan = readRepoFile("docs/PLAN.md");
     const architecture = readRepoFile("docs/ARCHITECTURE.md");
+    const readme = readRepoFile("README.md");
 
     expect(plan).not.toContain("A placeholder CI file exists at `workflows/ci.yml`");
     expect(architecture).not.toContain("implementation has not been scaffolded yet");
     expect(architecture).not.toContain("init.ts");
+    expect(readme).toContain("Stage: Phase 3 local CLI walking skeleton");
+    expect(architecture).toContain("src/modules/evidence");
   });
 
-  it("documents lint as an active Phase 2 feedback loop", () => {
+  it("documents lint as an active feedback loop", () => {
     const spec = readRepoFile("docs/SPEC.md");
     const adr = readRepoFile("docs/decisions/ADR-0001-project-foundation.md");
     const packageJson = JSON.parse(readRepoFile("package.json")) as {
