@@ -165,6 +165,38 @@ Rules:
 
 ---
 
+### 2026-06-18 — standard — Phase 3 Task 3: Payment/webhook risk and review-first files — this task branch
+
+- Environment: local CLI workspace
+- Checked:
+  - Generated payment fixture brief now includes `## Risk areas` with payment/webhook/access, entitlement, idempotency-storage, and test-quality risk lines tied to changed fixture files.
+  - Generated payment fixture brief now includes `## Review first` ordered as webhook route, Stripe event storage, entitlement, and test file.
+  - CLI regression test uses an intentionally unhelpful agent summary to prove risk/review-first output comes from changed paths and diff text, not summary claims alone.
+- Commands run:
+  - `pnpm test -- tests/cli.test.ts` -> red for missing `## Risk areas`, then pass after implementation; 4 test files, 10 tests.
+  - `pnpm test -- tests/fixtures.test.ts` -> red for missing `## Risk areas`, then pass after implementation; 4 test files, 10 tests.
+  - `pnpm typecheck` -> pass.
+  - `pnpm lint` -> pass.
+  - `pnpm test` -> pass; 4 test files, 10 tests.
+  - `pnpm build` -> pass.
+  - `node dist/cli/index.js analyze --diff evals/fixtures/payment-webhook-idempotency/patch.diff --changed-files evals/fixtures/payment-webhook-idempotency/changed-files.txt --summary evals/fixtures/payment-webhook-idempotency/agent-summary.md --test-output evals/fixtures/payment-webhook-idempotency/test-output.txt --out /private/tmp/patchtrace-task3-smoke/VERIFICATION_BRIEF.md` -> pass.
+- Runtime proof:
+  - CLI flow: built CLI writes `/private/tmp/patchtrace-task3-smoke/VERIFICATION_BRIEF.md` from the payment fixture.
+  - Output proof: generated brief includes `## Risk areas` and `## Review first` with the expected payment/webhook, entitlement, idempotency-storage, and test-quality guidance.
+  - Browser flow: N/A, V0 has no browser UI.
+  - Database proof: N/A, V0 has no database or migrations.
+  - Provider/dashboard proof: N/A, provider-related scenarios are static fixtures only.
+- Cannot verify:
+  - Agent claim-support, full test-quality analysis, cannot-verify generation, and final verdict selection, because those analyzer slices are deferred to later Phase 3 tasks.
+  - Stripe dashboard, provider replay, deployed environment, or production payment behavior, because Task 3 only analyzes local fixture material.
+- Docs updated:
+  - `docs/PLAN.md`
+  - `docs/ARCHITECTURE.md`
+  - `docs/VERIFY_LOG.md`
+- Verdict: SHIP for Task 3 acceptance criteria.
+
+---
+
 ### YYYY-MM-DD — `standard | high-risk | phase close | ship` — `[feature/task/phase]` — `[commit SHA]`
 
 - Environment: `local | preview/staging | production`

@@ -109,14 +109,14 @@ Implementation order follows this graph while keeping each task user-visible.
 **Description:** Add the first deterministic analyzer slice for changed-file and diff risk. The payment/webhook fixture should produce file-specific risk areas and ordered review-first guidance from the provided paths and patch text.
 
 **Acceptance criteria:**
-- [ ] Generated output for the payment fixture includes `## Risk areas` with payment/webhook/access, entitlement, idempotency-storage, and test-quality risk language tied to fixture files.
-- [ ] Generated output includes `## Review first` with the webhook route, Stripe event storage, entitlement, and test files in a useful order.
-- [ ] Risk and review-first output is derived from provided paths/diff content, not from agent-summary claims alone.
+- [x] Generated output for the payment fixture includes `## Risk areas` with payment/webhook/access, entitlement, idempotency-storage, and test-quality risk language tied to fixture files.
+- [x] Generated output includes `## Review first` with the webhook route, Stripe event storage, entitlement, and test files in a useful order.
+- [x] Risk and review-first output is derived from provided paths/diff content, not from agent-summary claims alone.
 
 **Verification method:**
-- [ ] `pnpm test -- tests/fixtures.test.ts`
-- [ ] `pnpm test -- tests/cli.test.ts`
-- [ ] Manual CLI smoke confirms the generated brief includes the expected risk and review-first sections.
+- [x] `pnpm test -- tests/fixtures.test.ts`
+- [x] `pnpm test -- tests/cli.test.ts`
+- [x] Manual CLI smoke confirms the generated brief includes the expected risk and review-first sections.
 
 **Dependencies:** Task 2.
 

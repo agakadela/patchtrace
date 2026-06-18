@@ -64,6 +64,8 @@ src/
       changed-files.ts
     report/
       brief-shell.ts
+    risk/
+      risk-analysis.ts
 evals/
   fixtures/
 tests/
@@ -183,3 +185,4 @@ Future optional integrations such as LLM extraction, GitHub PR integration, pack
 | 2026-06-15 | Initial accepted architecture | Project foundation | N/A |
 | 2026-06-16 | Recorded Phase 2 CLI scaffold, fixture, lint gate, and pinned CI actions | Keep project truth aligned after review fixes | `agent/fix-phase-2-review-gates` |
 | 2026-06-18 | Recorded Phase 3 saved-material brief shell under `src/modules/patch`, `src/modules/evidence`, and `src/modules/report` | Analyzer module work has begun with local CLI proof | `agent/task-2-brief-shell` |
+| 2026-06-18 | Recorded Phase 3 payment fixture risk and review-first analyzer under `src/modules/risk` | First deterministic risk slice now derives report guidance from changed paths and diff text | `agent/task-3-payment-risk-review-first` |
