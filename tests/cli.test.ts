@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -92,6 +92,62 @@ describe("patchtrace CLI", () => {
     expect(brief).toContain("agent-summary.md");
     expect(brief).toContain("test-output.txt");
     expect(brief).toContain("--changed-files: `evals/fixtures/payment-webhook-idempotency/changed-files.txt` (130 bytes, 4 lines)");
+  });
+
+  it("derives payment risk and review-first guidance from changed paths and diff text", () => {
+    const buffered = createBufferedIo();
+    const tempDir = createTempDir();
+    const outPath = join(tempDir, "VERIFICATION_BRIEF.md");
+    const summaryPath = join(tempDir, "agent-summary.md");
+    writeFileSync(summaryPath, "# Agent Summary\n\nEverything is done.\n", "utf8");
+
+    const exitCode = main(
+      [
+        "analyze",
+        "--diff",
+        join(paymentFixture, "patch.diff"),
+        "--changed-files",
+        join(paymentFixture, "changed-files.txt"),
+        "--summary",
+        summaryPath,
+        "--test-output",
+        join(paymentFixture, "test-output.txt"),
+        "--out",
+        outPath,
+      ],
+      buffered.io,
+    );
+
+    expect(exitCode).toBe(0);
+    expect(buffered.stderr()).toBe("");
+
+    const brief = readFileSync(outPath, "utf8");
+    expect(brief).toContain("## Risk areas");
+    expect(brief).toContain(
+      "Payment/webhook/access risk: `app/api/stripe/webhook/route.ts` accepts provider events and can grant paid access.",
+    );
+    expect(brief).toContain(
+      "Entitlement risk: `src/lib/billing/entitlements.ts` updates plan state and customer linkage.",
+    );
+    expect(brief).toContain(
+      "Idempotency-storage risk: `src/lib/billing/stripe-events.ts` records processed events but the diff does not show uniqueness or transactional guarantees.",
+    );
+    expect(brief).toContain(
+      "Test-quality risk: `tests/api/stripe-webhook.test.ts` exercises the happy path and sequential duplicate path, but it does not demonstrate the highest-risk duplicate delivery cases.",
+    );
+    expect(brief).toContain("## Review first");
+    expect(brief).toContain(
+      "1. `app/api/stripe/webhook/route.ts` - confirm idempotency ordering, signature handling, error behavior, and whether duplicate event checks are race-safe.",
+    );
+    expect(brief).toContain(
+      "2. `src/lib/billing/stripe-events.ts` - confirm `eventId` has a unique database constraint and that event recording is atomic with the entitlement decision or otherwise safe under retries.",
+    );
+    expect(brief).toContain(
+      "3. `src/lib/billing/entitlements.ts` - confirm paid access updates are correct, auditable, and scoped to the intended user/customer mapping.",
+    );
+    expect(brief).toContain(
+      "4. `tests/api/stripe-webhook.test.ts` - add or inspect tests for concurrent duplicates, database constraint behavior, realistic signed payloads, and partial-failure cases.",
+    );
   });
 
   it("fails with an actionable error when a local input path is missing", () => {

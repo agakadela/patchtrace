@@ -3,6 +3,9 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { readSavedMaterials } from "../src/modules/evidence/local-materials.js";
+import { buildBriefShellInput, renderBriefShell } from "../src/modules/report/brief-shell.js";
+
 const repoRoot = process.cwd();
 const fixturesRoot = join(repoRoot, "evals", "fixtures");
 
@@ -97,5 +100,28 @@ describe("fixture discovery", () => {
         expect(expectedBrief, `${fixture.name} should contain ${signal}`).toContain(signal);
       }
     }
+  });
+
+  it("generates payment fixture risk areas and review-first guidance", () => {
+    const paymentFixturePath = join(fixturesRoot, "payment-webhook-idempotency");
+    const materials = readSavedMaterials({
+      changedFiles: join(paymentFixturePath, "changed-files.txt"),
+      diff: join(paymentFixturePath, "patch.diff"),
+      summary: join(paymentFixturePath, "agent-summary.md"),
+      testOutput: join(paymentFixturePath, "test-output.txt"),
+    });
+
+    const brief = renderBriefShell(buildBriefShellInput(materials));
+
+    expect(brief).toContain("## Risk areas");
+    expect(brief).toContain("Payment/webhook/access risk: `app/api/stripe/webhook/route.ts`");
+    expect(brief).toContain("Entitlement risk: `src/lib/billing/entitlements.ts`");
+    expect(brief).toContain("Idempotency-storage risk: `src/lib/billing/stripe-events.ts`");
+    expect(brief).toContain("Test-quality risk: `tests/api/stripe-webhook.test.ts`");
+    expect(brief).toContain("## Review first");
+    expect(brief).toContain("1. `app/api/stripe/webhook/route.ts`");
+    expect(brief).toContain("2. `src/lib/billing/stripe-events.ts`");
+    expect(brief).toContain("3. `src/lib/billing/entitlements.ts`");
+    expect(brief).toContain("4. `tests/api/stripe-webhook.test.ts`");
   });
 });
