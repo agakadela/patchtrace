@@ -111,7 +111,7 @@ Accepted product-level constraints:
 
 ## Commands
 
-These are the current Phase 2 scaffold commands plus the intended analyzer command shape.
+These are the current local development commands plus the analyzer command shape.
 
 ```bash
 # install dependencies
@@ -130,13 +130,13 @@ pnpm test
 pnpm build
 
 # analyze local patch material
-patchtrace analyze --base main --summary .patchtrace/agent-summary.md --test-output .patchtrace/test-output.txt --out VERIFICATION_BRIEF.md
+patchtrace analyze --diff patch.diff --changed-files changed-files.txt --summary agent-summary.md --test-output test-output.txt --out VERIFICATION_BRIEF.md
 
 # analyze a saved diff
-patchtrace analyze --diff patch.diff --summary agent-summary.md --test-output test-output.txt --out VERIFICATION_BRIEF.md
+patchtrace analyze --diff patch.diff --changed-files changed-files.txt --summary agent-summary.md --out VERIFICATION_BRIEF.md
 ```
 
-The scaffold currently supports install, typecheck, lint, tests, build, and `analyze --help`. Full analyzer behavior remains deferred until fixture expectations exist.
+The current walking skeleton supports install, typecheck, lint, tests, build, `analyze --help`, and `analyze` for saved local material. It writes a conservative Markdown brief shell; detailed analyzer behavior remains deferred to the ordered Phase 3 tasks.
 
 ## Project Structure
 

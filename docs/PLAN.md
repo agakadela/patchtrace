@@ -80,14 +80,14 @@ Implementation order follows this graph while keeping each task user-visible.
 **Description:** Replace the scaffold-only `analyze` path with the smallest real local CLI flow. The command should read saved fixture files, validate required input combinations, and write a structured Markdown brief shell with inputs reviewed and a conservative verdict placeholder.
 
 **Acceptance criteria:**
-- [ ] `patchtrace analyze --diff evals/fixtures/payment-webhook-idempotency/patch.diff --changed-files evals/fixtures/payment-webhook-idempotency/changed-files.txt --summary evals/fixtures/payment-webhook-idempotency/agent-summary.md --test-output evals/fixtures/payment-webhook-idempotency/test-output.txt --out <tmp>/VERIFICATION_BRIEF.md` exits 0 and writes a Markdown file.
-- [ ] The generated file contains `# VERIFICATION_BRIEF.md`, `## Conservative verdict`, and `## Inputs reviewed`.
-- [ ] Invalid or missing local input paths exit non-zero with an actionable stderr message; no misleading partial brief is silently written.
+- [x] `patchtrace analyze --diff evals/fixtures/payment-webhook-idempotency/patch.diff --changed-files evals/fixtures/payment-webhook-idempotency/changed-files.txt --summary evals/fixtures/payment-webhook-idempotency/agent-summary.md --test-output evals/fixtures/payment-webhook-idempotency/test-output.txt --out <tmp>/VERIFICATION_BRIEF.md` exits 0 and writes a Markdown file.
+- [x] The generated file contains `# VERIFICATION_BRIEF.md`, `## Conservative verdict`, and `## Inputs reviewed`.
+- [x] Invalid or missing local input paths exit non-zero with an actionable stderr message; no misleading partial brief is silently written.
 
 **Verification method:**
-- [ ] `pnpm test -- tests/cli.test.ts`
-- [ ] `pnpm typecheck`
-- [ ] Manual CLI smoke against the payment fixture writes the output file.
+- [x] `pnpm test -- tests/cli.test.ts`
+- [x] `pnpm typecheck`
+- [x] Manual CLI smoke against the payment fixture writes the output file.
 
 **Dependencies:** Task 1.
 

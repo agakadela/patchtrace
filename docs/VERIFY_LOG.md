@@ -134,6 +134,37 @@ Rules:
 
 ---
 
+### 2026-06-18 — standard — Phase 3 Task 2: Saved material generates a brief shell — PR #6 branch
+
+- Environment: local CLI workspace
+- Checked:
+  - `patchtrace analyze` reads saved `--diff`, `--changed-files`, `--summary`, and optional `--test-output` material, then writes a Markdown brief shell.
+  - Generated brief contains `# VERIFICATION_BRIEF.md`, `## Conservative verdict`, `## Inputs reviewed`, and the payment fixture changed files.
+  - Missing local input paths exit non-zero with actionable stderr and do not write a partial brief.
+  - Review follow-up regressions are covered: output paths that cannot be written produce a controlled CLI error, and trailing newlines do not inflate reported input line counts.
+- Commands run:
+  - `pnpm test -- tests/cli.test.ts` -> red for the two review regressions, then pass after fixes; 4 test files, 8 tests.
+  - `pnpm lint` -> pass.
+  - `pnpm typecheck` -> pass.
+  - `pnpm test` -> pass; 4 test files, 8 tests.
+  - `pnpm build` -> pass.
+  - `node dist/cli/index.js analyze --diff evals/fixtures/payment-webhook-idempotency/patch.diff --changed-files evals/fixtures/payment-webhook-idempotency/changed-files.txt --summary evals/fixtures/payment-webhook-idempotency/agent-summary.md --test-output evals/fixtures/payment-webhook-idempotency/test-output.txt --out /private/tmp/patchtrace-task2-fix-smoke/VERIFICATION_BRIEF.md` -> pass.
+  - `node dist/cli/index.js analyze --diff evals/fixtures/payment-webhook-idempotency/patch.diff --changed-files evals/fixtures/payment-webhook-idempotency/changed-files.txt --summary evals/fixtures/payment-webhook-idempotency/agent-summary.md --test-output evals/fixtures/payment-webhook-idempotency/test-output.txt --out evals/fixtures/payment-webhook-idempotency` -> expected non-zero with actionable write error.
+- Runtime proof:
+  - CLI flow: built CLI writes `/private/tmp/patchtrace-task2-fix-smoke/VERIFICATION_BRIEF.md` from the payment fixture.
+  - Output proof: generated brief reports `changed-files.txt` as 4 lines and lists the four payment fixture changed files.
+  - Browser flow: N/A, V0 has no browser UI.
+  - Database proof: N/A, V0 has no database or migrations.
+  - Provider/dashboard proof: N/A, provider-related scenarios are static fixtures only.
+- Cannot verify:
+  - Detailed risk, claim-support, test-quality, cannot-verify, and review-first analysis, because those analyzer slices are deferred to later Phase 3 tasks.
+  - Package publishing or deployed production behavior, because Phase 3 Task 2 is local CLI-only.
+- Docs updated:
+  - `docs/VERIFY_LOG.md`
+- Verdict: SHIP for Task 2 acceptance criteria after review fixes.
+
+---
+
 ### YYYY-MM-DD — `standard | high-risk | phase close | ship` — `[feature/task/phase]` — `[commit SHA]`
 
 - Environment: `local | preview/staging | production`
