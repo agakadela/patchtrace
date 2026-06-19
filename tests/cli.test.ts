@@ -92,6 +92,11 @@ describe("patchtrace CLI", () => {
     expect(brief).toContain("agent-summary.md");
     expect(brief).toContain("test-output.txt");
     expect(brief).toContain("--changed-files: `evals/fixtures/payment-webhook-idempotency/changed-files.txt` (130 bytes, 4 lines)");
+    expect(brief).toContain("## Agent claims and support");
+    expect(brief).toContain("Duplicate Stripe webhooks do not double-grant paid access.");
+    expect(brief).toContain("partially_supported");
+    expect(brief).toContain("## Test quality");
+    expect(brief).toContain("Weak or missing duplicate-event test evidence.");
   });
 
   it("derives payment risk and review-first guidance from changed paths and diff text", () => {
@@ -122,6 +127,8 @@ describe("patchtrace CLI", () => {
     expect(buffered.stderr()).toBe("");
 
     const brief = readFileSync(outPath, "utf8");
+    expect(brief).toContain("No explicit agent claims were extracted from the provided summary.");
+    expect(brief).not.toContain("Duplicate Stripe webhooks do not double-grant paid access.");
     expect(brief).toContain("## Risk areas");
     expect(brief).toContain(
       "Payment/webhook/access risk: `app/api/stripe/webhook/route.ts` accepts provider events and can grant paid access.",
