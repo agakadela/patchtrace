@@ -230,6 +230,39 @@ Rules:
 
 ---
 
+### 2026-06-19 — standard — Phase 3 Task 5: Cannot-verify items and verdict selection — PR #9 branch
+
+- Environment: local CLI workspace
+- Checked:
+  - Generated payment fixture brief now keeps the conservative verdict as `needs_human_review`.
+  - Generated payment fixture brief now includes `## Cannot verify from provided material` with gaps for Stripe dashboard settings, deployed environment variables, production database constraints, provider replay behavior, and prior duplicate-access remediation.
+  - Generated payment fixture brief now includes `## Suggested next checks` with evidence-linked follow-up actions for database uniqueness, duplicate-event race coverage, Stripe replay proof, and dashboard inspection.
+  - The verdict rationale avoids production-readiness language such as "safe", "correct", "guaranteed", or "production verified".
+- Commands run:
+  - `pnpm test -- tests/fixtures.test.ts` -> pass; 4 test files, 12 tests.
+  - `pnpm test -- tests/cli.test.ts` -> pass; 4 test files, 12 tests.
+  - `pnpm lint` -> pass.
+  - `pnpm typecheck` -> pass.
+  - `pnpm build` -> pass.
+  - `pnpm test` -> pass; 4 test files, 12 tests.
+  - `node dist/cli/index.js analyze --diff evals/fixtures/payment-webhook-idempotency/patch.diff --changed-files evals/fixtures/payment-webhook-idempotency/changed-files.txt --summary evals/fixtures/payment-webhook-idempotency/agent-summary.md --test-output evals/fixtures/payment-webhook-idempotency/test-output.txt --out /private/tmp/patchtrace-task5-smoke/VERIFICATION_BRIEF.md` -> pass.
+- Runtime proof:
+  - CLI flow: built CLI writes `/private/tmp/patchtrace-task5-smoke/VERIFICATION_BRIEF.md` from the payment fixture.
+  - Output proof: generated brief includes `Conservative verdict: needs_human_review`, the five payment cannot-verify gaps, and the suggested next checks.
+  - Browser flow: N/A, V0 has no browser UI.
+  - Database proof: N/A, V0 has no database or migrations.
+  - Provider/dashboard proof: N/A, provider-related scenarios are static fixtures only.
+- Cannot verify:
+  - Stripe dashboard settings, deployed environment variables, provider replay logs, production database constraints, or prior duplicate-access remediation, because Task 5 only analyzes local fixture material and reports those as explicit gaps.
+  - Generated-output parity for non-payment fixtures, because it is deferred until after Phase 3.
+- Docs updated:
+  - `docs/PLAN.md`
+  - `docs/ARCHITECTURE.md`
+  - `docs/VERIFY_LOG.md`
+- Verdict: SHIP for Task 5 acceptance criteria.
+
+---
+
 ### YYYY-MM-DD — `standard | high-risk | phase close | ship` — `[feature/task/phase]` — `[commit SHA]`
 
 - Environment: `local | preview/staging | production`
