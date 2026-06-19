@@ -4,8 +4,8 @@ import { basename } from "node:path";
 import { parseChangedFiles } from "../patch/changed-files.js";
 
 export interface LocalMaterialPaths {
-  diff: string;
-  changedFiles: string;
+  diff?: string;
+  changedFiles?: string;
   summary: string;
   testOutput?: string;
 }
@@ -24,6 +24,7 @@ export interface SavedMaterials {
   changedFiles: string[];
   summaryText: string;
   testOutputText?: string;
+  hasUsablePatchMaterial: boolean;
   inputsReviewed: ReviewedInput[];
 }
 
@@ -83,18 +84,21 @@ function readMaterial(option: ReviewedInput["option"], path: string) {
 }
 
 export function readSavedMaterials(paths: LocalMaterialPaths): SavedMaterials {
-  const diff = readMaterial("--diff", paths.diff);
-  const changedFiles = readMaterial("--changed-files", paths.changedFiles);
+  const diff = paths.diff ? readMaterial("--diff", paths.diff) : undefined;
+  const changedFiles = paths.changedFiles ? readMaterial("--changed-files", paths.changedFiles) : undefined;
   const summary = readMaterial("--summary", paths.summary);
   const optionalTestOutput = paths.testOutput ? readMaterial("--test-output", paths.testOutput) : undefined;
+  const changedFilesText = changedFiles?.text ?? "";
+  const diffText = diff?.text ?? "";
 
   return {
-    diffText: diff.text,
-    changedFilesText: changedFiles.text,
-    changedFiles: parseChangedFiles(changedFiles.text),
+    diffText,
+    changedFilesText,
+    changedFiles: parseChangedFiles(changedFilesText),
     summaryText: summary.text,
     testOutputText: optionalTestOutput?.text,
-    inputsReviewed: [diff.input, changedFiles.input, summary.input, optionalTestOutput?.input].filter(
+    hasUsablePatchMaterial: diffText.trim().length > 0 && changedFilesText.trim().length > 0,
+    inputsReviewed: [diff?.input, changedFiles?.input, summary.input, optionalTestOutput?.input].filter(
       (input): input is ReviewedInput => Boolean(input),
     ),
   };

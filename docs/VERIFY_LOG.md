@@ -263,6 +263,39 @@ Rules:
 
 ---
 
+### 2026-06-19 — standard — Phase 3 Task 6: Insufficient-material failure state — this task branch
+
+- Environment: local CLI workspace
+- Checked:
+  - Summary-only `patchtrace analyze --summary ... --out ...` now exits 0 and writes a `Conservative verdict: insufficient_material` brief.
+  - Missing `--test-output` is rendered as `Result: missing` with explicit missing behavioral-proof language, not as a passing test.
+  - Provided-but-missing local input paths still exit non-zero with actionable stderr and do not write a partial brief.
+  - The generated insufficient-material brief tells the developer to provide saved `--diff`, `--changed-files`, and `--test-output` material next, and states that live git comparison is not collected in this Phase 3 path.
+- Commands run:
+  - `pnpm test -- tests/cli.test.ts` -> red for missing `insufficient_material` summary-only behavior, then pass; 4 test files, 14 tests.
+  - `pnpm test -- tests/fixtures.test.ts` -> pass; 4 test files, 14 tests.
+  - `pnpm lint` -> pass.
+  - `pnpm typecheck` -> pass.
+  - `pnpm test` -> pass; 4 test files, 14 tests.
+  - `pnpm build` -> pass.
+  - `node dist/cli/index.js analyze --summary evals/fixtures/payment-webhook-idempotency/agent-summary.md --out /private/tmp/patchtrace-task6-smoke/VERIFICATION_BRIEF.md` -> pass.
+- Runtime proof:
+  - CLI flow: built CLI writes `/private/tmp/patchtrace-task6-smoke/VERIFICATION_BRIEF.md` from summary-only material.
+  - Output proof: generated brief includes `Conservative verdict: insufficient_material`, only the summary under `## Inputs reviewed`, `Result: missing`, and suggested next checks for `--diff`, `--changed-files`, and `--test-output`.
+  - Browser flow: N/A, V0 has no browser UI.
+  - Database proof: N/A, V0 has no database or migrations.
+  - Provider/dashboard proof: N/A, provider-related scenarios are static fixtures only.
+- Cannot verify:
+  - Live git diff collection, because it remains out of scope for Phase 3 Task 6.
+  - Generated-output parity for non-payment fixtures, because it is deferred until after Phase 3.
+- Docs updated:
+  - `docs/PLAN.md`
+  - `docs/ARCHITECTURE.md`
+  - `docs/VERIFY_LOG.md`
+- Verdict: SHIP for Task 6 acceptance criteria.
+
+---
+
 ### YYYY-MM-DD — `standard | high-risk | phase close | ship` — `[feature/task/phase]` — `[commit SHA]`
 
 - Environment: `local | preview/staging | production`

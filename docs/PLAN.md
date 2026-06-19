@@ -195,15 +195,15 @@ Implementation order follows this graph while keeping each task user-visible.
 **Description:** Add the first failure/empty-state slice so `patchtrace analyze` handles missing patch material conservatively instead of pretending analysis happened.
 
 **Acceptance criteria:**
-- [ ] Running `patchtrace analyze --summary <path> --out <tmp>/VERIFICATION_BRIEF.md` without `--diff`/`--changed-files` and without a usable git comparison writes an `insufficient_material` brief.
-- [ ] Missing test output is represented as missing test evidence, not as passing tests.
-- [ ] Unreadable local input paths still exit non-zero with an actionable stderr message.
-- [ ] Error or report language tells the developer exactly which local materials are needed next.
+- [x] Running `patchtrace analyze --summary <path> --out <tmp>/VERIFICATION_BRIEF.md` without `--diff`/`--changed-files` and without a usable git comparison writes an `insufficient_material` brief.
+- [x] Missing test output is represented as missing test evidence, not as passing tests.
+- [x] Unreadable local input paths still exit non-zero with an actionable stderr message.
+- [x] Error or report language tells the developer exactly which local materials are needed next.
 
 **Verification method:**
-- [ ] `pnpm test -- tests/cli.test.ts`
-- [ ] `pnpm test -- tests/fixtures.test.ts`
-- [ ] Manual CLI smoke for missing material shows the expected stderr or generated `insufficient_material` brief.
+- [x] `pnpm test -- tests/cli.test.ts`
+- [x] `pnpm test -- tests/fixtures.test.ts`
+- [x] Manual CLI smoke for missing material shows the expected stderr or generated `insufficient_material` brief.
 
 **Dependencies:** Task 5.
 

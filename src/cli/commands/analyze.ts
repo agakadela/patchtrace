@@ -17,9 +17,9 @@ interface AnalyzeOptions {
 
 type AnalyzeOptionName = keyof AnalyzeOptions;
 
-interface RequiredMaterialOptions {
-  changedFiles: string;
-  diff: string;
+interface AnalyzeMaterialOptions {
+  changedFiles?: string;
+  diff?: string;
   out: string;
   summary: string;
   testOutput?: string;
@@ -103,17 +103,7 @@ function isAnalyzeOptionError(value: string | AnalyzeOptionError): value is Anal
   return typeof value !== "string";
 }
 
-function resolveRequiredMaterialOptions(options: AnalyzeOptions): RequiredMaterialOptions | AnalyzeOptionError {
-  const diff = requireOption(options, "diff", "--diff");
-  if (isAnalyzeOptionError(diff)) {
-    return diff;
-  }
-
-  const changedFiles = requireOption(options, "changedFiles", "--changed-files");
-  if (isAnalyzeOptionError(changedFiles)) {
-    return changedFiles;
-  }
-
+function resolveAnalyzeMaterialOptions(options: AnalyzeOptions): AnalyzeMaterialOptions | AnalyzeOptionError {
   const summary = requireOption(options, "summary", "--summary");
   if (isAnalyzeOptionError(summary)) {
     return summary;
@@ -125,8 +115,8 @@ function resolveRequiredMaterialOptions(options: AnalyzeOptions): RequiredMateri
   }
 
   return {
-    changedFiles,
-    diff,
+    changedFiles: options.changedFiles,
+    diff: options.diff,
     out,
     summary,
     testOutput: options.testOutput,
@@ -163,7 +153,7 @@ export function runAnalyze(args: string[], io: CliIo): number {
     return 1;
   }
 
-  const materialOptions = resolveRequiredMaterialOptions(parsedOptions.options);
+  const materialOptions = resolveAnalyzeMaterialOptions(parsedOptions.options);
 
   if ("error" in materialOptions) {
     io.stderr.write(`${materialOptions.error}\n\n${buildAnalyzeHelp()}\n`);
