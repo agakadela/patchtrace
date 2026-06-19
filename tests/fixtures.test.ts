@@ -83,6 +83,23 @@ function discoverFixtureNames(): string[] {
     .sort();
 }
 
+function extractSection(markdown: string, heading: string): string {
+  const sectionStart = markdown.indexOf(`## ${heading}`);
+
+  if (sectionStart === -1) {
+    throw new Error(`Missing section: ${heading}`);
+  }
+
+  const sectionText = markdown.slice(sectionStart);
+  const nextSectionStart = sectionText.slice(1).search(/\n## /);
+
+  if (nextSectionStart === -1) {
+    return sectionText.trim();
+  }
+
+  return sectionText.slice(0, nextSectionStart + 1).trim();
+}
+
 describe("fixture discovery", () => {
   it("discovers all five V0 fixture scenarios and their expected briefs", () => {
     expect(discoverFixtureNames()).toEqual(expectedFixtures.map((fixture) => fixture.name).sort());
@@ -156,5 +173,27 @@ describe("fixture discovery", () => {
     expect(brief).toContain("A repeated event ID can avoid a second entitlement grant in the tested setup.");
     expect(brief).toContain("Duplicate events arriving concurrently.");
     expect(brief).toContain("Database-level uniqueness for Stripe event IDs.");
+  });
+
+  it("generates payment fixture cannot-verify gaps, suggested checks, and conservative verdict", () => {
+    const paymentFixturePath = join(fixturesRoot, "payment-webhook-idempotency");
+    const materials = readSavedMaterials({
+      changedFiles: join(paymentFixturePath, "changed-files.txt"),
+      diff: join(paymentFixturePath, "patch.diff"),
+      summary: join(paymentFixturePath, "agent-summary.md"),
+      testOutput: join(paymentFixturePath, "test-output.txt"),
+    });
+
+    const brief = renderBriefShell(buildBriefShellInput(materials));
+    const expectedBrief = readFileSync(join(paymentFixturePath, "VERIFICATION_BRIEF.md"), "utf8");
+
+    expect(extractSection(brief, "Cannot verify from provided material")).toBe(
+      extractSection(expectedBrief, "Cannot verify from provided material"),
+    );
+    expect(extractSection(brief, "Suggested next checks")).toBe(extractSection(expectedBrief, "Suggested next checks"));
+
+    const verdictSection = extractSection(brief, "Conservative verdict");
+    expect(verdictSection).toContain("Conservative verdict: needs_human_review");
+    expect(verdictSection).not.toMatch(/\b(safe|correct|guaranteed|production verified)\b/i);
   });
 });

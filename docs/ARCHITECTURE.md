@@ -70,6 +70,8 @@ src/
       risk-analysis.ts
     test-quality/
       test-quality-analysis.ts
+    verdict/
+      verdict-selection.ts
 evals/
   fixtures/
 tests/
@@ -191,3 +193,4 @@ Future optional integrations such as LLM extraction, GitHub PR integration, pack
 | 2026-06-18 | Recorded Phase 3 saved-material brief shell under `src/modules/patch`, `src/modules/evidence`, and `src/modules/report` | Analyzer module work has begun with local CLI proof | `agent/task-2-brief-shell` |
 | 2026-06-18 | Recorded Phase 3 payment fixture risk and review-first analyzer under `src/modules/risk` | First deterministic risk slice now derives report guidance from changed paths and diff text | `agent/task-3-payment-risk-review-first` |
 | 2026-06-18 | Recorded Phase 3 payment fixture claim-support and test-quality analyzers under `src/modules/claims` and `src/modules/test-quality` | Generated briefs now assess explicit agent summary claims and passing-test limits conservatively | `agent/task-4-claims-test-quality` |
+| 2026-06-19 | Recorded Phase 3 payment fixture verdict selection under `src/modules/verdict` | Generated briefs now include cannot-verify gaps, suggested next checks, and conservative verdict rationale | `agent/task-5-payment-verdict-gaps` |
