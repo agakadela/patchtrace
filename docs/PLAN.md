@@ -165,16 +165,16 @@ Implementation order follows this graph while keeping each task user-visible.
 **Description:** Add cannot-verify generation and conservative verdict selection for the payment fixture so the generated brief matches the expected report's product intent, not just its section headings.
 
 **Acceptance criteria:**
-- [ ] Generated output includes `## Cannot verify from provided material` or the accepted equivalent title with Stripe dashboard, deployed env, database constraint, provider replay, and prior-duplicate-access gaps.
-- [ ] Generated output includes `## Suggested next checks` with evidence-linked next actions.
-- [ ] Conservative verdict is `needs_human_review` for the payment fixture and avoids words like "safe", "correct", "guaranteed", or "production verified".
-- [ ] Fixture tests compare the generated payment brief against expected key sections or a stable normalized expected output.
+- [x] Generated output includes `## Cannot verify from provided material` or the accepted equivalent title with Stripe dashboard, deployed env, database constraint, provider replay, and prior-duplicate-access gaps.
+- [x] Generated output includes `## Suggested next checks` with evidence-linked next actions.
+- [x] Conservative verdict is `needs_human_review` for the payment fixture and avoids words like "safe", "correct", "guaranteed", or "production verified".
+- [x] Fixture tests compare the generated payment brief against expected key sections or a stable normalized expected output.
 
 **Verification method:**
-- [ ] `pnpm test -- tests/fixtures.test.ts`
-- [ ] `pnpm lint`
-- [ ] `pnpm typecheck`
-- [ ] Manual CLI smoke confirms the generated payment fixture brief is useful before reading the full diff.
+- [x] `pnpm test -- tests/fixtures.test.ts`
+- [x] `pnpm lint`
+- [x] `pnpm typecheck`
+- [x] Manual CLI smoke confirms the generated payment fixture brief is useful before reading the full diff.
 
 **Dependencies:** Task 4.
 

@@ -6,9 +6,10 @@ Fixture: `payment-webhook-idempotency`
 
 Conservative verdict: needs_human_review
 
-The patch is a reasonable start for sequential duplicate Stripe webhook events,
-but the provided material does not prove production-safe idempotency or access
-correctness. Review the webhook and entitlement path before accepting.
+The provided local material shows a sequential duplicate-event guard and passing
+tests, but it does not prove deployed Stripe configuration, database uniqueness,
+provider replay behavior, or remediation for prior duplicate grants. Review the
+payment webhook and entitlement path before accepting.
 
 ## Inputs reviewed
 
@@ -26,7 +27,7 @@ correctness. Review the webhook and entitlement path before accepting.
 |---|---|---|
 | Duplicate Stripe webhooks do not double-grant paid access. | partially_supported | Duplicate webhook claim: partially supported. The diff checks `hasProcessedEvent(event.id)` before granting access and records the event afterward, and the test repeats the same event ID sequentially. The patch does not show a database uniqueness constraint, transaction, insert-first idempotency strategy, or concurrent duplicate delivery test. |
 | Already-processed events return `200`. | supported | `app/api/stripe/webhook/route.ts` returns JSON for an already processed event before the entitlement branch. |
-| Tests cover duplicate webhook deliveries. | weak | Weak or missing duplicate-event test evidence. The test output shows a passing duplicate-event test, but the test appears mock-heavy and only covers a sequential repeat of the same event in one process. It does not prove provider retry behavior, concurrent delivery, database constraint enforcement, or failed-first-processing behavior. |
+| Tests cover duplicate webhook deliveries. | partially_supported | Weak or missing duplicate-event test evidence. The test output shows a passing duplicate-event test, but the test appears mock-heavy and only covers a sequential repeat of the same event in one process. It does not prove provider retry behavior, concurrent delivery, database constraint enforcement, or failed-first-processing behavior. |
 | No Stripe production dashboard changes are needed. | cannot_determine | Cannot verify Stripe production settings from local diff, agent summary, or test output. |
 
 ## Risk areas

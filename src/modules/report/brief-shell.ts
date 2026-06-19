@@ -4,6 +4,7 @@ import { assessAgentClaims, type AgentClaimAssessment } from "../claims/claim-an
 import type { ReviewedInput, SavedMaterials } from "../evidence/local-materials.js";
 import { analyzeRiskAndReviewFirst, type ReviewFirstTarget, type RiskArea } from "../risk/risk-analysis.js";
 import { assessTestQuality, type TestQualityAssessment } from "../test-quality/test-quality-analysis.js";
+import { selectConservativeVerdict, type VerdictAssessment } from "../verdict/verdict-selection.js";
 
 const ReviewedInputSchema = z.object({
   option: z.enum(["--diff", "--changed-files", "--summary", "--test-output"]),
@@ -38,6 +39,13 @@ const TestQualityAssessmentSchema = z.object({
   weakOrMissing: z.array(z.string().min(1)),
 });
 
+const VerdictAssessmentSchema = z.object({
+  verdict: z.enum(["needs_human_review", "send_agent_back", "insufficient_material"]),
+  rationale: z.string().min(1),
+  cannotVerify: z.array(z.string().min(1)),
+  suggestedNextChecks: z.array(z.string().min(1)),
+});
+
 const BriefShellInputSchema = z.object({
   agentClaims: z.array(AgentClaimAssessmentSchema),
   changedFiles: z.array(z.string()),
@@ -45,6 +53,7 @@ const BriefShellInputSchema = z.object({
   reviewFirst: z.array(ReviewFirstTargetSchema),
   riskAreas: z.array(RiskAreaSchema),
   testQuality: TestQualityAssessmentSchema,
+  verdict: VerdictAssessmentSchema,
 });
 
 export interface BriefShellInput {
@@ -54,6 +63,7 @@ export interface BriefShellInput {
   reviewFirst: ReviewFirstTarget[];
   riskAreas: RiskArea[];
   testQuality: TestQualityAssessment;
+  verdict: VerdictAssessment;
 }
 
 function formatInput(input: ReviewedInput): string {
@@ -135,26 +145,54 @@ function formatTestQuality(testQuality: TestQualityAssessment): string[] {
   ];
 }
 
+function formatConservativeVerdict(verdict: VerdictAssessment): string[] {
+  return ["## Conservative verdict", "", `Conservative verdict: ${verdict.verdict}`, "", verdict.rationale, ""];
+}
+
+function formatCannotVerify(cannotVerify: string[]): string[] {
+  if (cannotVerify.length === 0) {
+    return [];
+  }
+
+  return ["## Cannot verify from provided material", "", ...cannotVerify.map((item) => `- ${item}`), ""];
+}
+
+function formatSuggestedNextChecks(suggestedNextChecks: string[]): string[] {
+  if (suggestedNextChecks.length === 0) {
+    return [];
+  }
+
+  return ["## Suggested next checks", "", ...suggestedNextChecks.map((item) => `- ${item}`), ""];
+}
+
 export function buildBriefShellInput(materials: SavedMaterials): BriefShellInput {
   const riskAnalysis = analyzeRiskAndReviewFirst({
     changedFiles: materials.changedFiles,
     diffText: materials.diffText,
   });
+  const agentClaims = assessAgentClaims({
+    diffText: materials.diffText,
+    summaryText: materials.summaryText,
+    testOutputText: materials.testOutputText,
+  });
+  const testQuality = assessTestQuality({
+    diffText: materials.diffText,
+    summaryText: materials.summaryText,
+    testOutputText: materials.testOutputText,
+  });
 
   return {
-    agentClaims: assessAgentClaims({
-      diffText: materials.diffText,
-      summaryText: materials.summaryText,
-      testOutputText: materials.testOutputText,
-    }),
+    agentClaims,
     changedFiles: materials.changedFiles,
     inputsReviewed: materials.inputsReviewed,
     reviewFirst: riskAnalysis.reviewFirst,
     riskAreas: riskAnalysis.riskAreas,
-    testQuality: assessTestQuality({
-      diffText: materials.diffText,
-      summaryText: materials.summaryText,
-      testOutputText: materials.testOutputText,
+    testQuality,
+    verdict: selectConservativeVerdict({
+      agentClaims,
+      reviewFirst: riskAnalysis.reviewFirst,
+      riskAreas: riskAnalysis.riskAreas,
+      testQuality,
     }),
   };
 }
@@ -165,12 +203,7 @@ export function renderBriefShell(input: BriefShellInput): string {
   return [
     "# VERIFICATION_BRIEF.md",
     "",
-    "## Conservative verdict",
-    "",
-    "Conservative verdict: needs_human_review",
-    "",
-    "This brief confirms PatchTrace read the provided local material and generated deterministic risk, claim-support, test-quality, and review-first guidance. Cannot-verify analysis will be filled by a later analyzer slice.",
-    "",
+    ...formatConservativeVerdict(parsed.verdict),
     "## Inputs reviewed",
     "",
     ...parsed.inputsReviewed.map(formatInput),
@@ -182,6 +215,8 @@ export function renderBriefShell(input: BriefShellInput): string {
     ...formatAgentClaims(parsed.agentClaims),
     ...formatRiskAreas(parsed.riskAreas),
     ...formatTestQuality(parsed.testQuality),
+    ...formatCannotVerify(parsed.verdict.cannotVerify),
     ...formatReviewFirst(parsed.reviewFirst),
+    ...formatSuggestedNextChecks(parsed.verdict.suggestedNextChecks),
   ].join("\n");
 }
