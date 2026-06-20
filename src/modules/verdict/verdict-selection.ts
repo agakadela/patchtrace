@@ -6,6 +6,7 @@ export type ConservativeVerdict = "needs_human_review" | "send_agent_back" | "in
 
 export interface VerdictSelectionInput {
   agentClaims: AgentClaimAssessment[];
+  hasUsablePatchMaterial: boolean;
   reviewFirst: ReviewFirstTarget[];
   riskAreas: RiskArea[];
   testQuality: TestQualityAssessment;
@@ -51,7 +52,35 @@ function selectPaymentWebhookVerdict(): VerdictAssessment {
   };
 }
 
+function selectInsufficientMaterialVerdict(input: VerdictSelectionInput): VerdictAssessment {
+  const cannotVerify = [
+    "Cannot verify changed-file scope because `--changed-files <path>` was not provided with usable local material.",
+    "Cannot verify diff hunks because `--diff <path>` was not provided with usable local material.",
+    "Cannot collect a live git comparison in this Phase 3 saved-material path; pass saved local material instead.",
+  ];
+
+  if (input.testQuality.result === "missing") {
+    cannotVerify.push("Cannot verify test behavior because `--test-output <path>` was not provided.");
+  }
+
+  return {
+    verdict: "insufficient_material",
+    rationale:
+      "PatchTrace cannot analyze changed files or diff hunks because no saved patch material was provided. This brief is an explicit missing-material state, not evidence that the patch was reviewed.",
+    cannotVerify,
+    suggestedNextChecks: [
+      "Add `--diff <path>` with a saved patch diff.",
+      "Add `--changed-files <path>` with the changed-file list for that diff.",
+      "Add `--test-output <path>` with the relevant test or command output.",
+    ],
+  };
+}
+
 export function selectConservativeVerdict(input: VerdictSelectionInput): VerdictAssessment {
+  if (!input.hasUsablePatchMaterial) {
+    return selectInsufficientMaterialVerdict(input);
+  }
+
   if (isPaymentWebhookIdempotencySlice(input)) {
     return selectPaymentWebhookVerdict();
   }

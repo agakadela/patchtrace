@@ -184,6 +184,66 @@ describe("patchtrace CLI", () => {
     expect(existsSync(outPath)).toBe(false);
   });
 
+  it("writes an insufficient-material brief when patch material is missing", () => {
+    const buffered = createBufferedIo();
+    const outPath = join(createTempDir(), "VERIFICATION_BRIEF.md");
+
+    const exitCode = main(
+      [
+        "analyze",
+        "--summary",
+        join(paymentFixture, "agent-summary.md"),
+        "--out",
+        outPath,
+      ],
+      buffered.io,
+    );
+
+    expect(exitCode).toBe(0);
+    expect(buffered.stderr()).toBe("");
+    expect(existsSync(outPath)).toBe(true);
+
+    const brief = readFileSync(outPath, "utf8");
+    expect(brief).toContain("Conservative verdict: insufficient_material");
+    expect(brief).toContain("PatchTrace cannot analyze changed files or diff hunks because no saved patch material was provided.");
+    expect(brief).toContain("--summary: `evals/fixtures/payment-webhook-idempotency/agent-summary.md`");
+    expect(brief).toContain("No changed files were listed in the provided material.");
+    expect(brief).toContain("Result: missing.");
+    expect(brief).toContain("No test output was provided.");
+    expect(brief).toContain("Add `--diff <path>` with a saved patch diff.");
+    expect(brief).toContain("Add `--changed-files <path>` with the changed-file list for that diff.");
+    expect(brief).toContain("Add `--test-output <path>` with the relevant test or command output.");
+  });
+
+  it("represents omitted test output as missing evidence", () => {
+    const buffered = createBufferedIo();
+    const outPath = join(createTempDir(), "VERIFICATION_BRIEF.md");
+
+    const exitCode = main(
+      [
+        "analyze",
+        "--diff",
+        join(paymentFixture, "patch.diff"),
+        "--changed-files",
+        join(paymentFixture, "changed-files.txt"),
+        "--summary",
+        join(paymentFixture, "agent-summary.md"),
+        "--out",
+        outPath,
+      ],
+      buffered.io,
+    );
+
+    expect(exitCode).toBe(0);
+    expect(buffered.stderr()).toBe("");
+
+    const brief = readFileSync(outPath, "utf8");
+    expect(brief).toContain("Result: missing.");
+    expect(brief).toContain("No test output was provided.");
+    expect(brief).toContain("Test output is missing, so PatchTrace cannot assess behavioral proof.");
+    expect(brief).not.toContain("Result: pass.");
+  });
+
   it("fails with an actionable error when the output path cannot be written", () => {
     const buffered = createBufferedIo();
     const outPath = createTempDir();
