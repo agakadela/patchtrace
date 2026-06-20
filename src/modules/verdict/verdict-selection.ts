@@ -6,7 +6,10 @@ export type ConservativeVerdict = "needs_human_review" | "send_agent_back" | "in
 
 export interface VerdictSelectionInput {
   agentClaims: AgentClaimAssessment[];
+  hasUsableChangedFilesMaterial: boolean;
+  hasUsableDiffMaterial: boolean;
   hasUsablePatchMaterial: boolean;
+  hasUsableTestOutputMaterial: boolean;
   reviewFirst: ReviewFirstTarget[];
   riskAreas: RiskArea[];
   testQuality: TestQualityAssessment;
@@ -52,27 +55,53 @@ function selectPaymentWebhookVerdict(): VerdictAssessment {
   };
 }
 
-function selectInsufficientMaterialVerdict(input: VerdictSelectionInput): VerdictAssessment {
-  const cannotVerify = [
-    "Cannot verify changed-file scope because `--changed-files <path>` was not provided with usable local material.",
-    "Cannot verify diff hunks because `--diff <path>` was not provided with usable local material.",
-    "Cannot collect a live git comparison in this Phase 3 saved-material path; pass saved local material instead.",
-  ];
+function formatMissingPatchMaterialRationale(missingDiff: boolean, missingChangedFiles: boolean): string {
+  if (missingDiff && missingChangedFiles) {
+    return "PatchTrace cannot analyze changed files or diff hunks because no saved patch material was provided. This brief is an explicit missing-material state, not evidence that the patch was reviewed.";
+  }
 
-  if (input.testQuality.result === "missing") {
+  if (missingDiff) {
+    return "PatchTrace cannot complete saved-material analysis because the patch diff is missing. This brief is an explicit missing-material state, not evidence that the patch was fully reviewed.";
+  }
+
+  return "PatchTrace cannot complete saved-material analysis because the changed-file list is missing. This brief is an explicit missing-material state, not evidence that the patch was fully reviewed.";
+}
+
+function selectInsufficientMaterialVerdict(input: VerdictSelectionInput): VerdictAssessment {
+  const missingChangedFiles = !input.hasUsableChangedFilesMaterial;
+  const missingDiff = !input.hasUsableDiffMaterial;
+  const cannotVerify: string[] = [];
+  const suggestedNextChecks: string[] = [];
+
+  if (missingChangedFiles) {
+    cannotVerify.push(
+      "Cannot verify changed-file scope because `--changed-files <path>` was not provided with usable local material.",
+    );
+  }
+
+  if (missingDiff) {
+    cannotVerify.push("Cannot verify diff hunks because `--diff <path>` was not provided with usable local material.");
+    suggestedNextChecks.push("Add `--diff <path>` with a saved patch diff.");
+  }
+
+  if (missingChangedFiles) {
+    suggestedNextChecks.push("Add `--changed-files <path>` with the changed-file list for that diff.");
+  }
+
+  cannotVerify.push(
+    "Cannot collect a live git comparison in this Phase 3 saved-material path; pass saved local material instead.",
+  );
+
+  if (!input.hasUsableTestOutputMaterial) {
     cannotVerify.push("Cannot verify test behavior because `--test-output <path>` was not provided.");
+    suggestedNextChecks.push("Add `--test-output <path>` with the relevant test or command output.");
   }
 
   return {
     verdict: "insufficient_material",
-    rationale:
-      "PatchTrace cannot analyze changed files or diff hunks because no saved patch material was provided. This brief is an explicit missing-material state, not evidence that the patch was reviewed.",
+    rationale: formatMissingPatchMaterialRationale(missingDiff, missingChangedFiles),
     cannotVerify,
-    suggestedNextChecks: [
-      "Add `--diff <path>` with a saved patch diff.",
-      "Add `--changed-files <path>` with the changed-file list for that diff.",
-      "Add `--test-output <path>` with the relevant test or command output.",
-    ],
+    suggestedNextChecks,
   };
 }
 

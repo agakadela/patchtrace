@@ -296,6 +296,38 @@ Rules:
 
 ---
 
+### 2026-06-20 — standard — Phase 3 Task 6 follow-up: Partial-material guidance — this task branch
+
+- Environment: local CLI workspace
+- Checked:
+  - Partial saved material no longer produces blanket missing-input guidance.
+  - When `--diff` and `--test-output` are provided but `--changed-files` is missing, the brief asks only for `--changed-files`.
+  - When `--changed-files` and `--test-output` are provided but `--diff` is missing, the brief asks only for `--diff`.
+  - Summary-only insufficient-material output still asks for `--diff`, `--changed-files`, and `--test-output`.
+- Commands run:
+  - `pnpm test -- tests/cli.test.ts` -> red for the two partial-material regression cases, then pass; 4 test files, 16 tests.
+  - `pnpm test -- tests/fixtures.test.ts` -> pass; 4 test files, 16 tests.
+  - `pnpm lint` -> pass.
+  - `pnpm typecheck` -> pass.
+  - `pnpm test` -> pass; 4 test files, 16 tests.
+  - `pnpm build` -> pass.
+  - Built CLI smoke for missing `--changed-files` -> pass.
+  - Built CLI smoke for missing `--diff` -> pass.
+  - Built CLI smoke for summary-only material -> pass.
+- Runtime proof:
+  - CLI flow: built CLI writes `/private/tmp/patchtrace-partial-missing-changed-files-final.md`, `/private/tmp/patchtrace-partial-missing-diff-final.md`, and `/private/tmp/patchtrace-summary-only-final.md`.
+  - Output proof: partial-material briefs list only the missing local material under `## Cannot verify from provided material` and `## Suggested next checks`.
+  - Browser flow: N/A, V0 has no browser UI.
+  - Database proof: N/A, V0 has no database or migrations.
+  - Provider/dashboard proof: N/A, provider-related scenarios are static fixtures only.
+- Cannot verify:
+  - Live git diff collection, because it remains out of scope for Phase 3.
+- Docs updated:
+  - `docs/VERIFY_LOG.md`
+- Verdict: SHIP for the partial-material guidance follow-up.
+
+---
+
 ### YYYY-MM-DD — `standard | high-risk | phase close | ship` — `[feature/task/phase]` — `[commit SHA]`
 
 - Environment: `local | preview/staging | production`
