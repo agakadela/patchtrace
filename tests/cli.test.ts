@@ -215,6 +215,80 @@ describe("patchtrace CLI", () => {
     expect(brief).toContain("Add `--test-output <path>` with the relevant test or command output.");
   });
 
+  it("asks only for changed files when diff and test output are already provided", () => {
+    const buffered = createBufferedIo();
+    const outPath = join(createTempDir(), "VERIFICATION_BRIEF.md");
+
+    const exitCode = main(
+      [
+        "analyze",
+        "--diff",
+        join(paymentFixture, "patch.diff"),
+        "--summary",
+        join(paymentFixture, "agent-summary.md"),
+        "--test-output",
+        join(paymentFixture, "test-output.txt"),
+        "--out",
+        outPath,
+      ],
+      buffered.io,
+    );
+
+    expect(exitCode).toBe(0);
+    expect(buffered.stderr()).toBe("");
+
+    const brief = readFileSync(outPath, "utf8");
+    expect(brief).toContain("Conservative verdict: insufficient_material");
+    expect(brief).toContain("--diff: `evals/fixtures/payment-webhook-idempotency/patch.diff`");
+    expect(brief).toContain("--test-output: `evals/fixtures/payment-webhook-idempotency/test-output.txt`");
+    expect(brief).toContain(
+      "PatchTrace cannot complete saved-material analysis because the changed-file list is missing.",
+    );
+    expect(brief).toContain(
+      "Cannot verify changed-file scope because `--changed-files <path>` was not provided with usable local material.",
+    );
+    expect(brief).toContain("Add `--changed-files <path>` with the changed-file list for that diff.");
+    expect(brief).not.toContain("Cannot verify diff hunks because `--diff <path>` was not provided");
+    expect(brief).not.toContain("Cannot verify test behavior because `--test-output <path>` was not provided.");
+    expect(brief).not.toContain("Add `--diff <path>` with a saved patch diff.");
+    expect(brief).not.toContain("Add `--test-output <path>` with the relevant test or command output.");
+  });
+
+  it("asks only for the diff when changed files and test output are already provided", () => {
+    const buffered = createBufferedIo();
+    const outPath = join(createTempDir(), "VERIFICATION_BRIEF.md");
+
+    const exitCode = main(
+      [
+        "analyze",
+        "--changed-files",
+        join(paymentFixture, "changed-files.txt"),
+        "--summary",
+        join(paymentFixture, "agent-summary.md"),
+        "--test-output",
+        join(paymentFixture, "test-output.txt"),
+        "--out",
+        outPath,
+      ],
+      buffered.io,
+    );
+
+    expect(exitCode).toBe(0);
+    expect(buffered.stderr()).toBe("");
+
+    const brief = readFileSync(outPath, "utf8");
+    expect(brief).toContain("Conservative verdict: insufficient_material");
+    expect(brief).toContain("--changed-files: `evals/fixtures/payment-webhook-idempotency/changed-files.txt`");
+    expect(brief).toContain("--test-output: `evals/fixtures/payment-webhook-idempotency/test-output.txt`");
+    expect(brief).toContain("PatchTrace cannot complete saved-material analysis because the patch diff is missing.");
+    expect(brief).toContain("Cannot verify diff hunks because `--diff <path>` was not provided with usable local material.");
+    expect(brief).toContain("Add `--diff <path>` with a saved patch diff.");
+    expect(brief).not.toContain("Cannot verify changed-file scope because `--changed-files <path>` was not provided");
+    expect(brief).not.toContain("Cannot verify test behavior because `--test-output <path>` was not provided.");
+    expect(brief).not.toContain("Add `--changed-files <path>` with the changed-file list for that diff.");
+    expect(brief).not.toContain("Add `--test-output <path>` with the relevant test or command output.");
+  });
+
   it("represents omitted test output as missing evidence", () => {
     const buffered = createBufferedIo();
     const outPath = join(createTempDir(), "VERIFICATION_BRIEF.md");

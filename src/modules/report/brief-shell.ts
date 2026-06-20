@@ -190,7 +190,10 @@ export function buildBriefShellInput(materials: SavedMaterials): BriefShellInput
     testQuality,
     verdict: selectConservativeVerdict({
       agentClaims,
+      hasUsableChangedFilesMaterial: materials.hasUsableChangedFilesMaterial,
+      hasUsableDiffMaterial: materials.hasUsableDiffMaterial,
       hasUsablePatchMaterial: materials.hasUsablePatchMaterial,
+      hasUsableTestOutputMaterial: materials.hasUsableTestOutputMaterial,
       reviewFirst: riskAnalysis.reviewFirst,
       riskAreas: riskAnalysis.riskAreas,
       testQuality,

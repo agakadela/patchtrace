@@ -24,7 +24,10 @@ export interface SavedMaterials {
   changedFiles: string[];
   summaryText: string;
   testOutputText?: string;
+  hasUsableChangedFilesMaterial: boolean;
+  hasUsableDiffMaterial: boolean;
   hasUsablePatchMaterial: boolean;
+  hasUsableTestOutputMaterial: boolean;
   inputsReviewed: ReviewedInput[];
 }
 
@@ -90,14 +93,20 @@ export function readSavedMaterials(paths: LocalMaterialPaths): SavedMaterials {
   const optionalTestOutput = paths.testOutput ? readMaterial("--test-output", paths.testOutput) : undefined;
   const changedFilesText = changedFiles?.text ?? "";
   const diffText = diff?.text ?? "";
+  const testOutputText = optionalTestOutput?.text;
+  const hasUsableChangedFilesMaterial = changedFilesText.trim().length > 0;
+  const hasUsableDiffMaterial = diffText.trim().length > 0;
 
   return {
     diffText,
     changedFilesText,
     changedFiles: parseChangedFiles(changedFilesText),
     summaryText: summary.text,
-    testOutputText: optionalTestOutput?.text,
-    hasUsablePatchMaterial: diffText.trim().length > 0 && changedFilesText.trim().length > 0,
+    testOutputText,
+    hasUsableChangedFilesMaterial,
+    hasUsableDiffMaterial,
+    hasUsablePatchMaterial: hasUsableChangedFilesMaterial && hasUsableDiffMaterial,
+    hasUsableTestOutputMaterial: Boolean(testOutputText?.trim()),
     inputsReviewed: [diff?.input, changedFiles?.input, summary.input, optionalTestOutput?.input].filter(
       (input): input is ReviewedInput => Boolean(input),
     ),
