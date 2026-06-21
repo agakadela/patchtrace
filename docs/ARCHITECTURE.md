@@ -10,8 +10,8 @@ Template rules:
 
 ## Status
 
-- Last reviewed: 2026-06-15
-- Reviewed by: project maintainer
+- Last reviewed: 2026-06-20
+- Reviewed by: agent closeout review; human review pending
 - Related ADRs: `docs/decisions/ADR-0001-project-foundation.md`
 
 ## Stack
@@ -39,7 +39,7 @@ Default principle: organize code by product/domain ownership, not by technical l
 - Chosen convention: `modules`
 - Exact root path: `src/modules`
 - Reason: PatchTrace is a domain engine/devtool with stable product concepts: claims, evidence, patch material, risk, test quality, reports, and verdicts.
-- Existing repo convention, if any: Phase 3 now has a thin `src/cli/` entrypoint plus first analyzer modules under `src/modules/patch`, `src/modules/evidence`, and `src/modules/report`.
+- Existing repo convention, if any: Phase 3 has a thin `src/cli/` entrypoint plus analyzer modules under `src/modules/claims`, `src/modules/evidence`, `src/modules/patch`, `src/modules/report`, `src/modules/risk`, `src/modules/test-quality`, and `src/modules/verdict`.
 
 Global technical folders policy:
 
@@ -78,7 +78,7 @@ tests/
 docs/
 ```
 
-Target analyzer module structure as later Phase 3 behavior lands:
+Current analyzer module structure:
 
 ```text
 src/

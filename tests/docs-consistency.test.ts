@@ -20,6 +20,9 @@ describe("project truth docs", () => {
     expect(architecture).not.toContain("init.ts");
     expect(readme).toContain("Stage: Phase 3 local CLI walking skeleton");
     expect(architecture).toContain("src/modules/evidence");
+    expect(readme).not.toContain("Detailed risk, claim-support, test-quality, and cannot-verify analysis is intentionally deferred");
+    expect(architecture).not.toContain("Target analyzer module structure as later Phase 3 behavior lands");
+    expect(readme).toContain("payment/webhook fixture produces risk areas");
   });
 
   it("documents lint as an active feedback loop", () => {

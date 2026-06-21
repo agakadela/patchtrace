@@ -10,7 +10,7 @@ PatchTrace does not replace human code review. It helps you start review with be
 
 ## Status
 
-- Stage: Phase 3 local CLI walking skeleton
+- Stage: Phase 3 local CLI walking skeleton complete
 - Current phase: see `docs/PLAN.md`
 - Product spec: see `docs/SPEC.md`
 - Architecture: see `docs/ARCHITECTURE.md`
@@ -50,7 +50,7 @@ V0 is a local CLI:
 patchtrace analyze --diff patch.diff --changed-files changed-files.txt --summary agent-summary.md --test-output test-output.txt --out VERIFICATION_BRIEF.md
 ```
 
-The CLI currently reads saved local material and writes a conservative Markdown brief shell. Detailed risk, claim-support, test-quality, and cannot-verify analysis is intentionally deferred to later Phase 3 tasks.
+The CLI currently reads saved local material and writes a conservative Markdown brief. The payment/webhook fixture produces risk areas, review-first guidance, claim-support assessment, test-quality assessment, cannot-verify gaps, suggested next checks, and a conservative verdict. Missing or partial patch material produces an explicit `insufficient_material` brief.
 
 ## Setup
 
@@ -94,4 +94,4 @@ Do not put real secrets in README, docs, screenshots, commits, or chat.
 - PatchTrace does not prove code correctness.
 - PatchTrace does not claim a patch is safe or production verified.
 - V0 has no SaaS, auth, teams, GitHub integration, HTML report, or required LLM calls.
-- The first implementation should be fixture-first, with hand-written expected verification briefs before analyzer behavior.
+- Analyzer development remains fixture-first, with hand-written expected verification briefs before broad analyzer behavior.

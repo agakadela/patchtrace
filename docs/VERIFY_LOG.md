@@ -328,6 +328,62 @@ Rules:
 
 ---
 
+### 2026-06-20 — phase close — Phase 3: Local CLI Walking Skeleton — this closeout commit
+
+- Environment: local CLI workspace on `main` at `9edbd43` before closeout docs changes.
+- Checked:
+  - `$aga-review` / five-axis review covered Phase 3 source, tests, docs gates, security boundaries, and performance risks.
+  - Review finding fixed: `README.md`, `docs/SPEC.md`, and `docs/ARCHITECTURE.md` still described detailed analyzer behavior as deferred after the payment-fixture analyzer slices had landed.
+  - `docs/PLAN.md` was compacted per phase-close hygiene so completed task detail lives in git history and this verification log.
+  - The generated payment fixture brief contains the Phase 3 proof sections: conservative verdict, inputs reviewed, changed files, agent claims/support, risk areas, test quality, cannot-verify gaps, review-first files, and suggested next checks.
+  - V0 boundaries remain intact: no LLM, network, GitHub integration, package publishing, auth, database, payments, provider dashboard, HTML UI, deploy target, or external service calls.
+- Commands run:
+  - `pnpm lint` -> pass.
+  - `pnpm typecheck` -> pass.
+  - `pnpm test` -> pass; 4 test files, 16 tests.
+  - `pnpm build` -> pass.
+  - `node dist/cli/index.js analyze --diff evals/fixtures/payment-webhook-idempotency/patch.diff --changed-files evals/fixtures/payment-webhook-idempotency/changed-files.txt --summary evals/fixtures/payment-webhook-idempotency/agent-summary.md --test-output evals/fixtures/payment-webhook-idempotency/test-output.txt --out /private/tmp/patchtrace-phase3-closeout/VERIFICATION_BRIEF.md` -> pass.
+- Runtime proof:
+  - CLI flow: built CLI writes `/private/tmp/patchtrace-phase3-closeout/VERIFICATION_BRIEF.md` from the payment fixture.
+  - Output proof: generated brief includes `Conservative verdict: needs_human_review`, payment/webhook risk areas, partially supported duplicate-webhook claims, weak duplicate-event test evidence, Stripe/provider/database cannot-verify gaps, review-first guidance, and suggested next checks.
+  - Browser flow: N/A, V0 has no browser UI.
+  - Database proof: N/A, V0 has no database or migrations.
+  - Provider/dashboard proof: N/A, provider-related scenarios are static fixtures only and are reported as cannot-verify gaps.
+- Cannot verify:
+  - Human review of the generated payment fixture brief; this remains the only unchecked Phase 3 closeout item in `docs/PLAN.md`.
+  - Live git `--base`/`--head` collection and generated-output parity for non-payment fixtures, because both are deferred until after Phase 3.
+  - Remote CI for this local closeout commit before it is pushed.
+- Docs updated:
+  - `README.md`
+  - `docs/SPEC.md`
+  - `docs/ARCHITECTURE.md`
+  - `docs/PLAN.md`
+  - `docs/VERIFY_LOG.md`
+- Verdict: SHIP for agent-owned Phase 3 closeout checkpoints; final phase closure still requires human review of the generated brief.
+
+---
+
+### 2026-06-20 — phase close addendum — Phase 3 human review completed — this human-review closeout commit
+
+- Environment: local CLI workspace on `main` after agent closeout commit `3de21b3`.
+- Checked:
+  - Human review of the generated payment fixture brief completed; Aga confirmed agreement on 2026-06-20.
+  - `docs/PLAN.md` now marks the final Phase 3 human-review checkpoint complete.
+- Commands run:
+  - `pnpm test` -> pass; 4 test files, 16 tests.
+- Runtime proof:
+  - Browser flow: N/A, V0 has no browser UI.
+  - Database proof: N/A, V0 has no database or migrations.
+  - Provider/dashboard proof: N/A, provider-related scenarios are static fixtures only.
+- Cannot verify:
+  - Remote CI for this human-review closeout commit before it is pushed.
+- Docs updated:
+  - `docs/PLAN.md`
+  - `docs/VERIFY_LOG.md`
+- Verdict: SHIP; Phase 3 closed.
+
+---
+
 ### YYYY-MM-DD — `standard | high-risk | phase close | ship` — `[feature/task/phase]` — `[commit SHA]`
 
 - Environment: `local | preview/staging | production`
