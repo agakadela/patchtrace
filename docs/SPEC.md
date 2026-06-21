@@ -13,7 +13,7 @@ Template rules:
 - Product name: PatchTrace
 - Spec status: accepted
 - Owner: project maintainer(s)
-- Last updated: 2026-06-15
+- Last updated: 2026-06-20
 - Current implementation phase: see `docs/PLAN.md`
 
 ## Objective
@@ -136,7 +136,7 @@ patchtrace analyze --diff patch.diff --changed-files changed-files.txt --summary
 patchtrace analyze --diff patch.diff --changed-files changed-files.txt --summary agent-summary.md --out VERIFICATION_BRIEF.md
 ```
 
-The current walking skeleton supports install, typecheck, lint, tests, build, `analyze --help`, and `analyze` for saved local material. It writes a conservative Markdown brief shell; detailed analyzer behavior remains deferred to the ordered Phase 3 tasks.
+The current walking skeleton supports install, typecheck, lint, tests, build, `analyze --help`, and `analyze` for saved local material. The payment/webhook fixture generates evidence-linked risk, review-first, claim-support, test-quality, cannot-verify, suggested-next-check, and conservative-verdict sections. Missing or partial saved patch material produces an explicit `insufficient_material` brief. Generated-output parity for the non-payment fixture families remains deferred until after Phase 3.
 
 ## Project Structure
 
@@ -362,11 +362,10 @@ Decisions that may need ADRs because they are hard to reverse, affect public int
 
 ### Non-Blocking
 
-- Exact fixture folder names and fixture file naming.
-- Exact CLI flag names for first public command.
 - Whether optional JSON output is exposed in V0 or kept internal to fixture tests.
 - Package publishing timing and npm package ownership.
-- Exact initial repository initialization and remote setup.
+- Whether and when live git `--base`/`--head` collection enters the CLI.
+- Generated-output parity timing for non-payment fixture families.
 
 ## Review Notes
 
