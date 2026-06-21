@@ -7,15 +7,14 @@ Hygiene rule:
 - When a phase closes, move the phase summary to `docs/VERIFY_LOG.md` and remove completed task details from this file.
 - Do not store long-term roadmap, completed-task archive, or feature specs as separate files.
 
-## Current Phase: Phase 3 - Agent Closeout Complete, Human Review Pending
+## Current Phase: No Active Phase - Phase 3 Closed
 
 Goal: make `patchtrace analyze` run one narrow end-to-end local verification path:
 read saved patch material, produce a Markdown `VERIFICATION_BRIEF.md`, and prove
 the output through fixture-driven tests.
 
-Agent-owned Phase 3 work is complete as of 2026-06-20. The remaining closeout
-checkpoint is human review of the generated payment fixture brief before the
-phase is treated as fully closed.
+Phase 3 closed on 2026-06-20 after agent verification and human review of the
+generated payment fixture brief. No next phase has been selected yet.
 
 Phase 3 is the PatchTrace equivalent of the generic walking skeleton. V0 has no
 auth, database, provider dashboard, browser UI, deploy target, or hosted surface,
@@ -53,7 +52,7 @@ Markdown as the core output, and the local CLI boundary. Their older suggested
 - [x] Built CLI smoke: `node dist/cli/index.js analyze --diff evals/fixtures/payment-webhook-idempotency/patch.diff --changed-files evals/fixtures/payment-webhook-idempotency/changed-files.txt --summary evals/fixtures/payment-webhook-idempotency/agent-summary.md --test-output evals/fixtures/payment-webhook-idempotency/test-output.txt --out <tmp>/VERIFICATION_BRIEF.md`
 - [x] `docs/VERIFY_LOG.md` gets one compact Phase 3 closeout entry.
 - [x] `README.md`, `docs/SPEC.md`, and `docs/ARCHITECTURE.md` are updated only if project truth changed.
-- [ ] Human reviews the generated brief before Phase 3 is closed.
+- [x] Human reviews the generated brief before Phase 3 is closed.
 
 ## Deferred until after Phase 3
 
