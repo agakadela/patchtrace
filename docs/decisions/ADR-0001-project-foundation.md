@@ -1,65 +1,90 @@
 # ADR-0001: Project Foundation
 
-- Date: 2026-06-15
+- Date: 2026-07-02
 - Status: accepted
 - Owner: project maintainer(s)
 
 ## Context
 
-PatchTrace is a local-first open-source devtool for verifying AI-agent code changes before a developer accepts a patch. The V0 product is a CLI that turns local patch material, agent claims, and test/command evidence into a conservative Markdown verification brief.
+PatchTrace Python is a local-first devtool for recording Codex CLI sessions and
+turning the resulting transcript, git patch material, and test/command evidence
+into a review package.
+
+The TypeScript prototype proved useful product concepts: conservative evidence
+briefs, claim skepticism, fixture-first development, and no false confidence.
+The Python version restarts the foundation around a stronger first workflow:
+PatchTrace should wrap the agent session instead of only analyzing saved
+materials afterward.
 
 The foundation decisions optimize for:
-- a small useful local workflow;
-- evidence-backed reports;
+- dogfooding with Aga's Codex CLI workflow;
+- local transcript and patch capture;
+- evidence-backed reports and ready-to-paste agent feedback;
 - fixture-first development;
 - conservative trust boundaries;
-- public OSS maintainability.
+- a small Python CLI package that can later become OSS.
 
 ## Decision Summary
 
 | Area | Decision | Why | Revisit When |
 |---|---|---|---|
-| Stack | Node.js + TypeScript CLI | Fits local devtool workflow and typed report/domain model. | A non-Node ecosystem becomes the primary user base. |
-| Package manager | `pnpm` | Accepted project default for small TypeScript tooling. | Dependency management becomes painful or contributors require another manager. |
-| Test runner | Vitest | Fast TypeScript-friendly unit and fixture tests. | Test suite needs capabilities Vitest does not support. |
-| Schema validation | Zod | Validate structured inputs and generated report objects. | Runtime validation becomes unnecessary or a better local standard emerges. |
-| Database | N/A | V0 has no persisted app state. | A local history, cache, or hosted service is introduced. |
+| Stack | Python >=3.11 CLI | Python has strong local automation, PTY/session capture, and CLI ergonomics. | PTY support or packaging needs force another runtime. |
+| Project manager | `uv` | Fast project/dependency/env/lock workflow. | Contributor workflow requires a different standard. |
+| Build metadata | `pyproject.toml` | Standard Python project configuration. | N/A. |
+| CLI framework | Typer | Typed subcommand-oriented CLI for `run`, `analyze`, `watch`. | CLI needs outgrow Typer or dependency becomes costly. |
+| Session capture | Pexpect | Purpose-built PTY control for interactive child applications. | Direct stdlib `pty` implementation is simpler or Pexpect cannot handle target behavior. |
+| Structured models | Pydantic v2 | Validate run manifests, evidence, claims, verdicts, and report objects. | Runtime validation becomes unnecessary or too heavy. |
+| Test runner | pytest | Good fit for unit, integration, and fixture-first tests. | Test suite needs capabilities pytest does not support. |
+| Lint/format | Ruff | Fast linter/formatter with `pyproject.toml` support. | Rules or formatting needs require a supplement. |
+| Typecheck | mypy | Static checking without adding Node dependency. | Pyright becomes necessary for better coverage or team preference. |
+| Database | N/A | V0 stores local run folders only. | Local history/cache/querying becomes part of product scope. |
 | Migrations | N/A | No database in V0. | A database is introduced. |
 | Hosting/deploy | N/A for V0 | V0 is local CLI only. | Publishing/release/distribution is planned. |
 | Auth/session | N/A | No users, teams, or accounts in V0. | Hosted service, team workspace, or protected surface is introduced. |
 | Tenancy/workspace | N/A | No user accounts or multi-tenant data in V0. | Team/hosted features are introduced. |
-| Data isolation | Local-first, no external calls by default | Diffs and code can be sensitive. | Any external provider or cloud feature is proposed. |
+| Data isolation | Local-first, no external calls by default | Diffs and transcripts can be sensitive. | Any external provider or cloud feature is proposed. |
 | Payments/entitlements | N/A | No billing in V0. | Paid distribution or hosted service is planned. |
-| API style | CLI command interface | Primary interface is local `patchtrace analyze`. | Public library API or service API is introduced. |
-| UI foundation | N/A | HTML/UI is out of scope for V0. | Local report UI becomes useful after CLI is dogfooded. |
-| Module/domain convention | `src/modules/` | PatchTrace is a domain engine with stable product concepts. | Code naturally becomes UI-feature-first or package boundaries demand another shape. |
-| AI boundary | No required AI/LLM in V0 | Rules-first engine keeps output inspectable, private, and cheap. | Opt-in extraction/summarization is explicitly approved. |
-| Monitoring | N/A for V0 | Local CLI uses stdout/stderr and tests. | A hosted surface or package telemetry is proposed. |
+| Primary interface | `patchtrace run -- codex` | Full claim-vs-evidence requires session material. | Another agent becomes the primary dogfood target. |
+| Fallback interface | `patchtrace analyze` | Supports existing working trees and saved material. | Manual analysis is unused after dogfooding. |
+| Background interface | `patchtrace watch` as secondary safety net | Useful patch-only fallback, but not full session truth. | Watch becomes reliable enough to promote. |
+| Package convention | `src/patchtrace/<capability>/...` | Idiomatic Python package layout with clear capability ownership. | Boundaries become misleading after implementation. |
+| AI boundary | No required AI/LLM in V0 | Tool verifying agents should not depend on agent judgment by default. | Opt-in extraction/summarization is explicitly approved. |
+| Monitoring | N/A for V0 | Local CLI uses stdout/stderr and run artifacts. | Hosted surface or telemetry is proposed. |
 
 ## Decisions
 
 ### Stack
 
 - Framework: N/A; local CLI.
-- Language: TypeScript.
-- Package manager: `pnpm`.
-- Runtime: Node.js.
-- Test runner: Vitest.
-- Schema validation: Zod.
-- Reasoning: TypeScript gives a strong, readable domain model for claims, evidence, risks, test-quality assessment, and verification briefs without requiring a web framework or hosted app.
+- Language: Python >=3.11.
+- Project manager: `uv`.
+- Runtime interface: local command line.
+- CLI framework: Typer.
+- Session capture: Pexpect over a pseudo-terminal.
+- Structured data validation: Pydantic v2.
+- Test runner: pytest.
+- Lint/format: Ruff.
+- Typecheck: mypy.
+- Reasoning: this stack maps directly to the product problem: launch and record
+  an interactive CLI agent, capture local git evidence, validate structured run
+  data, and generate local Markdown artifacts.
 
 ### Database And Migrations
 
 - Database: N/A for V0.
 - Migration tool: N/A for V0.
-- Rule: if a database is introduced later, schema changes must happen only through repo migrations.
+- Run storage: local files under `.patchtrace/runs/<run-id>/`.
+- Rule: if a database is introduced later, schema changes must happen only
+  through repo migrations.
 - Local/preview/prod separation: N/A until a database or hosted service exists.
-- Backup/PITR expectation before production migrations: N/A until production data exists.
+- Backup/PITR expectation before production migrations: N/A until production
+  data exists.
 
 ### Auth And Sessions
 
 - Identity provider: N/A for V0.
-- Session model: N/A for V0.
+- Session model: N/A for V0 user accounts.
+- Agent session: a local recorded CLI run, not an authenticated app session.
 - Server-side auth enforcement point: N/A for V0.
 - UI role: N/A because V0 has no UI.
 
@@ -68,7 +93,8 @@ The foundation decisions optimize for:
 - Tenant/workspace model: N/A for V0.
 - `workspace_id` from first table: N/A because V0 has no database tables.
 - DB-level isolation/RLS or equivalent: N/A for V0.
-- Two-user test expectation: N/A for V0; required if hosted/team/user data exists later.
+- Two-user test expectation: N/A for V0; required if hosted/team/user data
+  exists later.
 
 ### Entitlements And Payments
 
@@ -80,54 +106,82 @@ The foundation decisions optimize for:
 ### API/Interface Style
 
 - Primary style: CLI commands.
-- First public command target: `patchtrace analyze`.
-- Validation boundary: CLI argument parsing and Zod validation for structured report/input objects.
+- First public command target: `patchtrace run -- codex`.
+- Fallback command target: `patchtrace analyze`.
+- Secondary command target: `patchtrace watch`.
+- Validation boundary: Typer argument parsing and Pydantic validation for run
+  manifests/report objects.
 - Error taxonomy:
-  - validation: invalid flags, missing required local material, unreadable files;
-  - unauthenticated: N/A;
-  - unauthorized: N/A;
-  - not found: missing path, missing base ref, missing diff file;
-  - conflict: incompatible CLI options;
-  - provider failure: N/A in V0 because no provider calls;
-  - analyzer failure: unexpected parse or report generation error.
-- Idempotency policy: running the same command with the same local inputs should produce stable report content except timestamps if included.
+  - validation: invalid flags, missing command, incompatible options;
+  - environment: not in a git repo, Codex command unavailable, PTY unsupported;
+  - filesystem: unreadable or unwritable run paths;
+  - wrapped command: non-zero exit or interrupted agent process;
+  - material: missing transcript, missing diff, missing test output;
+  - analyzer: unexpected parse or report generation error;
+  - provider failure: N/A in V0 because no provider calls.
+- Idempotency policy: running analysis on the same saved run material should
+  produce stable report content except timestamps or run IDs.
 
 ### Conventions
 
-- IDs: stable string IDs for claims, evidence, risks, and review targets where needed.
-- Money: N/A for PatchTrace product state; payment-risk fixtures may mention money only as analyzed code context.
-- Time/timezones: use ISO 8601 when report timestamps are needed.
+- IDs: stable string IDs for runs, claims, evidence, risks, and review targets
+  where needed.
+- Run IDs: timestamp plus short stable suffix unless implementation finds a
+  simpler deterministic convention.
+- Time/timezones: use ISO 8601 for run timestamps.
+- Money: N/A for PatchTrace product state; analyzed patches may mention money
+  only as code context.
 - Soft delete: N/A for V0.
-- Logging: CLI stdout/stderr; no telemetry by default.
-- Error handling: no silent catch blocks; errors should be explicit and actionable.
-- Privacy: no external network calls or LLM submission by default.
+- Logging: CLI stdout/stderr plus local run artifacts; no telemetry by default.
+- Error handling: no silent catch blocks; errors should be explicit and
+  actionable.
+- Privacy: no external network calls, telemetry, or LLM submission by default.
 
 ### AI Boundary
 
 - AI role: N/A in V0.
-- Human checkpoint required before: adding any LLM call, model dependency, external provider, or network submission of code/diffs/summaries.
+- Human checkpoint required before: adding any LLM call, model dependency,
+  external provider, or network submission of code/diffs/transcripts/summaries.
 - Cost/retry caps: N/A in V0; required if AI calls are added later.
 - Logging/failure path: N/A in V0; required if AI calls are added later.
-- Future rule: if an LLM is introduced, it may extract or summarize explicit material only; it must not be treated as truth or as a correctness oracle.
+- Future rule: if an LLM is introduced, it may extract or summarize explicit
+  material only; it must not be treated as truth or as a correctness oracle.
 
-### Module/Domain Convention
+### Package Convention
 
-- Default principle: organize code by product/domain ownership, not by technical layer.
-- Chosen convention: `modules`.
-- Exact root path: `src/modules`.
-- Reason: PatchTrace is a domain engine/devtool, not a screen-based application. Its stable boundaries are concepts like claims, evidence, patch material, risk, test quality, reports, and verdicts.
-- Why not `features`: V0 has no UI flows or user-facing feature screens, so `features` would imply a UI/product-app shape.
-- Why not global `core/rules/schemas`: those become technical-layer dumping grounds and hide ownership of product judgment.
-- Shared code policy: only genuinely generic primitives may live outside modules, and they should remain small.
-- Dependency boundaries: `src/cli` calls modules; modules should expose small typed APIs and avoid reaching into CLI concerns.
+- Default principle: organize code by product and system capability ownership,
+  not by technical layer dumps.
+- Chosen convention: `src/patchtrace/<capability>/...`.
+- Exact root path: `src/patchtrace`.
+- Reason: Python packages are normally organized under an import package; this
+  project has clear capabilities: CLI, session capture, adapters, VCS, analysis,
+  reports, models, and storage.
+- Why not `src/modules`: in Python, "module" usually means a `.py` file, and a
+  `modules/` package would be less idiomatic.
+- Why not `features`: V0 has no UI screens or feature slices.
+- Why not global `utils`: shared helpers become ownership-free dumping grounds.
+- Shared code policy: only genuinely generic primitives may live outside the
+  main capability packages, and they should remain small.
+- Dependency boundaries:
+  - `cli` calls package services and owns user-facing command wiring.
+  - `session` owns PTY capture and transcript normalization.
+  - `adapters` owns tool-specific behavior, starting with Codex CLI.
+  - `vcs` owns local git state collection.
+  - `analysis` owns product judgment.
+  - `reports` owns Markdown rendering.
+  - `models` owns Pydantic schemas shared across boundaries.
+  - `storage` owns run folder paths and persistence.
 
 ### Feedback Loops
 
-- Typecheck: `pnpm typecheck` after scaffold.
-- Lint: `pnpm lint` after scaffold.
-- Test runner: `pnpm test` after scaffold.
-- Build: `pnpm build` after scaffold.
-- CI: install, lint, typecheck, tests, build, and fixture checks before release/PR merge after scaffold.
+- Install/sync: `uv sync` after scaffold.
+- Lint: `uv run ruff check .` after scaffold.
+- Format check: `uv run ruff format --check .` after scaffold.
+- Typecheck: `uv run mypy src tests` after scaffold.
+- Tests: `uv run pytest` after scaffold.
+- Build: `uv build` after scaffold.
+- CI: sync/install, lint, format check, typecheck, tests, and build before
+  release/PR merge after scaffold.
 - Error monitoring: N/A for V0.
 - Seed data / two test accounts: N/A for V0.
 
@@ -135,36 +189,47 @@ The foundation decisions optimize for:
 
 | Alternative | Why Not Chosen | Cost Of Switching Later |
 |---|---|---|
+| TypeScript port | Would preserve old saved-material shape instead of solving session capture first. | Low now; higher after Python code exists. |
+| Saved diff analyzer first | Does not reliably provide agent claims because transcript/session data is missing. | Medium; can remain as `analyze` fallback. |
+| Watcher first | Cannot know agent claims without session material and can trigger too early. | Low; remains secondary safety net. |
 | Web app first | Adds auth/hosting/UI before local workflow proves value. | Medium; web app can wrap the CLI engine later. |
 | SaaS or GitHub App first | Creates privacy, auth, integration, and trust complexity too early. | High; platform assumptions would shape the product prematurely. |
 | LLM-first analyzer | Risks generic output, privacy concerns, cost, and hidden judgment. | Medium; optional LLM extraction can be added later behind validated schemas. |
-| `src/features/` convention | Better for UI/product apps than a local domain engine. | Low to medium if a future UI becomes primary. |
-| Global `core/rules/schemas` layout | Encourages technical-layer ownership instead of product/domain ownership. | Medium; refactor cost grows as rules and schemas multiply. |
-| JSON-first output | Pulls V0 toward API/platform design before report quality is proven. | Low; JSON can still support fixtures or future integrations. |
+| Raw stdlib `pty` only | Lower dependency count, but more low-level behavior to implement and test. | Low; Pexpect can be replaced if it becomes a problem. |
+| `argparse` only | Standard library, but less ergonomic for typed subcommands and future CLI growth. | Low; Typer can be swapped early if needed. |
+| Pyright | Strong checker, but adds Node dependency to a Python-first repo. | Low to medium; can add later if mypy is insufficient. |
+| Flat package layout | Simpler direct imports, but easier to accidentally import root files. | Low; source layout is cleaner before code exists. |
+| Global `utils` layout | Encourages technical-layer ownership instead of product/capability ownership. | Medium; refactor cost grows as helpers multiply. |
 
 ## Consequences
 
 ### Positive
 
-- Keeps V0 small, local, and dogfoodable.
-- Makes report quality testable through fixtures.
-- Protects sensitive code and diffs by default.
+- Captures the agent session at the moment claims are made.
+- Keeps full claim-vs-evidence analysis grounded in transcript and patch
+  evidence.
+- Produces a useful next-step package, not only a report.
+- Protects sensitive code, diffs, and transcripts by default.
 - Avoids false confidence from LLM or correctness-score framing.
-- Keeps future GitHub, HTML, package, or AI integrations possible without committing to them early.
+- Keeps future GitHub, HTML, package, or AI integrations possible without
+  committing to them early.
 
 ### Negative / Trade-Offs
 
-- The first version may feel less magical than an AI reviewer.
-- Early analysis will be intentionally shallow and rules-based.
-- Markdown-first output may delay API/integration use cases.
-- Contributors may expect GitHub integration or LLM analysis because of the AI-agent context; docs must keep scope clear.
+- Users must run Codex through PatchTrace for the full V0 experience.
+- PTY capture can have edge cases with interactive terminal applications.
+- V0 is POSIX/macOS/Linux-oriented; Windows support is deferred.
+- Early claim extraction will be intentionally conservative and rules-based.
+- `watch` is useful but cannot be treated as full session truth.
 
 ### Operational Requirements Created By This ADR
 
-- Create fixtures before broad analyzer behavior.
+- Create fake-command PTY fixtures before real Codex dogfood tests.
 - Keep all report claims evidence-backed.
+- Treat transcripts as sensitive local material.
 - Require explicit approval before adding external services or LLM calls.
-- Run lint, typecheck, tests, build, and fixture checks once the scaffold exists.
+- Run lint, format check, typecheck, tests, build, and fixture checks once the
+  scaffold exists.
 
 ## Follow-Up Docs Triggered
 
@@ -173,14 +238,18 @@ The foundation decisions optimize for:
 - [ ] `docs/UI_SYSTEM.md` after second view.
 - [ ] `docs/AI_BOUNDARIES.md` after first AI call.
 - [ ] `docs/INTEGRATIONS.md` after first provider webhook/callback.
+- [ ] `docs/OPERATIONS.md` before package release, background service install,
+      or launch preparation.
 
 Current V0 triggers none of the above risk docs.
 
 ## Revisit Triggers
 
-- The CLI is dogfooded on 3-5 real agent sessions and report quality demands a different architecture.
+- `patchtrace run -- codex` fails to preserve usable Codex CLI interaction.
+- The CLI is dogfooded on 3-5 real Codex sessions and report quality demands a
+  different architecture.
 - Optional JSON becomes a public interface.
-- GitHub/PR integration becomes part of the next accepted phase.
+- A non-Codex adapter becomes part of the next accepted phase.
 - LLM extraction is proposed.
 - A local HTML report becomes necessary for comprehension.
 - Package publishing or release automation begins.

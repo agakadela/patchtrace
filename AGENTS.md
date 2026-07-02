@@ -45,11 +45,13 @@
 
 ## Commands
 
-- dev: N/A; Phase 2 has no dev server.
-- test: `pnpm test`
-- typecheck: `pnpm typecheck`
-- lint: `pnpm lint`
-- build: `pnpm build`
+- dev: N/A; V0 is a local CLI.
+- install/sync: `uv sync`
+- test: `uv run pytest`
+- typecheck: `uv run mypy src tests`
+- lint: `uv run ruff check .`
+- format check: `uv run ruff format --check .`
+- build: `uv build`
 - db:migrate: N/A; V0 has no database.
 - db:seed: N/A; V0 has no database.
 
@@ -77,7 +79,7 @@
 
 - Auth checks only in UI; always enforce server-side and, where applicable, DB-level isolation.
 - Payment or AI endpoint without an explicit failure path.
-- Silent catch blocks or accumulated TypeScript/type errors.
+- Silent catch blocks or accumulated type errors.
 - Schema changes outside the migrations directory.
 - Refactor unrelated code or delete tests to make build pass.
 - Assume provider behavior from memory.

@@ -1,17 +1,19 @@
 # ARCHITECTURE.md
 
-System source of truth: stack, module convention, data flow, and trust boundaries.
+System source of truth: stack, package convention, data flow, and trust
+boundaries.
 
 Template rules:
 - Keep this short and current.
 - Do not duplicate product scope from `docs/SPEC.md`.
-- Do not duplicate detailed auth/API/UI/AI/integration contracts; link to risk-triggered docs when they exist.
+- Do not duplicate detailed auth/API/UI/AI/integration contracts; link to
+  risk-triggered docs when they exist.
 - If unknown, write `UNKNOWN`. If not applicable, write `N/A` and why.
 
 ## Status
 
-- Last reviewed: 2026-06-20
-- Reviewed by: agent closeout review; human review pending
+- Last reviewed: 2026-07-02
+- Reviewed by: `$aga-spec` foundation interview
 - Related ADRs: `docs/decisions/ADR-0001-project-foundation.md`
 
 ## Stack
@@ -19,117 +21,137 @@ Template rules:
 | Layer | Decision | Source / ADR | Notes |
 |---|---|---|---|
 | App framework | N/A | `ADR-0001` | V0 is a local CLI, not a web app. |
-| Language | TypeScript | `ADR-0001` | Strong typed domain model for claims, evidence, risks, and reports. |
-| Runtime | Node.js | `ADR-0001` | Local developer-machine CLI. |
-| Package manager | `pnpm` | `ADR-0001` | Accepted foundation choice. |
-| Test runner | Vitest | `ADR-0001` | Unit and fixture tests. |
-| Schema validation | Zod | `ADR-0001` | Validate structured inputs and report objects. |
-| Database | N/A | `ADR-0001` | V0 has no persisted app database. |
+| Language | Python >=3.11 | `ADR-0001` | Local CLI with typed models and PTY/session capture. |
+| Project manager | `uv` | `ADR-0001` | Project/dependency/env/lock workflow. |
+| CLI framework | Typer | `ADR-0001` | Subcommands: `run`, `analyze`, `watch`. |
+| Session capture | Pexpect | `ADR-0001` | PTY-based capture for interactive Codex CLI sessions. |
+| PTY platform primitive | Python stdlib `pty` | `ADR-0001` | POSIX/macOS/Linux concept underlying the wrapper. |
+| Structured models | Pydantic v2 | `ADR-0001` | Validate run manifests, evidence, claims, verdicts, reports. |
+| Test runner | pytest | `ADR-0001` | Unit, integration, fixture, and fake-command PTY tests. |
+| Lint/format | Ruff | `ADR-0001` | Fast linter and formatter. |
+| Typecheck | mypy | `ADR-0001` | Static checking without adding Node dependency. |
+| Database | N/A | `ADR-0001` | V0 stores local files only. |
 | Migrations | N/A | `ADR-0001` | No schema migrations in V0. |
 | Auth | N/A | `ADR-0001` | V0 has no users, sessions, teams, or accounts. |
 | Payments | N/A | `ADR-0001` | V0 has no billing or entitlements. |
-| AI provider | N/A for V0 | `ADR-0001` | CLI must be useful without LLM calls. Future LLM use must be opt-in and evidence-constrained. |
+| AI provider | N/A for V0 | `ADR-0001` | Must be useful without LLM calls. Future LLM use is opt-in only. |
 | Hosting/deploy | N/A for V0 | `ADR-0001` | Local CLI only; package publishing is a later decision. |
-| Monitoring | N/A for V0 | `ADR-0001` | Use test logs and CLI errors locally. |
+| Monitoring | N/A for V0 | `ADR-0001` | Local stdout/stderr, run folders, and tests. |
 
-## Module Convention
+## Package Convention
 
-Default principle: organize code by product/domain ownership, not by technical layer.
+Default principle: organize code by product and system capability ownership, not
+by global technical-layer dumps.
 
-- Chosen convention: `modules`
-- Exact root path: `src/modules`
-- Reason: PatchTrace is a domain engine/devtool with stable product concepts: claims, evidence, patch material, risk, test quality, reports, and verdicts.
-- Existing repo convention, if any: Phase 3 has a thin `src/cli/` entrypoint plus analyzer modules under `src/modules/claims`, `src/modules/evidence`, `src/modules/patch`, `src/modules/report`, `src/modules/risk`, `src/modules/test-quality`, and `src/modules/verdict`.
+- Chosen convention: Python `src` layout with an import package under
+  `src/patchtrace/`.
+- Exact root path: `src/patchtrace/`.
+- Reason: PatchTrace is a local CLI package with clear capability boundaries:
+  CLI commands, session capture, Codex adapter, git/VCS collection, analysis,
+  report rendering, models, and run storage.
+- Why not `src/modules`: in Python, "module" usually means a `.py` file, so a
+  `modules/` package is less idiomatic than capability packages.
+- Why not `features`: V0 has no UI screens or user-facing app features.
+- Why not global `utils`: it hides ownership. Shared primitives must remain
+  small and have a clear package owner.
 
-Global technical folders policy:
-
-- `src/cli/` is allowed as a thin command entrypoint.
-- `tests/` and `evals/fixtures/` are allowed as verification roots.
-- Application logic belongs in product/domain modules under `src/modules/`.
-- Avoid global `core/`, `rules/`, `schemas/`, `services/`, `types/`, or `utils/` dumping grounds for PatchTrace logic.
-
-Current implementation structure:
-
-```text
-src/
-  cli/
-    index.ts
-    io.ts
-    commands/
-      analyze.ts
-  modules/
-    claims/
-      claim-analysis.ts
-    evidence/
-      local-materials.ts
-    patch/
-      changed-files.ts
-    report/
-      brief-shell.ts
-    risk/
-      risk-analysis.ts
-    test-quality/
-      test-quality-analysis.ts
-    verdict/
-      verdict-selection.ts
-evals/
-  fixtures/
-tests/
-docs/
-```
-
-Current analyzer module structure:
+Accepted implementation shape:
 
 ```text
 src/
-  cli/
-    index.ts
-    io.ts
-    commands/
-      analyze.ts
-  modules/
-    claims/
-    evidence/
-    patch/
-    risk/
-    test-quality/
-    report/
-    verdict/
-evals/
-  fixtures/
+  patchtrace/
+    __init__.py
+    __main__.py
+    cli/
+      app.py
+      commands/
+        run.py
+        analyze.py
+        watch.py
+    session/
+      recorder.py
+      transcript.py
+      terminal.py
+    adapters/
+      codex.py
+    vcs/
+      git.py
+      snapshot.py
+    analysis/
+      claims.py
+      risk.py
+      test_evidence.py
+      verdict.py
+    reports/
+      summary.py
+      feedback.py
+      verification_brief.py
+    models/
+      run.py
+      evidence.py
+      report.py
+    storage/
+      runs.py
 tests/
+  unit/
+  integration/
+  fixtures/
 docs/
 ```
 
 ## Data Flow
 
+Primary full flow:
+
 ```text
-developer runs CLI
-  -> CLI reads local inputs and flags
-  -> patch module collects or parses changed files and diff hunks
-  -> claims module extracts explicit agent claims
-  -> evidence module normalizes patch, test, command, note, and summary evidence
-  -> risk module classifies changed areas and risk areas
-  -> test-quality module assesses provided test evidence
-  -> verdict module chooses a conservative verdict
-  -> report module writes VERIFICATION_BRIEF.md
+developer runs `patchtrace run -- codex`
+  -> CLI creates run folder
+  -> storage records run metadata
+  -> vcs records pre-run git state
+  -> session launches Codex CLI through PTY
+  -> session records transcript locally
+  -> vcs records post-run git state, changed files, and diff
+  -> analysis extracts explicit agent claims from transcript
+  -> analysis evaluates patch evidence, test evidence, risk, gaps, verdict
+  -> reports write SUMMARY.md, AGENT_FEEDBACK.md, VERIFICATION_BRIEF.md
+```
+
+Fallback manual flow:
+
+```text
+developer runs `patchtrace analyze`
+  -> CLI reads current git state and optional transcript/run material
+  -> analysis runs with available evidence
+  -> reports clearly mark missing transcript or test evidence
+```
+
+Watch flow:
+
+```text
+developer runs `patchtrace watch`
+  -> watcher detects working-tree changes and idle state
+  -> analysis creates limited patch-only output if no transcript exists
+  -> reports label trigger source and evidence limits
 ```
 
 Notes:
 
-- The agent summary is never treated as truth.
-- The analyzer should preserve evidence source references wherever practical.
-- Missing local/provided material should produce explicit gaps, not confident guesses.
+- The transcript is evidence, not truth.
+- The agent summary is never treated as proof.
+- Missing local/provided material should produce explicit gaps, not confident
+  guesses.
+- Full claim-vs-evidence analysis requires session material.
 
 ## Trust Boundaries
 
 | Boundary | Validation | Auth/AuthZ Enforcement | Logging | Failure Behavior |
 |---|---|---|---|---|
-| CLI flags -> analyzer | Validate required combinations, file existence, and supported options. | N/A | CLI error output. | Exit non-zero with actionable message. |
-| Local filesystem -> patch material | Read only user-provided paths or git material from the target repo. | N/A | Record material source in report where useful. | Mark material missing or insufficient instead of inventing evidence. |
-| Agent summary -> claims | Extract explicit claims only; do not infer unstated claims. | N/A | Include claim source. | If no claims are found, report insufficient or limited claim material. |
-| Test output -> test evidence | Parse conservatively; distinguish pass/fail from behavior proof. | N/A | Include command/test evidence when provided. | Mark test evidence missing, weak, or contradictory. |
-| Analyzer -> report | Validate report object before export. | N/A | Surface generation errors. | Do not write misleading partial reports silently. |
+| CLI args -> command handlers | Validate subcommand, wrapped command, paths, and option combinations. | N/A | CLI stderr and run manifest where applicable. | Exit non-zero with actionable message. |
+| PatchTrace -> Codex CLI process | Preserve terminal behavior through PTY; record command and exit status. | N/A | `agent-session.txt`, `run.json`. | Capture exit code; still analyze available material. |
+| PTY transcript -> claims | Extract explicit claims only; strip/normalize control sequences for analysis. | N/A | Include transcript source and offsets where practical. | Mark claim material missing/limited if extraction fails. |
+| Local git repo -> patch evidence | Use local git commands in the target repo only. | N/A | Save before/after status, changed files, diff. | Mark patch material missing or no-change instead of inventing evidence. |
+| Test output -> test evidence | Parse conservatively; distinguish pass/fail from behavior proof. | N/A | Include command/test evidence when present. | Mark test evidence missing, weak, unknown, or contradictory. |
+| Analyzer -> report package | Validate report objects with Pydantic before rendering. | N/A | Write report artifact paths to `run.json`. | Do not silently write misleading partial reports. |
 | CLI -> external services | N/A in V0. | N/A | N/A | No external calls by default. |
 
 ## Server-Side Enforcement Points
@@ -142,24 +164,30 @@ Notes:
 
 ## Data Model Overview
 
-Do not maintain full schemas here. Keep canonical schema definitions in code once implementation exists.
+Do not maintain full schemas here. Keep canonical schema definitions in code
+once implementation exists.
 
-| Concept | Storage | Owner Module | Notes |
+| Concept | Storage | Owner Package | Notes |
 |---|---|---|---|
-| PatchTrace input | In-memory object built from CLI/local files | `src/modules/patch` and `src/modules/evidence` | Includes session goal, agent summary, changed files, diff hunks, test output, command output, manual notes. |
-| Agent claim | In-memory/report object | `src/modules/claims` | Explicit claim extracted from agent summary or manual note. |
-| Evidence | In-memory/report object | `src/modules/evidence` | Source-backed material: changed file, diff hunk, test file, output, note, or command output. |
-| Risk area | In-memory/report object | `src/modules/risk` | Conservative risk classification tied to evidence. |
-| Test-quality assessment | In-memory/report object | `src/modules/test-quality` | Describes what tests appear to prove and not prove. |
-| Verification brief | Markdown file | `src/modules/report` | Main V0 product artifact: `VERIFICATION_BRIEF.md`. |
+| Run manifest | `.patchtrace/runs/<run-id>/run.json` | `models`, `storage` | Run ID, command, timestamps, exit code, artifact paths, trigger source. |
+| Session transcript | `.patchtrace/runs/<run-id>/agent-session.txt` | `session` | Raw-ish local transcript captured from PTY, normalized for analysis separately. |
+| Git snapshot | `.patchtrace/runs/<run-id>/git-before.txt`, `git-after.txt`, `patch.diff`, `changed-files.txt` | `vcs` | Local patch material before/after wrapped session. |
+| Agent claim | In-memory/report object | `analysis` | Explicit claim extracted from transcript/session material. |
+| Evidence source | In-memory/report object | `models`, `analysis` | Source-backed material: transcript span, diff hunk, file path, test output, command output. |
+| Risk area | In-memory/report object | `analysis` | Conservative risk classification tied to evidence. |
+| Verification package | Markdown files plus manifest | `reports`, `storage` | `SUMMARY.md`, `AGENT_FEEDBACK.md`, `VERIFICATION_BRIEF.md`. |
 
 ## External Systems
 
 | System | Purpose | Source Doc | Failure Path |
 |---|---|---|---|
-| N/A | V0 has no required external services. | N/A | N/A |
+| Codex CLI | First wrapped agent command for dogfooding. | `docs/SPEC.md`; implementation adapter once built. | If unavailable or exits non-zero, record failure and analyze available material. |
 
-Future optional integrations such as LLM extraction, GitHub PR integration, package publishing, or hosted services require explicit approval and matching risk-triggered docs.
+No external network service is required in V0.
+
+Future optional integrations such as non-Codex adapters, LLM extraction, GitHub
+PR integration, package publishing, or hosted services require explicit approval
+and matching risk-triggered docs.
 
 ## Environments
 
@@ -172,26 +200,34 @@ Future optional integrations such as LLM extraction, GitHub PR integration, pack
 ## Observability
 
 - Error monitoring: N/A for V0 local CLI.
-- Logs: CLI stdout/stderr and test output.
+- Logs: CLI stdout/stderr and local run folders.
 - Alerts: N/A.
 - Dashboards: N/A.
 
 ## Known Constraints
 
 - V0 must be useful without an LLM.
-- Markdown report quality is the product bar.
-- JSON is secondary/internal unless separately approved.
-- The report must not claim correctness, safety, guarantees, or production verification without evidence.
+- Full claim-vs-evidence analysis depends on session transcript material.
+- `patchtrace watch` is a secondary safety net, not the source of full session
+  truth.
+- Markdown report quality and ready-to-paste agent feedback are the product bar.
+- The report must not claim correctness, safety, guarantees, or production
+  verification without evidence.
 - Fixture expectations should precede analyzer behavior.
+- V0 targets macOS/Linux-style PTY workflows first; Windows support is not a V0
+  acceptance criterion.
+
+## Source Notes
+
+- Python `src` layout and `pyproject.toml`: Python Packaging User Guide.
+- `uv` and Ruff: Astral official docs.
+- Typer: Typer official docs.
+- Pexpect: Pexpect official docs.
+- Python `pty`: Python standard library docs.
+- Pydantic, pytest, mypy: official docs.
 
 ## Change Log
 
 | Date | Change | Reason | Commit/PR |
 |---|---|---|---|
-| 2026-06-15 | Initial accepted architecture | Project foundation | N/A |
-| 2026-06-16 | Recorded Phase 2 CLI scaffold, fixture, lint gate, and pinned CI actions | Keep project truth aligned after review fixes | `agent/fix-phase-2-review-gates` |
-| 2026-06-18 | Recorded Phase 3 saved-material brief shell under `src/modules/patch`, `src/modules/evidence`, and `src/modules/report` | Analyzer module work has begun with local CLI proof | `agent/task-2-brief-shell` |
-| 2026-06-18 | Recorded Phase 3 payment fixture risk and review-first analyzer under `src/modules/risk` | First deterministic risk slice now derives report guidance from changed paths and diff text | `agent/task-3-payment-risk-review-first` |
-| 2026-06-18 | Recorded Phase 3 payment fixture claim-support and test-quality analyzers under `src/modules/claims` and `src/modules/test-quality` | Generated briefs now assess explicit agent summary claims and passing-test limits conservatively | `agent/task-4-claims-test-quality` |
-| 2026-06-19 | Recorded Phase 3 payment fixture verdict selection under `src/modules/verdict` | Generated briefs now include cannot-verify gaps, suggested next checks, and conservative verdict rationale | `agent/task-5-payment-verdict-gaps` |
-| 2026-06-19 | Recorded Phase 3 insufficient-material verdict path under `src/modules/evidence` and `src/modules/verdict` | Summary-only or incomplete saved material now produces an explicit `insufficient_material` brief instead of pretending analysis happened | `agent/task-6-insufficient-material` |
+| 2026-07-02 | Reframed architecture for Python V0 as Codex CLI session recorder and local verification package | New `$aga-spec` direction | N/A |

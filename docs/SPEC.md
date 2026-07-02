@@ -1,86 +1,138 @@
-# Spec: PatchTrace
+# Spec: PatchTrace Python
 
 Product source of truth: problem, user, scope, flows, and success criteria.
 
 Template rules:
-- This file is produced from `/spec` / `$aga-spec` interview, not from silent guessing.
-- Do not duplicate architecture, auth, API contracts, UI system, AI boundaries, or integrations here. Link to their source docs once they exist.
+- This file is produced from `$aga-spec` interview, not from silent guessing.
+- Do not duplicate architecture, auth, API contracts, UI system, AI boundaries,
+  or integrations here. Link to their source docs once they exist.
 - If unknown, write `UNKNOWN`. If not applicable, write `N/A` and why.
 - Blocking unknowns must be resolved before planning implementation.
 
 ## Status
 
 - Product name: PatchTrace
-- Spec status: accepted
+- Spec status: accepted for Python V0 planning
 - Owner: project maintainer(s)
-- Last updated: 2026-06-20
+- Last updated: 2026-07-02
 - Current implementation phase: see `docs/PLAN.md`
 
 ## Objective
 
-PatchTrace is a local-first open-source devtool that helps developers verify AI-agent code changes before accepting a patch.
+PatchTrace Python is a local-first devtool for recording an AI coding agent
+session and turning the resulting transcript, git patch, and test/command
+evidence into a review package.
 
-It compares the requested task, agent claims, actual patch material, and available test or command evidence. It then produces a conservative verification brief that helps a human reviewer start in the right place, notice unsupported claims, and avoid trusting the agent summary as truth.
+The Python V0 is not a direct port of the TypeScript prototype. It restarts the
+product around the strongest dogfood workflow:
 
-PatchTrace is not a generic AI code reviewer and does not claim to prove code correctness.
+```bash
+patchtrace run -- codex
+```
+
+PatchTrace should be present while Codex CLI works. It records the session,
+captures git state before and after the agent run, extracts explicit agent
+claims from the transcript, compares those claims against local evidence, and
+writes practical next-step artifacts for the human reviewer.
+
+PatchTrace does not replace human code review and does not claim to prove code
+correctness, safety, or production readiness.
 
 ## Problem
 
-AI coding agents can produce patches faster than developers can comfortably verify them. After an agent session, the developer often has a changed working tree, a diff, an agent summary, terminal output, test output, and uncertainty about what was actually verified.
+AI coding agents can produce changes faster than a developer can comfortably
+verify them. The hardest moment is immediately after the agent says "done":
+the developer has a changed working tree, terminal output, maybe test output,
+and an agent summary that may sound more certain than the evidence supports.
 
-The pain PatchTrace solves is the review bottleneck between:
+The pain PatchTrace solves is the decision bottleneck between:
 
 ```text
-AI agent says "done"
+Codex CLI says "done"
 ```
 
 and:
 
 ```text
-developer accepts the patch
+Aga decides the next move: accept, review manually, run checks, or send the
+agent back with precise feedback.
 ```
 
 ## Target User
 
-The primary user is a developer reviewing AI-agent code changes before accepting a patch.
+The primary V0 user is Aga using Codex CLI in her own agent workflow.
 
-Likely early adopters:
-- solo developers using Codex, Cursor, Claude Code, GitHub Copilot coding agent, or similar tools;
-- AI-assisted freelancers;
-- small engineering teams experimenting with agent-created branches or pull requests;
-- open-source maintainers who want a local evidence brief before reviewing generated changes.
+Likely later users:
+- developers who run local CLI coding agents;
+- freelancers or maintainers who need a local record of agent work;
+- small teams experimenting with agent-created branches.
+
+V0 optimizes for dogfooding before broad OSS polish.
 
 ## Current Workaround / Status Quo
 
-Developers currently verify agent work by manually reading the diff, skimming the agent summary, re-running commands, inspecting test output, and writing their own review notes. This is slow, easy to do inconsistently, and vulnerable to trusting fluent agent summaries that are not backed by evidence.
+Today the reviewer manually reconstructs the session from terminal output,
+agent final messages, git diff, changed files, and test output. This is slow,
+easy to do inconsistently, and especially weak at turning unsupported agent
+claims into a concrete follow-up prompt.
 
 ## Smallest Adoption Wedge
 
-The smallest serious adoption wedge is a local CLI that generates a useful `VERIFICATION_BRIEF.md` in under 5 minutes from local patch material and pasted agent/test notes.
+The smallest useful wedge is a local wrapper around Codex CLI that writes a
+review package after the agent exits.
 
-The brief must be useful before the developer reads the full diff cold.
+The review package must make the next action obvious without requiring the
+reviewer to read the full diff cold.
 
 ## V0 Scope
 
-V0 is the Local Patch Verification Engine.
+V0 is the Codex session recorder and local verification package.
 
 V0 will:
-- run as a local Node/TypeScript CLI;
-- accept local git diff or saved diff material;
-- accept changed file lists, agent summary/session notes, test output, and optional manual notes;
-- extract or accept explicit agent claims;
-- identify changed areas from paths, filenames, and diff content;
-- classify risk areas with deterministic rules;
-- compare claims against patch evidence and test/command evidence;
-- assess whether test evidence appears strong, weak, missing, contradictory, or not applicable;
-- identify cannot-verify items when proof requires external dashboards, deployed environments, secrets, provider state, live logs, or manual runtime checks not provided;
-- rank review-first files with file-specific reasons;
-- generate a Markdown `VERIFICATION_BRIEF.md`;
-- support fixture-first development with hand-written expected briefs before analyzer behavior is implemented.
+- run as a Python CLI;
+- provide `patchtrace run -- codex` as the primary full workflow;
+- launch Codex CLI through a pseudo-terminal so interactive terminal behavior
+  still works;
+- record a local session transcript from the wrapped Codex run;
+- capture git status, changed files, and diff before and after the run;
+- store run material under `.patchtrace/runs/<run-id>/`;
+- extract explicit agent claims from transcript/session material with
+  deterministic, rules-first logic;
+- classify patch evidence, risk areas, test/command evidence, and missing
+  evidence conservatively;
+- generate `SUMMARY.md`, `AGENT_FEEDBACK.md`, and `VERIFICATION_BRIEF.md`;
+- support `patchtrace analyze` as a manual fallback for an existing working
+  tree, transcript, or saved run material;
+- support a secondary `patchtrace watch` concept as a patch-only safety net,
+  clearly labeled as limited when no session transcript is available;
+- stay useful without any required LLM call or external service.
 
-JSON output may exist as an internal or optional fixture artifact, but Markdown is the V0 product output.
+## Required V0 Artifacts
 
-## Explicitly Out of Scope
+Each full `patchtrace run -- codex` session writes:
+
+```text
+.patchtrace/runs/<run-id>/
+  run.json
+  agent-session.txt
+  git-before.txt
+  git-after.txt
+  patch.diff
+  changed-files.txt
+  SUMMARY.md
+  AGENT_FEEDBACK.md
+  VERIFICATION_BRIEF.md
+```
+
+Artifact roles:
+- `SUMMARY.md`: short human-readable decision summary and next action.
+- `AGENT_FEEDBACK.md`: ready-to-paste feedback for the agent.
+- `VERIFICATION_BRIEF.md`: evidence-backed detail including claims, patch
+  evidence, test evidence, gaps, review-first files, and conservative verdict.
+- `run.json`: structured manifest for the run and generated artifacts.
+- Raw material files: local evidence sources used by the reports.
+
+## Explicitly Out Of Scope
 
 V0 will not build:
 - SaaS;
@@ -89,159 +141,185 @@ V0 will not build:
 - GitHub App, GitHub OAuth, PR comments, or hosted PR integration;
 - local HTML report or dashboard;
 - public proof pages, social posts, PNG cards, or video replay;
-- full Codex/Cursor/Claude/GitHub Copilot session-log parsing;
+- broad adapters for every coding agent;
 - required LLM analysis;
 - automatic correctness scoring;
 - claims that code is safe, correct, guaranteed, or production verified;
-- sending private code, diffs, summaries, or test output to external services by default.
+- sending private code, diffs, transcripts, summaries, or test output to
+  external services by default.
 
 ## Tech Stack
 
-See `docs/ARCHITECTURE.md` and `docs/decisions/ADR-0001-project-foundation.md` for foundation decisions.
+See `docs/ARCHITECTURE.md` and
+`docs/decisions/ADR-0001-project-foundation.md` for foundation decisions.
 
 Accepted product-level constraints:
 - Runtime: local CLI.
-- Language: TypeScript.
-- Package manager: `pnpm`.
-- Test runner: Vitest.
-- Schema validation: Zod.
+- Language: Python >=3.11.
+- Project manager: `uv`.
+- CLI framework: Typer.
+- Session/PTY capture: Pexpect, with Python stdlib `pty` as the underlying
+  platform concept.
+- Data validation: Pydantic v2.
+- Test runner: pytest.
+- Lint/format: Ruff.
+- Typecheck: mypy.
 - Analyzer style: deterministic/rules-first.
-- Module convention: `src/modules/` with a thin CLI entrypoint.
+- Package layout: `src/patchtrace/<capability>/...`.
 - Database, auth, hosting, and required AI provider: N/A for V0.
 
 ## Commands
 
-These are the current local development commands plus the analyzer command shape.
+These are target commands for the Python foundation. They become executable
+after the scaffold task.
 
 ```bash
-# install dependencies
-pnpm install
+# install/sync dependencies
+uv sync
 
-# run typecheck
-pnpm typecheck
+# run the CLI from source
+uv run patchtrace --help
 
-# run lint
-pnpm lint
+# full Codex session workflow
+uv run patchtrace run -- codex
 
-# run tests and fixture checks
-pnpm test
+# manual fallback analysis
+uv run patchtrace analyze
 
-# build the CLI
-pnpm build
+# secondary watch mode, limited without transcript material
+uv run patchtrace watch
 
-# analyze local patch material
-patchtrace analyze --diff patch.diff --changed-files changed-files.txt --summary agent-summary.md --test-output test-output.txt --out VERIFICATION_BRIEF.md
+# lint and format check
+uv run ruff check .
+uv run ruff format --check .
 
-# analyze a saved diff
-patchtrace analyze --diff patch.diff --changed-files changed-files.txt --summary agent-summary.md --out VERIFICATION_BRIEF.md
+# typecheck
+uv run mypy src tests
+
+# tests
+uv run pytest
+
+# build package
+uv build
 ```
-
-The current walking skeleton supports install, typecheck, lint, tests, build, `analyze --help`, and `analyze` for saved local material. The payment/webhook fixture generates evidence-linked risk, review-first, claim-support, test-quality, cannot-verify, suggested-next-check, and conservative-verdict sections. Missing or partial saved patch material produces an explicit `insufficient_material` brief. Generated-output parity for the non-payment fixture families remains deferred until after Phase 3.
 
 ## Project Structure
 
-The product structure belongs in `docs/ARCHITECTURE.md`. The accepted foundation direction is:
+The product structure belongs in `docs/ARCHITECTURE.md`. The accepted
+foundation direction is:
 
 ```text
 src/
-  cli/
-  modules/
-    claims/
-    evidence/
-    patch/
-    risk/
-    test-quality/
-    report/
-    verdict/
-evals/
-  fixtures/
+  patchtrace/
+    __init__.py
+    __main__.py
+    cli/
+    session/
+    adapters/
+    vcs/
+    analysis/
+    reports/
+    models/
+    storage/
 tests/
+  unit/
+  integration/
+  fixtures/
 docs/
 ```
 
-The implementation should be organized by PatchTrace product/domain concepts, not by global technical dumping grounds such as `core/`, `rules/`, `schemas/`, or `utils/` for application logic.
+The implementation should be organized by PatchTrace capabilities and domain
+concepts, not by global technical dumping grounds such as `utils`.
 
 ## Code Style
 
-The implementation should favor explicit, typed, evidence-preserving data transformations.
+The implementation should favor explicit, typed, evidence-preserving data
+transformations.
 
 Example style target:
 
-```ts
-export type ClaimSupport =
-  | "supported"
-  | "partially_supported"
-  | "unsupported"
-  | "contradicted"
-  | "cannot_determine";
+```python
+from enum import StrEnum
+from pydantic import BaseModel
 
-export function assessClaimSupport(input: ClaimAssessmentInput): ClaimAssessment {
-  const supportingEvidence = findSupportingEvidence(input.claim, input.evidence);
-  const contradictions = findContradictions(input.claim, input.evidence);
 
-  return {
-    claimId: input.claim.id,
-    support: chooseConservativeSupport({
-      supportingEvidence,
-      contradictions,
-      missingEvidence: input.missingEvidence,
-    }),
-    supportingEvidence,
-    contradictions,
-    missingEvidence: input.missingEvidence,
-    notes: [],
-  };
-}
+class ClaimSupport(StrEnum):
+    SUPPORTED = "supported"
+    PARTIALLY_SUPPORTED = "partially_supported"
+    UNSUPPORTED = "unsupported"
+    CONTRADICTED = "contradicted"
+    CANNOT_DETERMINE = "cannot_determine"
+
+
+class AgentClaimAssessment(BaseModel):
+    claim: str
+    support: ClaimSupport
+    assessment: str
+    evidence_sources: list[str]
+    missing_evidence: list[str]
 ```
 
 Style rules:
 - Prefer small pure functions for analysis rules.
 - Preserve evidence source references wherever possible.
-- Do not hide product judgment inside one prompt or one opaque function.
+- Keep session capture, git collection, analysis, and report rendering separate.
+- Do not hide product judgment inside one prompt or opaque function.
 - Do not infer claims that are not stated.
 - Use conservative language when evidence is incomplete.
-- Validate structured inputs and generated report objects with schemas.
+- Validate structured run and report objects with Pydantic models.
+- Keep CLI commands thin; product behavior belongs in package modules.
 
 ## Testing Strategy
 
-V0 is fixture-first.
+V0 is fixture-first and session-aware.
 
-Before implementing broad analyzer behavior, create hand-written expected `VERIFICATION_BRIEF.md` outputs for five fixtures:
-- payment/webhook/idempotency change;
-- auth/session/ownership change;
-- agent claims tests were added but evidence is weak or missing;
-- test output fails while the agent says the work is done;
-- AI endpoint added without usage or rate-limit evidence.
+Before broad analyzer behavior, create fixtures for:
+- a recorded Codex-like transcript that claims work is done and tests passed;
+- a transcript where tests fail while the agent claims completion;
+- a patch-only run with no transcript, producing limited analysis;
+- high-risk changed paths such as auth, payment/webhook, AI endpoint, or
+  migration-like changes;
+- a minimal successful `patchtrace run -- <fake interactive command>` capture.
 
 Test levels:
-- unit tests for claim extraction, evidence matching, risk classification, test-quality assessment, cannot-verify generation, review-first ranking, and verdict selection;
-- fixture tests comparing generated output against expected report sections;
-- CLI smoke tests proving `patchtrace analyze` can read local inputs and write `VERIFICATION_BRIEF.md`;
-- regression tests for weak-test patterns and contradicted claim handling.
+- unit tests for transcript normalization, claim extraction, evidence matching,
+  risk classification, test-evidence assessment, verdict selection, and report
+  rendering;
+- integration tests for run-folder creation and git snapshot/diff collection;
+- PTY capture tests using a local fake command, not real Codex CLI;
+- fixture tests comparing generated Markdown sections against expected output;
+- CLI smoke tests proving `patchtrace run -- <fake command>` and
+  `patchtrace analyze` write expected artifacts.
 
-The tests do not need to prove code correctness. They need to prove PatchTrace stays conservative, evidence-backed, and useful.
+The tests do not need to prove code correctness. They need to prove PatchTrace
+stays conservative, evidence-backed, local-first, and useful.
 
 ## Boundaries
 
 Always:
 - keep V0 local-first;
-- tie warnings, verdicts, and next steps to provided evidence or missing evidence;
+- treat the transcript as sensitive local evidence;
+- tie warnings, verdicts, and next steps to provided evidence or missing
+  evidence;
 - use conservative verdict language;
-- put fixture expectations before analyzer behavior;
-- test rules and report output;
-- include cannot-verify items when proof requires unavailable runtime, provider, dashboard, secret, deployed environment, or live data access;
+- include cannot-verify items when proof requires unavailable runtime,
+  provider, dashboard, secret, deployed environment, live data, or logs;
+- keep full claim-vs-evidence analysis dependent on available session material;
+- label patch-only analysis as limited when transcript/session evidence is
+  missing;
 - keep the CLI usable without an LLM.
 
 Ask first:
-- adding LLM calls;
+- adding any LLM call or model SDK;
 - adding new runtime dependencies beyond the agreed foundation;
+- adding non-Codex agent adapters;
 - adding GitHub/PR integration;
 - adding an HTML UI or dashboard;
-- publishing an npm package or release;
+- publishing a package or release;
 - changing the verdict taxonomy;
 - changing the claim-support taxonomy;
-- changing the module convention;
-- adding any external service or network call.
+- changing the package/module convention;
+- adding any external service, network call, telemetry, or daemon install.
 
 Never in V0:
 - SaaS;
@@ -249,87 +327,114 @@ Never in V0:
 - cloud sync;
 - correctness scoring;
 - claims that PatchTrace proves safety or correctness;
-- sending private code or diffs to external services by default;
-- generic checklist output that is not tied to changed files, evidence, or missing evidence.
+- sending private code, diffs, transcripts, summaries, or test output to
+  external services by default;
+- generic checklist output that is not tied to changed files, evidence, or
+  missing evidence.
 
 ## Core Flows
 
-### Flow 1: Generate a verification brief from local patch material
+### Flow 1: Record and analyze a Codex CLI session
 
-- Actor: developer reviewing AI-agent code changes.
-- Trigger: an AI coding agent says the work is done or a generated patch is ready for review.
+- Actor: Aga using Codex CLI.
+- Trigger: Aga starts an agent session through PatchTrace.
+- Command:
+
+```bash
+patchtrace run -- codex
+```
+
 - Steps:
-  1. Developer runs `patchtrace analyze` with a base branch or saved diff.
-  2. Developer provides an agent summary, test output, and optional manual notes.
-  3. PatchTrace collects or reads changed files and diff hunks.
-  4. PatchTrace extracts explicit agent claims.
-  5. PatchTrace compares claims to patch, test, command, and note evidence.
-  6. PatchTrace classifies changed areas and risk areas.
-  7. PatchTrace assesses test evidence strength.
-  8. PatchTrace generates `VERIFICATION_BRIEF.md`.
-- Successful outcome: the developer has a source-backed brief with claim/evidence matrix, risk areas, test-quality review, checks run/missing, review-first files, cannot-verify items, suggested next steps, and a conservative verdict.
+  1. PatchTrace creates a new run ID and run folder.
+  2. PatchTrace records pre-run git status and diff state.
+  3. PatchTrace launches Codex CLI through a pseudo-terminal.
+  4. Aga uses Codex normally.
+  5. PatchTrace records the terminal transcript locally.
+  6. When Codex exits, PatchTrace records post-run git status, changed files,
+     and diff.
+  7. PatchTrace extracts explicit claims and command/test evidence from the
+     transcript.
+  8. PatchTrace analyzes claims against patch evidence and missing evidence.
+  9. PatchTrace writes `SUMMARY.md`, `AGENT_FEEDBACK.md`, and
+     `VERIFICATION_BRIEF.md`.
+- Successful outcome: Aga knows the next action and has a ready feedback
+  message if the agent should continue.
 - Failure/empty states:
-  - no diff or changed-file material: verdict should be `insufficient_material`;
-  - no test output: report should mark test evidence as missing, not assume tests passed;
-  - failing test output contradicts an agent "done" claim: report should surface the contradiction and recommend sending the agent back;
-  - unsupported claims: report should label them as unsupported or cannot determine.
-- Runtime proof required: fixture CLI run writes a Markdown brief with expected sections.
+  - no git repo: exit with actionable error;
+  - no patch after session: write a no-change run summary;
+  - transcript capture fails: keep git evidence and mark session evidence
+    unavailable;
+  - command exits non-zero: record exit code and include it in the verdict;
+  - claims cannot be extracted: mark claim material missing or limited.
+- Runtime proof required: fake interactive command fixture produces a run
+  folder with transcript, diff evidence, and all required Markdown artifacts.
 
-### Flow 2: Review the generated brief before accepting a patch
+### Flow 2: Analyze existing local material manually
 
-- Actor: developer reviewing the patch.
-- Trigger: `VERIFICATION_BRIEF.md` exists for the agent session.
-- Steps:
-  1. Developer reads the verdict and claim/evidence matrix.
-  2. Developer reviews the review-first file list.
-  3. Developer checks weak or missing test evidence.
-  4. Developer decides whether to review manually, run more checks, or send the agent back.
-- Successful outcome: the developer starts review from the right files and questions instead of trusting the agent summary.
+- Actor: developer reviewing an existing changed working tree or saved run.
+- Trigger: developer did not start the agent through PatchTrace or wants to
+  re-run analysis.
+- Command:
+
+```bash
+patchtrace analyze
+```
+
+- Successful outcome: PatchTrace produces an evidence brief from available git
+  material and any supplied transcript/test evidence.
 - Failure/empty states:
-  - output is generic checklist noise: fails product bar;
-  - report implies correctness without proof: fails product bar;
-  - next steps are not actionable or evidence-linked: fails product bar.
-- Runtime proof required: generated fixture reports include file-specific review-first guidance and evidence-linked next steps.
+  - transcript missing: claim analysis is limited;
+  - no diff: report says no patch material found;
+  - test output missing: test evidence is marked missing, not passed.
 
-### Flow 3: Maintain fixture-first quality
+### Flow 3: Watch as a secondary safety net
 
-- Actor: PatchTrace maintainer/contributor.
-- Trigger: adding or changing analyzer behavior.
-- Steps:
-  1. Add or update fixture input files.
-  2. Hand-write the expected `VERIFICATION_BRIEF.md` shape.
-  3. Implement or adjust analyzer behavior.
-  4. Run fixture tests.
-- Successful outcome: analyzer changes improve or preserve expected brief quality.
+- Actor: Aga running PatchTrace in the background.
+- Trigger: working tree changes become idle after agent-like activity.
+- Command:
+
+```bash
+patchtrace watch
+```
+
+- Successful outcome: PatchTrace writes a limited patch-only package when no
+  transcript is available, or links to session material when available.
 - Failure/empty states:
-  - analyzer output becomes vague;
-  - warnings are not tied to evidence;
-  - verdicts become overconfident;
-  - fixture expectations are missing for new behavior.
-- Runtime proof required: fixture tests pass.
+  - watch triggers early or more than once: deduplicate by run fingerprint
+    where practical and label trigger source;
+  - no transcript: do not assess agent claims.
+- Runtime proof required: local fixture simulates file changes and idle
+  detection without requiring real Codex CLI.
 
 ## Success Criteria
 
 | Criterion | How measured | Target | Owner |
 |---|---|---|---|
-| Useful local brief | Run CLI against fixture material | `VERIFICATION_BRIEF.md` generated from local inputs | Maintainer |
-| Fast enough to adopt | Dogfood or fixture run timing including input prep | Useful brief in under 5 minutes | Maintainer |
-| Claim skepticism | Fixture expectations and tests | Unsupported, partially supported, contradicted, and cannot-determine claims are labeled conservatively | Maintainer |
-| Test-quality awareness | Fixture expectations and unit tests | Weak/missing/contradictory test evidence is visible and actionable | Maintainer |
-| Risk awareness | Fixture expectations and unit tests | High-risk changed areas produce file-specific review-first guidance | Maintainer |
-| Cannot-verify discipline | Fixture expectations and report review | External/runtime/provider proof gaps are explicit | Maintainer |
-| No false confidence | Copy review and tests for verdict language | No "correct", "safe", "guaranteed", or "production verified" claims without evidence | Maintainer |
-| Fixture-first foundation | Repository contents before broad analyzer behavior | Five initial fixtures have hand-written expected briefs | Maintainer |
+| Codex session captured | PTY fake-command integration test | Transcript saved under `.patchtrace/runs/<run-id>/agent-session.txt` | Maintainer |
+| Patch evidence captured | Git fixture/integration test | Before/after status, changed files, and diff saved | Maintainer |
+| Useful next action | Fixture review | `SUMMARY.md` states accept/review/run-checks/send-back style decision | Maintainer |
+| Agent feedback useful | Fixture review | `AGENT_FEEDBACK.md` is ready to paste back to an agent | Maintainer |
+| Claim skepticism | Unit and fixture tests | Unsupported, contradicted, missing, and cannot-determine claims are labeled conservatively | Maintainer |
+| Test-evidence awareness | Unit and fixture tests | Missing/failing/weak test evidence is visible and actionable | Maintainer |
+| Privacy boundary | Code review and tests | No external calls by default; transcript stays local | Maintainer |
+| No false confidence | Copy review and tests | No "correct", "safe", "guaranteed", or "production verified" claims without evidence | Maintainer |
 
 ## Product Constraints
 
-- Legal/compliance constraints: N/A for V0; PatchTrace is a local OSS devtool and does not provide legal, security, or production-safety guarantees.
-- Data/privacy constraints: local-first; no external service calls by default; do not ask for `.env`, secrets, customer data, provider tokens, or private dashboard exports.
-- Performance expectations: the full workflow should be faster than writing equivalent manual review notes; target under 5 minutes for a useful brief.
-- Accessibility expectations: CLI output and Markdown reports should be readable, structured, and usable without a graphical interface. HTML UI is out of scope for V0.
+- Legal/compliance constraints: N/A for V0; PatchTrace is a local devtool and
+  does not provide legal, security, or production-safety guarantees.
+- Data/privacy constraints: local-first; no external service calls by default;
+  do not ask for `.env`, secrets, customer data, provider tokens, or private
+  dashboard exports.
+- Platform expectations: V0 targets macOS/Linux-style PTY workflows first.
+  Windows support is not a V0 acceptance criterion.
+- Performance expectations: the report package should be generated quickly
+  enough to use after every agent session.
+- Accessibility expectations: CLI output and Markdown reports should be
+  readable, structured, and usable without a graphical interface.
 - Budget/cost constraints: no required paid API or LLM cost in V0.
 
-## Source-of-Truth Links
+## Source-Of-Truth Links
 
 | Area | Source |
 |---|---|
@@ -344,31 +449,43 @@ Never in V0:
 
 ## ADR Candidates
 
-Decisions that may need ADRs because they are hard to reverse, affect public interfaces, or will surprise future maintainers.
+Decisions that may need ADRs because they are hard to reverse, affect public
+interfaces, or will surprise future maintainers.
 
-- Project foundation: local Node/TypeScript CLI, `pnpm`, Vitest, Zod.
-- Module convention: `src/modules/` with a thin CLI entrypoint.
-- Markdown-first report with JSON as secondary/internal fixture artifact.
+- Project foundation: Python >=3.11 CLI, `uv`, Typer, Pydantic v2, Pexpect,
+  pytest, Ruff, mypy.
+- Primary interface: `patchtrace run -- codex` instead of saved-material-only
+  analysis.
+- Package layout: `src/patchtrace/<capability>/...`.
+- Local run-folder format under `.patchtrace/runs/<run-id>/`.
+- Report package: `SUMMARY.md`, `AGENT_FEEDBACK.md`, and
+  `VERIFICATION_BRIEF.md`.
 - Local-first/no-cloud/no-required-LLM boundary.
-- Claim support taxonomy: `supported`, `partially_supported`, `unsupported`, `contradicted`, `cannot_determine`.
-- Verdict taxonomy: `ready_for_focused_review`, `needs_human_review`, `send_agent_back`, `insufficient_material`.
-- Fixture-first analyzer development.
+- Claim support taxonomy: `supported`, `partially_supported`, `unsupported`,
+  `contradicted`, `cannot_determine`.
+- Verdict taxonomy: `ready_for_review`, `needs_manual_review`,
+  `run_more_checks`, `send_agent_back`, `insufficient_material`.
+- Fixture-first session-capture and analyzer development.
 
 ## Open Questions
 
 ### Blocking
 
-- N/A. Blocking product and foundation decisions for writing the V0 spec are resolved.
+- N/A. Blocking product and foundation decisions for writing the Python V0 spec
+  are resolved.
 
 ### Non-Blocking
 
-- Whether optional JSON output is exposed in V0 or kept internal to fixture tests.
-- Package publishing timing and npm package ownership.
-- Whether and when live git `--base`/`--head` collection enters the CLI.
-- Generated-output parity timing for non-payment fixture families.
+- Exact idle threshold and deduplication strategy for `patchtrace watch`.
+- Whether optional JSON output is exposed publicly or kept as internal run
+  metadata.
+- Whether real Codex CLI transcript formats need a dedicated parser beyond
+  generic transcript rules.
+- Package publishing timing and package ownership.
+- Whether later non-Codex adapters belong in this package or separate plugins.
 
 ## Review Notes
 
 - Accepted by: project maintainer
-- Date: 2026-06-15
-- Links to discussion/PR: N/A; accepted in local spec interview.
+- Date: 2026-07-02
+- Links to discussion/PR: N/A; accepted in local `$aga-spec` interview.

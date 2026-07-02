@@ -1,16 +1,18 @@
 # PatchTrace
 
-Verify AI-agent code changes before you accept them.
+Record Codex CLI sessions and turn agent work into a local verification package.
 
-PatchTrace is a local-first open-source devtool that turns patch material, agent claims, and test or command output into a structured verification brief.
+PatchTrace is a local-first devtool for the moment after an AI coding agent says
+"done." It captures the agent session, collects local git evidence, compares
+agent claims against available evidence, and writes practical next-step
+artifacts.
 
-It traces agent claims back to local evidence, flags weak or missing test evidence, identifies risky changed areas, lists what cannot be verified from provided material, and tells you which files to review first.
-
-PatchTrace does not replace human code review. It helps you start review with better evidence.
+PatchTrace does not replace human code review. It helps you decide what to do
+next with better evidence.
 
 ## Status
 
-- Stage: Phase 3 local CLI walking skeleton complete
+- Stage: Python V0 spec and foundation accepted; scaffold not implemented yet
 - Current phase: see `docs/PLAN.md`
 - Product spec: see `docs/SPEC.md`
 - Architecture: see `docs/ARCHITECTURE.md`
@@ -23,7 +25,7 @@ PatchTrace does not replace human code review. It helps you start review with be
 |---|---|
 | Product scope and success criteria | `docs/SPEC.md` |
 | Current execution plan | `docs/PLAN.md` |
-| Stack, module convention, data flow, trust boundaries | `docs/ARCHITECTURE.md` |
+| Stack, package convention, data flow, trust boundaries | `docs/ARCHITECTURE.md` |
 | Domain language | `CONTEXT.md` |
 | Irreversible decisions | `docs/decisions/` |
 | Verification proof | `docs/VERIFY_LOG.md` |
@@ -44,23 +46,44 @@ Risk-triggered docs are created only when triggered:
 
 ## Intended V0
 
-V0 is a local CLI:
+The primary V0 workflow is:
 
 ```bash
-patchtrace analyze --diff patch.diff --changed-files changed-files.txt --summary agent-summary.md --test-output test-output.txt --out VERIFICATION_BRIEF.md
+patchtrace run -- codex
 ```
 
-The CLI currently reads saved local material and writes a conservative Markdown brief. The payment/webhook fixture produces risk areas, review-first guidance, claim-support assessment, test-quality assessment, cannot-verify gaps, suggested next checks, and a conservative verdict. Missing or partial patch material produces an explicit `insufficient_material` brief.
+PatchTrace will wrap Codex CLI through a pseudo-terminal, record the session
+transcript, capture git state before and after the agent run, and write:
 
-## Setup
+```text
+.patchtrace/runs/<run-id>/
+  run.json
+  agent-session.txt
+  git-before.txt
+  git-after.txt
+  patch.diff
+  changed-files.txt
+  SUMMARY.md
+  AGENT_FEEDBACK.md
+  VERIFICATION_BRIEF.md
+```
+
+`patchtrace analyze` remains a manual fallback. `patchtrace watch` is planned as
+a secondary patch-only safety net when no session transcript is available.
+
+## Planned Setup
+
+These commands become available after the Python scaffold exists:
 
 ```bash
-pnpm install
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
-node dist/cli/index.js analyze --diff evals/fixtures/payment-webhook-idempotency/patch.diff --changed-files evals/fixtures/payment-webhook-idempotency/changed-files.txt --summary evals/fixtures/payment-webhook-idempotency/agent-summary.md --test-output evals/fixtures/payment-webhook-idempotency/test-output.txt --out /tmp/VERIFICATION_BRIEF.md
+uv sync
+uv run patchtrace --help
+uv run patchtrace run -- codex
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy src tests
+uv run pytest
+uv build
 ```
 
 ## Environment
@@ -70,15 +93,17 @@ node dist/cli/index.js analyze --diff evals/fixtures/payment-webhook-idempotency
 - Production URL: N/A.
 - Database projects are separated by environment: N/A; V0 has no database.
 - Secrets live in: N/A; V0 should not require secrets.
+- Local run artifacts live under `.patchtrace/runs/` once implemented.
 
-Do not put real secrets in README, docs, screenshots, commits, or chat.
+Do not put real secrets, customer data, provider tokens, private transcripts, or
+private diffs in README, docs, screenshots, commits, or chat.
 
 ## Development Workflow
 
 - Read `AGENTS.md`, `docs/AGENT_WORKFLOW.md`, and `docs/PLAN.md` before work.
 - Work on one task at a time.
 - Use `using-agent-skills` when the right skill path is unclear.
-- Commit after each standard task once the target git repo exists.
+- Commit after each standard task once verified.
 - Use `pause before commit` for high-risk work.
 - Merge only after review and runtime verification.
 
@@ -94,4 +119,5 @@ Do not put real secrets in README, docs, screenshots, commits, or chat.
 - PatchTrace does not prove code correctness.
 - PatchTrace does not claim a patch is safe or production verified.
 - V0 has no SaaS, auth, teams, GitHub integration, HTML report, or required LLM calls.
-- Analyzer development remains fixture-first, with hand-written expected verification briefs before broad analyzer behavior.
+- Full claim-vs-evidence analysis requires session transcript material.
+- V0 targets macOS/Linux-style PTY workflows first; Windows support is deferred.

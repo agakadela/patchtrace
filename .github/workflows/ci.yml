@@ -9,39 +9,28 @@ permissions:
   contents: read
 
 jobs:
-  foundation-checks:
+  foundation-docs:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
         # actions/checkout@v4
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
-      - name: Setup pnpm
-        # pnpm/action-setup@v4
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
-        with:
-          version: 10.2.0
+      - name: Check foundation docs exist
+        run: |
+          test -f AGENTS.md
+          test -f CONTEXT.md
+          test -f README.md
+          test -f docs/SPEC.md
+          test -f docs/PLAN.md
+          test -f docs/ARCHITECTURE.md
+          test -f docs/VERIFY_LOG.md
+          test -f docs/decisions/ADR-0001-project-foundation.md
 
-      - name: Setup Node
-        # actions/setup-node@v4
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Test
-        run: pnpm test
-
-      - name: Build
-        run: pnpm build
+      - name: Check Python V0 foundation markers
+        run: |
+          grep -q "patchtrace run -- codex" docs/SPEC.md
+          grep -q "Python >=3.11" docs/ARCHITECTURE.md
+          grep -q "src/patchtrace" docs/decisions/ADR-0001-project-foundation.md
