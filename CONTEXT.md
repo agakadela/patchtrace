@@ -88,4 +88,4 @@ Template rules:
 
 | Date | Change | Reason | Commit/PR |
 |---|---|---|---|
-| 2026-07-02 | Replaced TypeScript prototype terms with Python V0 session-recording terms | New `$aga-spec` direction | N/A |
+| 2026-07-02 | Updated domain terms for Python V0 session-recording workflow | New `$aga-spec` direction | N/A |

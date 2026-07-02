@@ -31,7 +31,7 @@ Current accepted direction:
 - [x] Capture foundation architecture in `docs/ARCHITECTURE.md`.
 - [x] Capture foundation decision in `docs/decisions/ADR-0001-project-foundation.md`.
 - [x] Update domain language in `CONTEXT.md`.
-- [x] Update README and agent command references away from TypeScript prototype assumptions.
+- [x] Update README and agent command references for Python V0 session assumptions.
 
 ## Next Phase Candidate: Phase 2 - Feedback Loops And CLI Scaffold
 
@@ -61,7 +61,6 @@ Candidate first vertical slice:
 
 ## Rejected For This Phase
 
-- Direct TypeScript port.
 - Saved-diff analyzer as the primary V0 workflow.
 - Watcher-first design as full session truth.
 - Required LLM extraction.

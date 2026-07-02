@@ -29,7 +29,7 @@ Template rules:
 | Structured models | Pydantic v2 | `ADR-0001` | Validate run manifests, evidence, claims, verdicts, reports. |
 | Test runner | pytest | `ADR-0001` | Unit, integration, fixture, and fake-command PTY tests. |
 | Lint/format | Ruff | `ADR-0001` | Fast linter and formatter. |
-| Typecheck | mypy | `ADR-0001` | Static checking without adding Node dependency. |
+| Typecheck | mypy | `ADR-0001` | Static checking without adding a separate runtime dependency. |
 | Database | N/A | `ADR-0001` | V0 stores local files only. |
 | Migrations | N/A | `ADR-0001` | No schema migrations in V0. |
 | Auth | N/A | `ADR-0001` | V0 has no users, sessions, teams, or accounts. |

@@ -15,7 +15,7 @@ This repo should store project truth in files, not in chat memory.
 3. Work in small vertical slices. One task at a time. `docs/PLAN.md` is the durable memory.
 4. Git is a save-point system. Standard tasks end in commits. Larger or riskier changes go through short-lived branches and PRs. High-risk work pauses before commit.
 5. `AGENTS.md` stays small and alive. Long-form workflow lives here.
-6. Runtime proof beats agent claims. Passing tests, clicked flows, database records, and provider dashboards are evidence. Verification is proportional: routine browser proof is a targeted check, not full gstack `/qa`.
+6. Runtime proof beats agent claims. Passing tests, command output, generated run artifacts, clicked flows when UI exists, database records when a database exists, and provider dashboards when providers exist are evidence. Verification is proportional: routine browser proof is a targeted check, not full gstack `/qa`.
 7. Non-trivial diffs get review before merge.
 8. High-risk decisions get `doubt-driven-development` before code.
 
@@ -87,9 +87,10 @@ repo/
     VERIFY_LOG.md
     decisions/
       ADR-0001-project-foundation.md
-  migrations/
   .github/workflows/ci.yml
 ```
+
+Create `migrations/` only after a database is introduced.
 
 Canonical sources:
 
@@ -220,34 +221,34 @@ Module convention rule:
 
 Before real features:
 
-- scaffold app and the chosen feature/domain-first module convention
-- migrations configured and first migration committed
-- typecheck, lint, test runner work locally
-- CI runs typecheck, lint, tests, build
-- deploy a hello-world/skeleton through CI
-- local/preview/prod environments are separated
+- scaffold the Python package and the chosen capability-first module convention
+- expose a local CLI help path
+- prove a fake-command `patchtrace run -- <command>` path
+- create a run folder under `.patchtrace/runs/<run-id>/`
+- capture a transcript and git before/after material when git is available
+- generate at least one minimal Markdown artifact
+- typecheck, lint, format check, test runner, and build work locally
+- CI runs lint, format check, typecheck, tests, and build once the scaffold exists
 - `.env.example` exists; real secrets never enter repo or chat
-- error monitoring exists if production-like deploy exists
-- seed data includes at least two test accounts
-- baseline UI approach is chosen
+- database, migrations, deploy, seed data, browser proof, and UI baseline are N/A until those surfaces are introduced
 - `AGENTS.md` and this workflow exist in repo
 
 ### Phase 3: Walking Skeleton
 
-Build a narrow end-to-end skeleton before features:
+Build a narrow end-to-end CLI skeleton before analyzer features:
 
 ```text
-auth -> one trivial core action -> database write with isolation
--> protected route shows result -> deploy through CI
+patchtrace run -- <fake interactive command>
+-> child process executes under PTY
+-> transcript is captured
+-> git before/after material is captured when available
+-> run folder contains metadata and Markdown output
+-> local checks pass
 ```
 
-If paid access is part of the first real promise, include payment skeleton early:
-
-```text
-checkout -> webhook -> entitlement -> access
-```
-
-Gate: skeleton works in production or production-like environment, with browser proof, database proof, and provider proof where relevant.
+Gate: the skeleton works locally with command output and file artifact proof.
+Browser, database, provider, deploy, and payment proof are required only after
+those surfaces are introduced.
 
 ## 5. Process B: Phase / Milestone
 

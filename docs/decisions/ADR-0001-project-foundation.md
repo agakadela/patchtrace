@@ -10,11 +10,10 @@ PatchTrace Python is a local-first devtool for recording Codex CLI sessions and
 turning the resulting transcript, git patch material, and test/command evidence
 into a review package.
 
-The TypeScript prototype proved useful product concepts: conservative evidence
-briefs, claim skepticism, fixture-first development, and no false confidence.
-The Python version restarts the foundation around a stronger first workflow:
-PatchTrace should wrap the agent session instead of only analyzing saved
-materials afterward.
+The foundation preserves conservative evidence briefs, claim skepticism,
+fixture-first development, and no false confidence. The Python version centers
+the stronger first workflow: PatchTrace should wrap the agent session instead
+of only analyzing saved materials afterward.
 
 The foundation decisions optimize for:
 - dogfooding with Aga's Codex CLI workflow;
@@ -36,7 +35,7 @@ The foundation decisions optimize for:
 | Structured models | Pydantic v2 | Validate run manifests, evidence, claims, verdicts, and report objects. | Runtime validation becomes unnecessary or too heavy. |
 | Test runner | pytest | Good fit for unit, integration, and fixture-first tests. | Test suite needs capabilities pytest does not support. |
 | Lint/format | Ruff | Fast linter/formatter with `pyproject.toml` support. | Rules or formatting needs require a supplement. |
-| Typecheck | mypy | Static checking without adding Node dependency. | Pyright becomes necessary for better coverage or team preference. |
+| Typecheck | mypy | Static checking without adding a separate runtime dependency. | Pyright becomes necessary for better coverage or team preference. |
 | Database | N/A | V0 stores local run folders only. | Local history/cache/querying becomes part of product scope. |
 | Migrations | N/A | No database in V0. | A database is introduced. |
 | Hosting/deploy | N/A for V0 | V0 is local CLI only. | Publishing/release/distribution is planned. |
@@ -189,7 +188,6 @@ The foundation decisions optimize for:
 
 | Alternative | Why Not Chosen | Cost Of Switching Later |
 |---|---|---|
-| TypeScript port | Would preserve old saved-material shape instead of solving session capture first. | Low now; higher after Python code exists. |
 | Saved diff analyzer first | Does not reliably provide agent claims because transcript/session data is missing. | Medium; can remain as `analyze` fallback. |
 | Watcher first | Cannot know agent claims without session material and can trigger too early. | Low; remains secondary safety net. |
 | Web app first | Adds auth/hosting/UI before local workflow proves value. | Medium; web app can wrap the CLI engine later. |
@@ -197,7 +195,7 @@ The foundation decisions optimize for:
 | LLM-first analyzer | Risks generic output, privacy concerns, cost, and hidden judgment. | Medium; optional LLM extraction can be added later behind validated schemas. |
 | Raw stdlib `pty` only | Lower dependency count, but more low-level behavior to implement and test. | Low; Pexpect can be replaced if it becomes a problem. |
 | `argparse` only | Standard library, but less ergonomic for typed subcommands and future CLI growth. | Low; Typer can be swapped early if needed. |
-| Pyright | Strong checker, but adds Node dependency to a Python-first repo. | Low to medium; can add later if mypy is insufficient. |
+| Pyright | Strong checker, but adds a separate checker/runtime setup to a Python-first repo. | Low to medium; can add later if mypy is insufficient. |
 | Flat package layout | Simpler direct imports, but easier to accidentally import root files. | Low; source layout is cleaner before code exists. |
 | Global `utils` layout | Encourages technical-layer ownership instead of product/capability ownership. | Medium; refactor cost grows as helpers multiply. |
 

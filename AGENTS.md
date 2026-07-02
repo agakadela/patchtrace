@@ -80,7 +80,7 @@
 - Auth checks only in UI; always enforce server-side and, where applicable, DB-level isolation.
 - Payment or AI endpoint without an explicit failure path.
 - Silent catch blocks or accumulated type errors.
-- Schema changes outside the migrations directory.
+- Schema changes outside the migrations directory once a database exists.
 - Refactor unrelated code or delete tests to make build pass.
 - Assume provider behavior from memory.
 - Commit secrets, tokens, customer data, or screenshots containing secrets.
@@ -92,6 +92,6 @@
 ## Done means
 
 - Typecheck + tests + build pass.
-- Core flow verified in runtime with proportional browser, database, and provider proof.
+- Core flow verified in runtime with proportional command/artifact proof; browser, database, and provider proof only when applicable.
 - Diff explained and committed; branch pushed and draft PR opened when the work
   is branch-based; cannot-verify items named.

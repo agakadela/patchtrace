@@ -23,8 +23,7 @@ PatchTrace Python is a local-first devtool for recording an AI coding agent
 session and turning the resulting transcript, git patch, and test/command
 evidence into a review package.
 
-The Python V0 is not a direct port of the TypeScript prototype. It restarts the
-product around the strongest dogfood workflow:
+The Python V0 starts from the strongest dogfood workflow:
 
 ```bash
 patchtrace run -- codex

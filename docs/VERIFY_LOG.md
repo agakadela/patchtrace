@@ -24,3 +24,25 @@ proof, or explicit cannot-verify decisions.
   - PTY capture behavior cannot be proved until the fake-command slice is
     implemented.
 - Verdict: foundation direction documented; implementation not started.
+
+### 2026-07-02 - Python V0 Documentation Consistency Audit
+
+- Commit: this commit.
+- Scope: repo-wide docs/config audit after aligning all project material to
+  Python V0 assumptions.
+- Checks:
+  - Confirmed no repo content matches old non-Python stack markers.
+  - Confirmed no stale implementation examples match old file extensions, code
+    fences, package metadata, or web skeleton phrases.
+  - Ran foundation-doc existence checks for `AGENTS.md`, `CONTEXT.md`,
+    `README.md`, `docs/SPEC.md`, `docs/PLAN.md`, `docs/ARCHITECTURE.md`,
+    `docs/VERIFY_LOG.md`, and `docs/decisions/ADR-0001-project-foundation.md`.
+  - Ran foundation marker checks for `patchtrace run -- codex`,
+    `Python >=3.11`, and `src/patchtrace`.
+  - Ran `git diff --check`.
+- Runtime proof: N/A; docs/config audit only.
+- Cannot verify:
+  - Python commands still cannot run until the scaffold exists.
+  - Real Codex CLI capture still cannot be proved until Phase 2 implementation.
+- Verdict: docs/config are aligned to Python V0; no earlier stack references
+  found by repo-wide search.
