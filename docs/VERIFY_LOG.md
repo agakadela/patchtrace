@@ -8,6 +8,25 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-07-05 - Phase 2 Task 1 CLI Scaffold
+
+- Commit: this commit.
+- Scope: installable Python package scaffold with `patchtrace` console script,
+  Typer command surface, and local quality-loop configuration.
+- Checks:
+  - `uv sync`
+  - `uv run patchtrace --help`
+  - `uv run ruff check .`
+  - `uv run ruff format --check .`
+  - `uv run mypy src tests`
+  - `uv run pytest`
+  - `uv build`
+- Runtime proof: `patchtrace --help` exits 0 and lists `run`, `analyze`, and
+  `watch`; placeholder commands exit non-zero without claiming success.
+- Cannot verify: real run capture, git evidence, and report artifacts are later
+  Phase 2 tasks.
+- Verdict: Task 1 scaffold is implemented and locally verified.
+
 ### 2026-07-02 - Python V0 Foundation Spec
 
 - Commit: this commit.

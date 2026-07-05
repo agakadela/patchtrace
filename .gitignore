@@ -1,6 +1,10 @@
 # Dependencies
 .venv/
 
+# Python cache
+__pycache__/
+*.py[cod]
+
 # Build outputs
 dist/
 build/
