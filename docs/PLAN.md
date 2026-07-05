@@ -122,24 +122,26 @@ manifest, and capture the terminal transcript.
 
 ### Task 3: Run Captures Git Evidence
 
+**Status:** Complete.
+
 **Description:** Extend the fake-command run path to capture local git material
 before and after the wrapped command when the run starts inside a git
 repository.
 
 **Acceptance criteria:**
-- [ ] A run inside a git repo writes `git-before.txt`, `git-after.txt`,
+- [x] A run inside a git repo writes `git-before.txt`, `git-after.txt`,
       `changed-files.txt`, and `patch.diff`.
-- [ ] The manifest records git artifact paths and whether patch material was
+- [x] The manifest records git artifact paths and whether patch material was
       present.
-- [ ] Running outside a git repo exits non-zero with an actionable message and
+- [x] Running outside a git repo exits non-zero with an actionable message and
       does not write misleading report artifacts.
 
 **Verification method:**
-- [ ] `uv run pytest tests/integration/test_git_evidence.py`
-- [ ] Integration fixture creates a temporary git repo, runs the fake command,
+- [x] `uv run pytest tests/integration/test_git_evidence.py`
+- [x] Integration fixture creates a temporary git repo, runs the fake command,
       and asserts the before/after/diff artifacts exist.
-- [ ] `uv run ruff check .`
-- [ ] `uv run mypy src tests`
+- [x] `uv run ruff check .`
+- [x] `uv run mypy src tests`
 
 **Dependencies:** Task 2.
 

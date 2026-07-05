@@ -9,6 +9,16 @@ RunOutcome = Literal["completed", "wrapped_command_failed"]
 TriggerSource = Literal["manual_cli"]
 
 
+class GitEvidenceManifest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    git_before_path: str
+    git_after_path: str
+    changed_files_path: str
+    patch_path: str
+    patch_material_present: bool
+
+
 class RunManifest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -20,3 +30,4 @@ class RunManifest(BaseModel):
     artifact_paths: list[str]
     wrapped_command_exit_status: int
     outcome: RunOutcome
+    git_evidence: GitEvidenceManifest | None = None

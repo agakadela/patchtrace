@@ -23,6 +23,22 @@ class RunPaths:
     def transcript_path(self) -> Path:
         return self.run_dir / "agent-session.txt"
 
+    @property
+    def git_before_path(self) -> Path:
+        return self.run_dir / "git-before.txt"
+
+    @property
+    def git_after_path(self) -> Path:
+        return self.run_dir / "git-after.txt"
+
+    @property
+    def changed_files_path(self) -> Path:
+        return self.run_dir / "changed-files.txt"
+
+    @property
+    def patch_path(self) -> Path:
+        return self.run_dir / "patch.diff"
+
     def relative_artifact_path(self, artifact_path: Path) -> str:
         return artifact_path.relative_to(self.run_dir).as_posix()
 
