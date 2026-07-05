@@ -43,27 +43,29 @@ project metadata + local check config
 
 ### Task 1: Installable CLI Help Path
 
+**Status:** Complete.
+
 **Description:** Scaffold the Python package and local quality-loop
 configuration so `patchtrace` is installable from source and exposes the V0
 command surface before any capture behavior exists.
 
 **Acceptance criteria:**
-- [ ] `pyproject.toml` defines Python >=3.11, the `patchtrace` console script,
+- [x] `pyproject.toml` defines Python >=3.11, the `patchtrace` console script,
       accepted runtime dependencies, and dev dependencies for pytest, Ruff, and
       mypy.
-- [ ] `uv run patchtrace --help` exits 0 and lists `run`, `analyze`, and
+- [x] `uv run patchtrace --help` exits 0 and lists `run`, `analyze`, and
       `watch` with conservative placeholder behavior for unimplemented paths.
-- [ ] The initial package follows `src/patchtrace/<capability>/...` and avoids
+- [x] The initial package follows `src/patchtrace/<capability>/...` and avoids
       global technical dumping grounds.
 
 **Verification method:**
-- [ ] `uv sync`
-- [ ] `uv run patchtrace --help`
-- [ ] `uv run ruff check .`
-- [ ] `uv run ruff format --check .`
-- [ ] `uv run mypy src tests`
-- [ ] `uv run pytest`
-- [ ] `uv build`
+- [x] `uv sync`
+- [x] `uv run patchtrace --help`
+- [x] `uv run ruff check .`
+- [x] `uv run ruff format --check .`
+- [x] `uv run mypy src tests`
+- [x] `uv run pytest`
+- [x] `uv build`
 
 **Dependencies:** None.
 
