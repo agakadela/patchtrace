@@ -12,7 +12,7 @@ next with better evidence.
 
 ## Status
 
-- Stage: Python V0 spec and foundation accepted; scaffold not implemented yet
+- Stage: Python V0 Phase 2 scaffold available locally; CI feedback loop defined
 - Current phase: see `docs/PLAN.md`
 - Product spec: see `docs/SPEC.md`
 - Architecture: see `docs/ARCHITECTURE.md`
@@ -44,7 +44,37 @@ Risk-triggered docs are created only when triggered:
 | Launch prep | `docs/OPERATIONS.md` |
 | Client delivery | `docs/HANDOFF.md` |
 
-## Intended V0
+## Current Phase 2 Scaffold
+
+The implemented local scaffold can run a fake command through PatchTrace:
+
+```bash
+uv run patchtrace run -- python tests/fixtures/fake_agent.py
+```
+
+That command creates a local run folder with:
+
+```text
+.patchtrace/runs/<run-id>/
+  run.json
+  agent-session.txt
+  git-before.txt
+  git-after.txt
+  patch.diff
+  changed-files.txt
+  SUMMARY.md
+```
+
+The CLI help path is available with:
+
+```bash
+uv run patchtrace --help
+```
+
+`patchtrace analyze` and `patchtrace watch` are visible in help but still exit
+with conservative placeholder behavior.
+
+## Target V0
 
 The primary V0 workflow is:
 
@@ -70,15 +100,17 @@ transcript, capture git state before and after the agent run, and write:
 
 `patchtrace analyze` remains a manual fallback. `patchtrace watch` is planned as
 a secondary patch-only safety net when no session transcript is available.
+Real Codex dogfood and the full feedback/verification reports are deferred
+beyond the current Phase 2 scaffold.
 
-## Planned Setup
+## Available Local Loop
 
-These commands become available after the Python scaffold exists:
+These commands are available in the current scaffold:
 
 ```bash
 uv sync
 uv run patchtrace --help
-uv run patchtrace run -- codex
+uv run patchtrace run -- python tests/fixtures/fake_agent.py
 uv run ruff check .
 uv run ruff format --check .
 uv run mypy src tests
