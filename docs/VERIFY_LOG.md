@@ -8,6 +8,32 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-07-05 - Phase 2 Task 2 Fake Run Capture
+
+- Commit: this commit.
+- Scope: `patchtrace run -- <fake command>` creates a local run folder,
+  captures PTY output in `agent-session.txt`, and records a Pydantic-backed
+  `run.json` manifest with command, timestamps, trigger source, artifact paths,
+  wrapped command exit status, and conservative outcome.
+- Checks:
+  - `uv run pytest tests/integration/test_run_fake_command.py`
+  - `uv run pytest tests/integration/test_run_fake_command.py tests/unit/test_cli_help.py`
+  - `uv run ruff check .`
+  - `uv run ruff format --check .`
+  - `uv run mypy src tests`
+  - `uv run pytest`
+  - `uv build`
+  - Manual smoke:
+    `uv run patchtrace run -- python tests/fixtures/fake_agent.py`
+- Runtime proof: smoke run wrote
+  `.patchtrace/runs/20260705T201144042610Z-222148a1/run.json` and
+  `agent-session.txt`; manifest recorded exit status `0`, outcome `completed`,
+  and artifact paths `run.json` / `agent-session.txt`; transcript contained the
+  fake agent output.
+- Cannot verify: git evidence and Markdown summary artifacts are later Phase 2
+  tasks.
+- Verdict: Task 2 fake-run capture is implemented and locally verified.
+
 ### 2026-07-05 - Phase 2 Task 1 CLI Scaffold
 
 - Commit: this commit.

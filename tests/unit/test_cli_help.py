@@ -16,7 +16,6 @@ def test_help_lists_phase_2_command_surface() -> None:
 
 def test_unimplemented_commands_exit_without_claiming_success() -> None:
     command_args = (
-        ["run", "--", "python", "fake_agent.py"],
         ["analyze"],
         ["watch"],
     )
