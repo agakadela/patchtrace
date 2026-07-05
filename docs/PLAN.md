@@ -84,23 +84,25 @@ command surface before any capture behavior exists.
 
 ### Task 2: Fake Run Creates A Run Folder And Transcript
 
+**Status:** Complete.
+
 **Description:** Make `patchtrace run -- <fake command>` execute a local fake
 agent command through the PTY session path, create a run folder, save a
 manifest, and capture the terminal transcript.
 
 **Acceptance criteria:**
-- [ ] `uv run patchtrace run -- <fake command>` creates
+- [x] `uv run patchtrace run -- <fake command>` creates
       `.patchtrace/runs/<run-id>/`.
-- [ ] The run folder contains `run.json` with command, timestamps, trigger
+- [x] The run folder contains `run.json` with command, timestamps, trigger
       source, artifact paths written so far, and wrapped command exit status.
-- [ ] The run folder contains `agent-session.txt` with the fake command output.
-- [ ] Non-zero fake command exits are recorded without claiming success.
+- [x] The run folder contains `agent-session.txt` with the fake command output.
+- [x] Non-zero fake command exits are recorded without claiming success.
 
 **Verification method:**
-- [ ] `uv run pytest tests/integration/test_run_fake_command.py`
-- [ ] Manual smoke:
+- [x] `uv run pytest tests/integration/test_run_fake_command.py`
+- [x] Manual smoke:
       `uv run patchtrace run -- python tests/fixtures/fake_agent.py`
-- [ ] Inspect the latest `.patchtrace/runs/<run-id>/run.json` and
+- [x] Inspect the latest `.patchtrace/runs/<run-id>/run.json` and
       `agent-session.txt`.
 
 **Dependencies:** Task 1.

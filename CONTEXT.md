@@ -62,6 +62,8 @@ Template rules:
 - Code package naming uses capability packages: `cli`, `session`, `adapters`,
   `vcs`, `analysis`, `reports`, `models`, and `storage`.
 - Run folder path uses: `.patchtrace/runs/<run-id>/`.
+- Run IDs use a UTC timestamp with microseconds plus an 8-hex suffix:
+  `<YYYYMMDDTHHMMSSffffffZ>-<8hex>`.
 - Required report filenames use: `SUMMARY.md`, `AGENT_FEEDBACK.md`,
   `VERIFICATION_BRIEF.md`.
 - Billing/payment terms use: N/A for V0 because PatchTrace has no billing or
@@ -78,7 +80,6 @@ Template rules:
 
 ### Non-Blocking
 
-- Exact run ID format.
 - Exact public verdict labels.
 - Whether the public report section title should be `Cannot verify` or
   `Cannot verify from provided material`.
@@ -88,4 +89,5 @@ Template rules:
 
 | Date | Change | Reason | Commit/PR |
 |---|---|---|---|
+| 2026-07-05 | Recorded run ID format | Task 2 implemented local run folder creation | N/A |
 | 2026-07-02 | Updated domain terms for Python V0 session-recording workflow | New `$aga-spec` direction | N/A |
