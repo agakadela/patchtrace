@@ -196,25 +196,27 @@ reporting behavior for a later phase.
 
 ### Task 5: CI Proves The Scaffold
 
+**Status:** Complete.
+
 **Description:** Replace the current docs-only CI check with the real Phase 2
 feedback loop so every push or PR proves the package scaffold, CLI help path,
 fake-run tests, typecheck, lint, format check, and build.
 
 **Acceptance criteria:**
-- [ ] CI installs Python/uv and runs `uv sync`, Ruff lint, Ruff format check,
+- [x] CI installs Python/uv and runs `uv sync`, Ruff lint, Ruff format check,
       mypy, pytest, and `uv build`.
-- [ ] README command status changes from planned to available only for commands
+- [x] README command status changes from planned to available only for commands
       implemented in this phase.
-- [ ] Architecture/docs stay aligned with any implementation-level deviation
+- [x] Architecture/docs stay aligned with any implementation-level deviation
       from the accepted package convention.
 
 **Verification method:**
-- [ ] `uv run ruff check .`
-- [ ] `uv run ruff format --check .`
-- [ ] `uv run mypy src tests`
-- [ ] `uv run pytest`
-- [ ] `uv build`
-- [ ] PR check shows the updated CI workflow passing.
+- [x] `uv run ruff check .`
+- [x] `uv run ruff format --check .`
+- [x] `uv run mypy src tests`
+- [x] `uv run pytest`
+- [x] `uv build`
+- [x] PR check shows the updated CI workflow passing.
 
 **Dependencies:** Tasks 1-4.
 
@@ -232,18 +234,18 @@ fake-run tests, typecheck, lint, format check, and build.
 
 ## Checkpoint: Phase 2 Close
 
-- [ ] `uv sync` succeeds.
-- [ ] `uv run patchtrace --help` exits 0.
-- [ ] `uv run patchtrace run -- python tests/fixtures/fake_agent.py` creates a
+- [x] `uv sync` succeeds.
+- [x] `uv run patchtrace --help` exits 0.
+- [x] `uv run patchtrace run -- python tests/fixtures/fake_agent.py` creates a
       run folder with `run.json`, `agent-session.txt`, git artifacts when in a
       git repo, and `SUMMARY.md`.
-- [ ] `uv run ruff check .` passes.
-- [ ] `uv run ruff format --check .` passes.
-- [ ] `uv run mypy src tests` passes.
-- [ ] `uv run pytest` passes.
-- [ ] `uv build` passes.
-- [ ] Updated CI workflow passes in the PR.
-- [ ] `docs/VERIFY_LOG.md` records the phase close evidence.
+- [x] `uv run ruff check .` passes.
+- [x] `uv run ruff format --check .` passes.
+- [x] `uv run mypy src tests` passes.
+- [x] `uv run pytest` passes.
+- [x] `uv build` passes.
+- [x] Updated CI workflow passes in the PR.
+- [x] `docs/VERIFY_LOG.md` records the phase close evidence.
 
 ## Deferred
 

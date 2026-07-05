@@ -8,6 +8,35 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-07-05 - Phase 2 Task 5 CI Scaffold Proof
+
+- Commit: this commit.
+- Scope: GitHub Actions now runs the Phase 2 feedback loop with uv/Python
+  setup, project sync, CLI help, Ruff lint, Ruff format check, mypy, pytest,
+  and package build. README status now names only the commands implemented in
+  the current scaffold.
+- Checks:
+  - RED: `rg -n "uv sync|uv run ruff check|uv run ruff format --check|uv run mypy|uv run pytest|uv build" .github/workflows/ci.yml`
+    found no required uv loop before the edit.
+  - `uv sync`
+  - `uv run patchtrace --help`
+  - Manual smoke:
+    `uv run patchtrace run -- python tests/fixtures/fake_agent.py`
+  - `uv run ruff check .`
+  - `uv run ruff format --check .`
+  - `uv run mypy src tests`
+  - `uv run pytest`
+  - `uv build`
+- Runtime proof: smoke run wrote
+  `.patchtrace/runs/20260705T205308158614Z-e4a21734/` with `run.json`,
+  `agent-session.txt`, git artifacts, and `SUMMARY.md`; the draft PR must run
+  the same CI loop before merge.
+- Source docs: GitHub Actions workflow/Python docs and Astral uv GitHub Actions
+  docs were checked for the setup pattern.
+- Cannot verify in local commit: PR CI status until the branch is pushed and
+  the draft PR runs.
+- Verdict: Task 5 CI scaffold proof is implemented and locally verified.
+
 ### 2026-07-05 - Phase 2 Task 4 Minimal Summary Artifact
 
 - Commit: this commit.
