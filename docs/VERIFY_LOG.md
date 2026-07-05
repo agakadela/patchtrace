@@ -8,6 +8,28 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-07-05 - Phase 2 Task 3 Git Evidence Capture
+
+- Commit: this commit.
+- Scope: `patchtrace run -- <fake command>` now requires a Git work tree,
+  records before/after status, changed file names, patch diff material, and
+  manifest git evidence metadata.
+- Checks:
+  - `uv run pytest tests/integration/test_git_evidence.py`
+  - `uv run pytest tests/integration/test_git_evidence.py tests/integration/test_run_fake_command.py`
+  - `uv run ruff check .`
+  - `uv run ruff format --check .`
+  - `uv run mypy src tests`
+  - `uv run pytest`
+  - `uv build`
+- Runtime proof: integration fixture initializes a temporary Git repo, changes a
+  tracked file through the wrapped command, and asserts `git-before.txt`,
+  `git-after.txt`, `changed-files.txt`, and `patch.diff` exist with manifest
+  `git_evidence.patch_material_present = true`; outside-Git invocation exits
+  non-zero without creating `.patchtrace/`.
+- Cannot verify: PR CI status until the branch is pushed and the draft PR runs.
+- Verdict: Task 3 git evidence capture is implemented and locally verified.
+
 ### 2026-07-05 - Phase 2 Task 2 Fake Run Capture
 
 - Commit: this commit.
