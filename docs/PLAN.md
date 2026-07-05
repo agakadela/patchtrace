@@ -159,24 +159,26 @@ repository.
 
 ### Task 4: Fake Run Writes A Minimal Summary
 
+**Status:** Complete.
+
 **Description:** Generate the first Markdown artifact from run metadata and raw
 material so Phase 2 ends with a visible local review package, while keeping full
 reporting behavior for a later phase.
 
 **Acceptance criteria:**
-- [ ] A successful fake run writes `SUMMARY.md` in the run folder.
-- [ ] The summary includes run ID, wrapped command, exit status, artifacts
+- [x] A successful fake run writes `SUMMARY.md` in the run folder.
+- [x] The summary includes run ID, wrapped command, exit status, artifacts
       written, and conservative evidence gaps.
-- [ ] The summary does not claim the patch is correct, safe, or production
+- [x] The summary does not claim the patch is correct, safe, or production
       verified.
-- [ ] `run.json` lists `SUMMARY.md` as a generated artifact.
+- [x] `run.json` lists `SUMMARY.md` as a generated artifact.
 
 **Verification method:**
-- [ ] `uv run pytest tests/unit/test_summary_report.py`
-- [ ] `uv run pytest tests/integration/test_run_fake_command.py`
-- [ ] Manual smoke:
+- [x] `uv run pytest tests/unit/test_summary_report.py`
+- [x] `uv run pytest tests/integration/test_run_fake_command.py`
+- [x] Manual smoke:
       `uv run patchtrace run -- python tests/fixtures/fake_agent.py`
-- [ ] Inspect the latest `.patchtrace/runs/<run-id>/SUMMARY.md`.
+- [x] Inspect the latest `.patchtrace/runs/<run-id>/SUMMARY.md`.
 
 **Dependencies:** Tasks 2 and 3.
 

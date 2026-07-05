@@ -6,6 +6,7 @@ from pathlib import Path
 import typer
 
 from patchtrace.models.run import GitEvidenceManifest, RunManifest, RunOutcome
+from patchtrace.reports.summary import build_summary_report, render_summary_markdown
 from patchtrace.session.recorder import record_command
 from patchtrace.storage.runs import create_run_paths, write_run_manifest
 from patchtrace.vcs.git import GitCommandError, is_inside_work_tree
@@ -80,6 +81,7 @@ def run(ctx: typer.Context) -> None:
     git_after_path = run_paths.relative_artifact_path(run_paths.git_after_path)
     changed_files_path = run_paths.relative_artifact_path(run_paths.changed_files_path)
     patch_path = run_paths.relative_artifact_path(run_paths.patch_path)
+    summary_path = run_paths.relative_artifact_path(run_paths.summary_path)
     manifest = RunManifest(
         run_id=run_paths.run_id,
         command=command,
@@ -93,6 +95,7 @@ def run(ctx: typer.Context) -> None:
             git_after_path,
             changed_files_path,
             patch_path,
+            summary_path,
         ],
         wrapped_command_exit_status=recorded_session.exit_status,
         outcome=outcome,
@@ -103,6 +106,11 @@ def run(ctx: typer.Context) -> None:
             patch_path=patch_path,
             patch_material_present=git_evidence.patch_material_present,
         ),
+    )
+    summary = build_summary_report(manifest)
+    run_paths.summary_path.write_text(
+        render_summary_markdown(summary),
+        encoding="utf-8",
     )
     write_run_manifest(run_paths, manifest)
 
