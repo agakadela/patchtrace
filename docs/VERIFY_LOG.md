@@ -8,6 +8,30 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-07-05 - Phase 2 Task 4 Minimal Summary Artifact
+
+- Commit: this commit.
+- Scope: successful `patchtrace run -- <fake command>` runs now write
+  `SUMMARY.md`, include it in `run.json` artifact paths, and render run metadata
+  plus conservative evidence gaps without claiming correctness, safety, or
+  production verification.
+- Checks:
+  - `uv run pytest tests/unit/test_summary_report.py tests/integration/test_run_fake_command.py tests/integration/test_git_evidence.py`
+  - `uv run ruff check .`
+  - `uv run ruff format --check .`
+  - `uv run mypy src tests`
+  - `uv run pytest`
+  - `uv build`
+  - Manual smoke:
+    `uv run patchtrace run -- python tests/fixtures/fake_agent.py`
+- Runtime proof: smoke run wrote
+  `.patchtrace/runs/20260705T203821802325Z-96f2a362/SUMMARY.md`; the summary
+  recorded run ID, command, exit status `0`, artifact list including
+  `SUMMARY.md`, and conservative gaps. The matching `run.json` listed
+  `SUMMARY.md` in `artifact_paths`.
+- Cannot verify: PR CI status until the branch is pushed and the draft PR runs.
+- Verdict: Task 4 minimal summary artifact is implemented and locally verified.
+
 ### 2026-07-05 - Phase 2 Task 3 Git Evidence Capture
 
 - Commit: this commit.

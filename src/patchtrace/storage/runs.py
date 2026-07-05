@@ -39,6 +39,10 @@ class RunPaths:
     def patch_path(self) -> Path:
         return self.run_dir / "patch.diff"
 
+    @property
+    def summary_path(self) -> Path:
+        return self.run_dir / "SUMMARY.md"
+
     def relative_artifact_path(self, artifact_path: Path) -> str:
         return artifact_path.relative_to(self.run_dir).as_posix()
 

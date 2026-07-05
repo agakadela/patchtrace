@@ -44,6 +44,7 @@ def test_run_inside_git_repo_writes_git_evidence_artifacts(
         "git-after.txt",
         "changed-files.txt",
         "patch.diff",
+        "SUMMARY.md",
     ]
     assert manifest["git_evidence"] == {
         "git_before_path": "git-before.txt",

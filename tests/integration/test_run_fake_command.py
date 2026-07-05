@@ -31,6 +31,7 @@ def test_fake_run_creates_run_folder_manifest_and_transcript(
 
     manifest = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
     transcript = (run_dir / "agent-session.txt").read_text(encoding="utf-8")
+    summary = (run_dir / "SUMMARY.md").read_text(encoding="utf-8")
 
     assert manifest["run_id"] == run_dir.name
     assert manifest["command"] == [sys.executable, str(FIXTURE)]
@@ -44,11 +45,16 @@ def test_fake_run_creates_run_folder_manifest_and_transcript(
         "git-after.txt",
         "changed-files.txt",
         "patch.diff",
+        "SUMMARY.md",
     ]
     assert manifest["git_evidence"]["patch_material_present"] is False
     assert "started_at" in manifest
     assert "ended_at" in manifest
     assert "fake agent says hello" in transcript
+    assert f"- Run ID: `{run_dir.name}`" in summary
+    assert "- Exit status: `0`" in summary
+    assert "- `SUMMARY.md`" in summary
+    assert "PatchTrace has not verified correctness" in summary
 
 
 def test_nonzero_fake_run_records_exit_without_claiming_success(
@@ -68,11 +74,15 @@ def test_nonzero_fake_run_records_exit_without_claiming_success(
     run_dir = next((Path(".patchtrace") / "runs").iterdir())
     manifest = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
     transcript = (run_dir / "agent-session.txt").read_text(encoding="utf-8")
+    summary = (run_dir / "SUMMARY.md").read_text(encoding="utf-8")
 
     assert manifest["wrapped_command_exit_status"] == 7
     assert manifest["outcome"] == "wrapped_command_failed"
+    assert "SUMMARY.md" in manifest["artifact_paths"]
     assert "success" not in manifest
     assert "fake agent exiting with 7" in transcript
+    assert "- Exit status: `7`" in summary
+    assert "success" not in summary.lower()
 
 
 def _init_git_repo(path: Path) -> None:
