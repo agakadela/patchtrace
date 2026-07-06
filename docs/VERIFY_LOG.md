@@ -8,6 +8,35 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-07-06 - Phase 3 Task 1 Interactive PTY Passthrough
+
+- Commit: this commit.
+- Scope: `patchtrace run -- <command>` now uses a Pexpect interactive PTY
+  passthrough when PatchTrace itself has a TTY, preserves the noninteractive
+  fallback used by existing fake-command tests, and appends wrapped command
+  exit status evidence to `agent-session.txt`.
+- Checks:
+  - RED: `uv run pytest tests/integration/test_interactive_session_capture.py`
+    timed out waiting for the fake prompt before the recorder used
+    interactive passthrough.
+  - `uv run pytest tests/integration/test_interactive_session_capture.py`
+  - `uv run pytest tests/integration/test_run_fake_command.py`
+  - Manual PTY smoke equivalent to:
+    `uv run patchtrace run -- python tests/fixtures/fake_interactive_agent.py`
+- Runtime proof: smoke run wrote
+  `.patchtrace/runs/20260706T174257722010Z-8e099611/`; `agent-session.txt`
+  captured the fake prompt, supplied response, command output, and
+  `[patchtrace] wrapped command exited with status 0`; `run.json` recorded
+  exit status `0`, outcome `completed`, and the existing Phase 2 artifact list.
+- Source docs: Pexpect 4.9 official docs for `spawn`, `interact`, `logfile`,
+  and `close` were checked.
+- Observability: V0 local run artifacts answer the on-call questions for this
+  slice; no external logs, metrics, traces, or alerts were added.
+- Cannot verify in Task 1: real Codex CLI dogfood capture, expanded reports,
+  claim extraction, LLM calls, external services, `analyze`, and `watch`.
+- Verdict: Task 1 interactive fake-command passthrough is implemented and
+  locally verified.
+
 ### 2026-07-06 - Phase 2 Close: Feedback Loops And CLI Scaffold
 
 - Commit: `eeb7324` merge of PR #5 after Phase 2 task branches.

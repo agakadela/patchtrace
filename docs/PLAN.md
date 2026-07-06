@@ -126,7 +126,7 @@ Notes:
 
 ### Task 1: Real Interactive PTY Passthrough With Fake Fixture
 
-**Status:** Pending.
+**Status:** Complete.
 
 **Description:** Upgrade the existing run recorder from fake non-interactive
 command capture to a narrow interactive PTY path that can preserve a user's
@@ -135,18 +135,18 @@ evidence. Prove it with a local fake interactive command before using real
 Codex.
 
 **Acceptance criteria:**
-- [ ] `uv run patchtrace run -- python tests/fixtures/fake_interactive_agent.py`
+- [x] `uv run patchtrace run -- python tests/fixtures/fake_interactive_agent.py`
       can complete a one-prompt interactive exchange in local runtime.
-- [ ] `agent-session.txt` captures the fake prompt, supplied response, command
+- [x] `agent-session.txt` captures the fake prompt, supplied response, command
       output, and exit status evidence without dropping the transcript.
-- [ ] Existing fake non-interactive runs still create the Phase 2 artifacts.
-- [ ] Non-zero wrapped command exits still record run material without claiming
+- [x] Existing fake non-interactive runs still create the Phase 2 artifacts.
+- [x] Non-zero wrapped command exits still record run material without claiming
       success.
 
 **Verification method:**
-- [ ] `uv run pytest tests/integration/test_interactive_session_capture.py`
-- [ ] `uv run pytest tests/integration/test_run_fake_command.py`
-- [ ] Manual smoke:
+- [x] `uv run pytest tests/integration/test_interactive_session_capture.py`
+- [x] `uv run pytest tests/integration/test_run_fake_command.py`
+- [x] Manual smoke:
       `uv run patchtrace run -- python tests/fixtures/fake_interactive_agent.py`
 
 **Dependencies:** None.
