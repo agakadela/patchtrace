@@ -8,6 +8,24 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-07-06 - Phase 2 Close: Feedback Loops And CLI Scaffold
+
+- Commit: `eeb7324` merge of PR #5 after Phase 2 task branches.
+- Scope: Phase 2 closed with an installable Python CLI scaffold, fake-command
+  PTY run capture, run manifest, transcript capture, git before/after evidence,
+  minimal `SUMMARY.md`, and CI proving the local quality loop.
+- Checks: see the Phase 2 Task 1-5 entries below for command-level evidence;
+  the final local loop included `uv sync`, `uv run patchtrace --help`, fake-run
+  smoke, Ruff lint, Ruff format check, mypy, pytest, and `uv build`.
+- Runtime proof: final Phase 2 smoke wrote a `.patchtrace/runs/<run-id>/`
+  folder containing `run.json`, `agent-session.txt`, git artifacts, and
+  `SUMMARY.md`.
+- Cannot verify in Phase 2: real Codex dogfood capture, full
+  `AGENT_FEEDBACK.md`, full `VERIFICATION_BRIEF.md`, claim extraction,
+  claim-vs-evidence matching, `analyze`, and `watch`.
+- Verdict: Phase 2 is closed; Phase 3 should start from real Codex dogfood
+  walking-skeleton scope in `docs/PLAN.md`.
+
 ### 2026-07-05 - Phase 2 Task 5 CI Scaffold Proof
 
 - Commit: this commit.
