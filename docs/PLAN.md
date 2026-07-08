@@ -204,26 +204,26 @@ gaps. This keeps the quick summary useful before deeper claim analysis exists.
 
 ### Task 3: Agent Feedback Artifact
 
-**Status:** Pending.
+**Status:** Complete.
 
 **Description:** Generate `AGENT_FEEDBACK.md` from the bounded evidence so a
 human can paste concrete next steps back to the agent when evidence is missing,
 weak, contradictory, or the wrapped command failed.
 
 **Acceptance criteria:**
-- [ ] Every `patchtrace run -- <command>` that reaches report generation writes
+- [x] Every `patchtrace run -- <command>` that reaches report generation writes
       `AGENT_FEEDBACK.md` and lists it in `run.json`.
-- [ ] Feedback references concrete local evidence: exit status, changed files,
+- [x] Feedback references concrete local evidence: exit status, changed files,
       diff presence, command/test signals, and evidence gaps.
-- [ ] Feedback is ready to paste to an agent and asks for specific missing
+- [x] Feedback is ready to paste to an agent and asks for specific missing
       evidence or follow-up work when needed.
-- [ ] Feedback does not say the patch succeeded, is correct, is safe, or is
+- [x] Feedback does not say the patch succeeded, is correct, is safe, or is
       production verified.
 
 **Verification method:**
-- [ ] `uv run pytest tests/unit/test_agent_feedback_report.py`
-- [ ] `uv run pytest tests/integration/test_run_fake_command.py`
-- [ ] Manual smoke:
+- [x] `uv run pytest tests/unit/test_agent_feedback_report.py`
+- [x] `uv run pytest tests/integration/test_run_fake_command.py`
+- [x] Manual smoke:
       `uv run patchtrace run -- python tests/fixtures/fake_agent.py`
       then inspect `.patchtrace/runs/<run-id>/AGENT_FEEDBACK.md`.
 

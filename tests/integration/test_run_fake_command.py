@@ -32,6 +32,7 @@ def test_fake_run_creates_run_folder_manifest_and_transcript(
     manifest = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
     transcript = (run_dir / "agent-session.txt").read_text(encoding="utf-8")
     summary = (run_dir / "SUMMARY.md").read_text(encoding="utf-8")
+    feedback = (run_dir / "AGENT_FEEDBACK.md").read_text(encoding="utf-8")
 
     assert manifest["run_id"] == run_dir.name
     assert manifest["command"] == [sys.executable, str(FIXTURE)]
@@ -46,6 +47,7 @@ def test_fake_run_creates_run_folder_manifest_and_transcript(
         "changed-files.txt",
         "patch.diff",
         "SUMMARY.md",
+        "AGENT_FEEDBACK.md",
     ]
     assert manifest["git_evidence"]["patch_material_present"] is False
     assert "started_at" in manifest
@@ -57,6 +59,14 @@ def test_fake_run_creates_run_folder_manifest_and_transcript(
     assert "- Diff material: `empty`" in summary
     assert "No obvious command or test signals were detected." in summary
     assert "PatchTrace has not verified correctness" in summary
+    assert "# PatchTrace Agent Feedback" in feedback
+    assert "Paste this back to the agent:" in feedback
+    assert "- Exit status: `0`" in feedback
+    assert "- Diff material: `empty`" in feedback
+    assert "No obvious command or test signals were detected." in feedback
+    assert "Run the relevant tests and paste the exact command output." in feedback
+    assert "- `AGENT_FEEDBACK.md`" in feedback
+    assert "success" not in feedback.lower()
 
 
 def test_nonzero_fake_run_records_exit_without_claiming_success(
@@ -77,14 +87,20 @@ def test_nonzero_fake_run_records_exit_without_claiming_success(
     manifest = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
     transcript = (run_dir / "agent-session.txt").read_text(encoding="utf-8")
     summary = (run_dir / "SUMMARY.md").read_text(encoding="utf-8")
+    feedback = (run_dir / "AGENT_FEEDBACK.md").read_text(encoding="utf-8")
 
     assert manifest["wrapped_command_exit_status"] == 7
     assert manifest["outcome"] == "wrapped_command_failed"
     assert "SUMMARY.md" in manifest["artifact_paths"]
+    assert "AGENT_FEEDBACK.md" in manifest["artifact_paths"]
     assert "success" not in manifest
     assert "fake agent exiting with 7" in transcript
     assert "- Exit status: `7`" in summary
     assert "success" not in summary.lower()
+    assert "- Exit status: `7`" in feedback
+    assert "Wrapped command exited with status 7." in feedback
+    assert "Address the wrapped command failure and rerun it." in feedback
+    assert "success" not in feedback.lower()
 
 
 def _init_git_repo(path: Path) -> None:

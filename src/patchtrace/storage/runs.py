@@ -43,6 +43,10 @@ class RunPaths:
     def summary_path(self) -> Path:
         return self.run_dir / "SUMMARY.md"
 
+    @property
+    def feedback_path(self) -> Path:
+        return self.run_dir / "AGENT_FEEDBACK.md"
+
     def relative_artifact_path(self, artifact_path: Path) -> str:
         return artifact_path.relative_to(self.run_dir).as_posix()
 
