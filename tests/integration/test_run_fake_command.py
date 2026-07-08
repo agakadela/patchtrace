@@ -54,6 +54,8 @@ def test_fake_run_creates_run_folder_manifest_and_transcript(
     assert f"- Run ID: `{run_dir.name}`" in summary
     assert "- Exit status: `0`" in summary
     assert "- `SUMMARY.md`" in summary
+    assert "- Diff material: `empty`" in summary
+    assert "No obvious command or test signals were detected." in summary
     assert "PatchTrace has not verified correctness" in summary
 
 

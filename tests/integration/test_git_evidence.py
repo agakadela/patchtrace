@@ -31,6 +31,7 @@ def test_run_inside_git_repo_writes_git_evidence_artifacts(
 
     run_dir = next((Path(".patchtrace") / "runs").iterdir())
     manifest = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
+    summary = (run_dir / "SUMMARY.md").read_text(encoding="utf-8")
 
     assert (run_dir / "git-before.txt").exists()
     assert (run_dir / "git-after.txt").exists()
@@ -63,6 +64,10 @@ def test_run_inside_git_repo_writes_git_evidence_artifacts(
     patch = (run_dir / "patch.diff").read_text(encoding="utf-8")
     assert "-before" in patch
     assert "+after" in patch
+
+    assert "## Local Evidence" in summary
+    assert "- Diff material: `present`" in summary
+    assert "- `tracked.txt`" in summary
 
 
 def test_run_outside_git_repo_exits_without_writing_run_artifacts(
