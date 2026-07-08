@@ -8,6 +8,49 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-07-08 - Phase 3 Task 5 Full Fake-Command Review Package Checkpoint
+
+- Commit: this commit.
+- Scope: `patchtrace run -- <fake command>` now presents the output as a
+  review package, points to the local run folder, avoids accepted/correct/safe
+  or production-verified claims in CLI output, and has integration coverage
+  proving both zero and non-zero fake runs write the complete Phase 3 artifact
+  set.
+- Checks:
+  - RED: `uv run pytest tests/integration/test_run_fake_command.py` failed
+    because CLI output still said `PatchTrace run material written to ...`
+    instead of the review-package checkpoint wording.
+  - `uv run pytest tests/integration/test_run_fake_command.py`
+  - `uv run pytest tests/integration/test_run_fake_command.py tests/integration/test_git_evidence.py`
+  - Manual smoke:
+    `uv run patchtrace run -- python tests/fixtures/fake_agent.py`
+  - `uv run ruff check .`
+  - `uv run ruff format --check .`
+  - `uv run mypy src tests`
+  - `uv run pytest tests/integration/test_interactive_session_capture.py`
+  - `uv run pytest`
+  - `uv build`
+- Runtime proof: smoke run wrote
+  `.patchtrace/runs/20260708T232751124989Z-8057c8db/`; `run.json` listed
+  `run.json`, `agent-session.txt`, `git-before.txt`, `git-after.txt`,
+  `changed-files.txt`, `patch.diff`, `SUMMARY.md`, `AGENT_FEEDBACK.md`, and
+  `VERIFICATION_BRIEF.md`. The CLI printed
+  `PatchTrace review package written to .patchtrace/runs/20260708T232751124989Z-8057c8db`
+  and `Review the package before deciding next steps.`
+- Source docs: N/A; this slice uses existing local CLI, report, manifest, and
+  run storage patterns without new version-sensitive library behavior.
+- Observability: no external telemetry added. V0's run folder is the
+  observability surface for this local CLI slice. The on-call questions are:
+  did report generation write every expected artifact, did failure exits still
+  leave a complete package while preserving exit status, and did the CLI point
+  to the run folder without overclaiming.
+- Cannot verify in Task 5: real Codex dogfood capture, semantic
+  claim-vs-diff matching, LLM calls, external services, package publishing,
+  GitHub integration, `analyze`, `watch`, and Aga's review of the report
+  package before Task 6.
+- Verdict: Task 5 full fake-command review package checkpoint is implemented
+  and locally verified.
+
 ### 2026-07-08 - Phase 3 Task 4 Verification Brief Artifact
 
 - Commit: this commit.

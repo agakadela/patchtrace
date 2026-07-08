@@ -285,7 +285,7 @@ semantic correctness.
 
 ### Task 5: Full Fake-Command Review Package Checkpoint
 
-**Status:** Pending.
+**Status:** Complete.
 
 **Description:** Prove the complete Phase 3 review package shape on local fake
 commands before the real Codex dogfood run. This is the last fake-command gate:
@@ -293,25 +293,25 @@ the run folder, manifest, CLI output, and reports should all match the target
 artifact contract.
 
 **Acceptance criteria:**
-- [ ] `uv run patchtrace run -- python tests/fixtures/fake_agent.py` writes
+- [x] `uv run patchtrace run -- python tests/fixtures/fake_agent.py` writes
       `run.json`, `agent-session.txt`, git artifacts, `SUMMARY.md`,
       `AGENT_FEEDBACK.md`, and `VERIFICATION_BRIEF.md`.
-- [ ] `run.json` lists all required artifact paths in the run folder.
-- [ ] The CLI points the user to the run folder and does not imply the patch is
+- [x] `run.json` lists all required artifact paths in the run folder.
+- [x] The CLI points the user to the run folder and does not imply the patch is
       accepted, correct, safe, or production verified.
-- [ ] Non-zero wrapped-command exits still write the full review package before
+- [x] Non-zero wrapped-command exits still write the full review package before
       exiting with the wrapped command status.
-- [ ] README status reflects the Phase 3 fake-command review-package checkpoint
+- [x] README status reflects the Phase 3 fake-command review-package checkpoint
       only if the behavior is implemented.
 
 **Verification method:**
-- [ ] `uv run pytest tests/integration/test_run_fake_command.py`
-- [ ] `uv run pytest tests/integration/test_git_evidence.py`
-- [ ] `uv run ruff check .`
-- [ ] `uv run ruff format --check .`
-- [ ] `uv run mypy src tests`
-- [ ] `uv run pytest`
-- [ ] `uv build`
+- [x] `uv run pytest tests/integration/test_run_fake_command.py`
+- [x] `uv run pytest tests/integration/test_git_evidence.py`
+- [x] `uv run ruff check .`
+- [x] `uv run ruff format --check .`
+- [x] `uv run mypy src tests`
+- [x] `uv run pytest`
+- [x] `uv build`
 
 **Dependencies:** Task 4.
 
@@ -392,8 +392,8 @@ integration, `analyze`, or `watch`.
 
 ## Checkpoint: After Tasks 3-5
 
-- [ ] Fake-command runs write the complete Phase 3 review package.
-- [ ] Local lint, format check, typecheck, tests, and build pass.
+- [x] Fake-command runs write the complete Phase 3 review package.
+- [x] Local lint, format check, typecheck, tests, and build pass.
 - [ ] Aga reviews the report package before real Codex dogfood.
 
 ## Deferred
