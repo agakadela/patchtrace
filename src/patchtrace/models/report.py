@@ -23,3 +23,19 @@ class SummaryReport(BaseModel):
     diff_material_status: DiffMaterialStatus
     command_test_signals: list[str]
     evidence_gaps: list[str]
+
+
+class AgentFeedbackReport(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    run_id: str
+    command: list[str]
+    wrapped_command_exit_status: int
+    outcome: RunOutcome
+    artifact_paths: list[str]
+    transcript_status: TranscriptStatus
+    changed_files: list[str]
+    diff_material_status: DiffMaterialStatus
+    command_test_signals: list[str]
+    evidence_gaps: list[str]
+    requested_followups: list[str]

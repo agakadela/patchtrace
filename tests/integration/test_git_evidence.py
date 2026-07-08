@@ -32,11 +32,13 @@ def test_run_inside_git_repo_writes_git_evidence_artifacts(
     run_dir = next((Path(".patchtrace") / "runs").iterdir())
     manifest = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
     summary = (run_dir / "SUMMARY.md").read_text(encoding="utf-8")
+    feedback = (run_dir / "AGENT_FEEDBACK.md").read_text(encoding="utf-8")
 
     assert (run_dir / "git-before.txt").exists()
     assert (run_dir / "git-after.txt").exists()
     assert (run_dir / "changed-files.txt").exists()
     assert (run_dir / "patch.diff").exists()
+    assert (run_dir / "AGENT_FEEDBACK.md").exists()
 
     assert manifest["artifact_paths"] == [
         "run.json",
@@ -46,6 +48,7 @@ def test_run_inside_git_repo_writes_git_evidence_artifacts(
         "changed-files.txt",
         "patch.diff",
         "SUMMARY.md",
+        "AGENT_FEEDBACK.md",
     ]
     assert manifest["git_evidence"] == {
         "git_before_path": "git-before.txt",
@@ -68,6 +71,9 @@ def test_run_inside_git_repo_writes_git_evidence_artifacts(
     assert "## Local Evidence" in summary
     assert "- Diff material: `present`" in summary
     assert "- `tracked.txt`" in summary
+    assert "# PatchTrace Agent Feedback" in feedback
+    assert "- Diff material: `present`" in feedback
+    assert "- `tracked.txt`" in feedback
 
 
 def test_run_outside_git_repo_exits_without_writing_run_artifacts(
