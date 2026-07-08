@@ -165,7 +165,7 @@ Codex.
 
 ### Task 2: Bounded Evidence-Aware Summary
 
-**Status:** Pending.
+**Status:** Complete.
 
 **Description:** Make `SUMMARY.md` use the exact Phase 3 evidence boundary:
 transcript presence, wrapped command exit status, changed files, diff
@@ -173,19 +173,19 @@ presence, generated artifacts, obvious command/test lines, and conservative
 gaps. This keeps the quick summary useful before deeper claim analysis exists.
 
 **Acceptance criteria:**
-- [ ] A fake run with a changed tracked file lists changed files and whether
+- [x] A fake run with a changed tracked file lists changed files and whether
       diff material is present.
-- [ ] A transcript containing obvious command/test lines surfaces those lines
+- [x] A transcript containing obvious command/test lines surfaces those lines
       as command/test signals.
-- [ ] Missing test signals, empty diffs, missing git evidence, and non-zero
+- [x] Missing test signals, empty diffs, missing git evidence, and non-zero
       exits are named as evidence gaps.
-- [ ] The summary still avoids correctness, safety, guarantee, or production
+- [x] The summary still avoids correctness, safety, guarantee, or production
       verification claims.
 
 **Verification method:**
-- [ ] `uv run pytest tests/unit/test_summary_report.py`
-- [ ] `uv run pytest tests/integration/test_git_evidence.py`
-- [ ] `uv run pytest tests/integration/test_run_fake_command.py`
+- [x] `uv run pytest tests/unit/test_summary_report.py`
+- [x] `uv run pytest tests/integration/test_git_evidence.py`
+- [x] `uv run pytest tests/integration/test_run_fake_command.py`
 
 **Dependencies:** Task 1.
 
@@ -385,8 +385,8 @@ integration, `analyze`, or `watch`.
 
 ## Checkpoint: After Tasks 1-2
 
-- [ ] Fake interactive command capture works locally.
-- [ ] `SUMMARY.md` is bounded evidence-aware and still conservative.
+- [x] Fake interactive command capture works locally.
+- [x] `SUMMARY.md` is bounded evidence-aware and still conservative.
 - [ ] Aga reviews whether the bounded evidence language is useful enough before
       adding the remaining report artifacts.
 

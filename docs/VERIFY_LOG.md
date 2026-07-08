@@ -8,6 +8,40 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-07-08 - Phase 3 Task 2 Bounded Evidence-Aware Summary
+
+- Commit: this commit.
+- Scope: `SUMMARY.md` now reports bounded Phase 3 evidence from local run
+  material: transcript presence, changed files, diff material status,
+  generated artifact paths, obvious command/test signals, and conservative
+  evidence gaps.
+- Checks:
+  - RED: `uv run pytest tests/unit/test_summary_report.py` failed because
+    `build_summary_report` did not accept a run folder or render local evidence
+    sections.
+  - `uv run pytest tests/unit/test_summary_report.py`
+  - `uv run pytest tests/integration/test_git_evidence.py tests/integration/test_run_fake_command.py`
+  - `uv run ruff check .`
+  - `uv run ruff format --check .`
+  - `uv run mypy src tests`
+  - `uv run pytest`
+  - `uv build`
+  - Manual smoke:
+    `uv run patchtrace run -- python tests/fixtures/fake_agent.py`
+- Runtime proof: smoke run wrote
+  `.patchtrace/runs/20260708T225627310207Z-4b3418ec/SUMMARY.md`; the summary
+  recorded transcript `present`, diff material `present`, changed files,
+  generated artifacts, and the explicit gap that no obvious command/test
+  signals were detected.
+- Source docs: N/A; this slice uses local report logic only.
+- Observability: no external telemetry added. V0's local run artifacts are the
+  observability surface for this task.
+- Cannot verify in Task 2: `AGENT_FEEDBACK.md`, `VERIFICATION_BRIEF.md`, real
+  Codex dogfood capture, semantic claim-vs-diff matching, LLM calls, external
+  services, `analyze`, and `watch`.
+- Verdict: Task 2 bounded evidence-aware summary is implemented and locally
+  verified.
+
 ### 2026-07-06 - Phase 3 Task 1 Interactive PTY Passthrough
 
 - Commit: this commit.

@@ -107,7 +107,7 @@ def run(ctx: typer.Context) -> None:
             patch_material_present=git_evidence.patch_material_present,
         ),
     )
-    summary = build_summary_report(manifest)
+    summary = build_summary_report(manifest, run_dir=run_paths.run_dir)
     run_paths.summary_path.write_text(
         render_summary_markdown(summary),
         encoding="utf-8",
