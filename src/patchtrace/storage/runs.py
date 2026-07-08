@@ -47,6 +47,10 @@ class RunPaths:
     def feedback_path(self) -> Path:
         return self.run_dir / "AGENT_FEEDBACK.md"
 
+    @property
+    def verification_brief_path(self) -> Path:
+        return self.run_dir / "VERIFICATION_BRIEF.md"
+
     def relative_artifact_path(self, artifact_path: Path) -> str:
         return artifact_path.relative_to(self.run_dir).as_posix()
 

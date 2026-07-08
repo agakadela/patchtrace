@@ -243,7 +243,7 @@ weak, contradictory, or the wrapped command failed.
 
 ### Task 4: Verification Brief Artifact
 
-**Status:** Pending.
+**Status:** Complete.
 
 **Description:** Generate `VERIFICATION_BRIEF.md` as the detailed human-facing
 artifact for the same bounded evidence. It should explain what PatchTrace saw,
@@ -251,20 +251,20 @@ what it did not see, and where the human should review first, without claiming
 semantic correctness.
 
 **Acceptance criteria:**
-- [ ] Every `patchtrace run -- <command>` that reaches report generation writes
+- [x] Every `patchtrace run -- <command>` that reaches report generation writes
       `VERIFICATION_BRIEF.md` and lists it in `run.json`.
-- [ ] The brief includes run metadata, artifact paths, changed files, diff
+- [x] The brief includes run metadata, artifact paths, changed files, diff
       status, command/test signals, evidence gaps, and a simple review-first
       list based on changed files.
-- [ ] Missing transcript, missing tests, empty diff, and non-zero exit states
+- [x] Missing transcript, missing tests, empty diff, and non-zero exit states
       are labeled conservatively.
-- [ ] The brief explicitly states that Phase 3 does not perform full
+- [x] The brief explicitly states that Phase 3 does not perform full
       claim-vs-diff matching or prove correctness.
 
 **Verification method:**
-- [ ] `uv run pytest tests/unit/test_verification_brief_report.py`
-- [ ] `uv run pytest tests/integration/test_run_fake_command.py`
-- [ ] Manual smoke:
+- [x] `uv run pytest tests/unit/test_verification_brief_report.py`
+- [x] `uv run pytest tests/integration/test_run_fake_command.py`
+- [x] Manual smoke:
       `uv run patchtrace run -- python tests/fixtures/fake_agent.py`
       then inspect `.patchtrace/runs/<run-id>/VERIFICATION_BRIEF.md`.
 

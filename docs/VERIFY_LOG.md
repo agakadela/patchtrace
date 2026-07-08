@@ -8,6 +8,42 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-07-08 - Phase 3 Task 4 Verification Brief Artifact
+
+- Commit: this commit.
+- Scope: `patchtrace run -- <command>` now writes `VERIFICATION_BRIEF.md`,
+  lists it in `run.json`, and renders a detailed human-facing brief from
+  bounded local evidence: run metadata, artifact paths, changed files, diff
+  material status, command/test signals, evidence gaps, and a simple
+  review-first list based on changed files.
+- Checks:
+  - RED:
+    `uv run pytest tests/unit/test_verification_brief_report.py tests/integration/test_run_fake_command.py`
+    failed because `patchtrace.reports.verification_brief` did not exist.
+  - `uv run pytest tests/unit/test_verification_brief_report.py tests/integration/test_run_fake_command.py tests/integration/test_git_evidence.py`
+  - `uv run ruff check .`
+  - `uv run ruff format --check .`
+  - `uv run mypy src tests`
+  - `uv run pytest`
+  - `uv build`
+  - Manual smoke:
+    `uv run patchtrace run -- python tests/fixtures/fake_agent.py`
+- Runtime proof: smoke run wrote
+  `.patchtrace/runs/20260708T231738612522Z-f5f3e265/VERIFICATION_BRIEF.md`;
+  `run.json` listed `VERIFICATION_BRIEF.md`, the brief labeled transcript
+  `present`, diff material `present`, command/test signals `missing`, listed
+  changed files, and stated that Phase 3 does not perform full
+  claim-vs-diff matching or prove correctness.
+- Source docs: N/A; this slice uses existing local report, manifest, and run
+  storage patterns.
+- Observability: no external telemetry added. V0's local run artifacts are the
+  observability surface for this task.
+- Cannot verify in Task 4: full fake-command review package checkpoint, real
+  Codex dogfood capture, semantic claim-vs-diff matching, LLM calls, external
+  services, `analyze`, and `watch`.
+- Verdict: Task 4 verification brief artifact is implemented and locally
+  verified.
+
 ### 2026-07-08 - Phase 3 Task 3 Agent Feedback Artifact
 
 - Commit: this commit.
