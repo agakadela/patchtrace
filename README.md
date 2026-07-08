@@ -3,16 +3,17 @@
 Record Codex CLI sessions and turn agent work into a local verification package.
 
 PatchTrace is a local-first devtool for the moment after an AI coding agent says
-"done." It captures the agent session, collects local git evidence, compares
-agent claims against available evidence, and writes practical next-step
-artifacts.
+"done." It captures the agent session, collects local git evidence, and writes
+practical next-step artifacts. Deeper claim-vs-diff comparison is target V0
+work beyond the current fake-command checkpoint.
 
 PatchTrace does not replace human code review. It helps you decide what to do
 next with better evidence.
 
 ## Status
 
-- Stage: Python V0 Phase 2 scaffold available locally; CI feedback loop defined
+- Stage: Python V0 Phase 3 fake-command review-package checkpoint available
+  locally; real Codex dogfood not verified yet
 - Current phase: see `docs/PLAN.md`
 - Product spec: see `docs/SPEC.md`
 - Architecture: see `docs/ARCHITECTURE.md`
@@ -44,15 +45,16 @@ Risk-triggered docs are created only when triggered:
 | Launch prep | `docs/OPERATIONS.md` |
 | Client delivery | `docs/HANDOFF.md` |
 
-## Current Phase 2 Scaffold
+## Current Phase 3 Fake-Command Checkpoint
 
-The implemented local scaffold can run a fake command through PatchTrace:
+The implemented local checkpoint can run a fake command through PatchTrace:
 
 ```bash
 uv run patchtrace run -- python tests/fixtures/fake_agent.py
 ```
 
-That command creates a local run folder with:
+That command creates a local run folder with the complete Phase 3 review
+package shape:
 
 ```text
 .patchtrace/runs/<run-id>/
@@ -63,6 +65,8 @@ That command creates a local run folder with:
   patch.diff
   changed-files.txt
   SUMMARY.md
+  AGENT_FEEDBACK.md
+  VERIFICATION_BRIEF.md
 ```
 
 The CLI help path is available with:
@@ -100,8 +104,8 @@ transcript, capture git state before and after the agent run, and write:
 
 `patchtrace analyze` remains a manual fallback. `patchtrace watch` is planned as
 a secondary patch-only safety net when no session transcript is available.
-Real Codex dogfood and the full feedback/verification reports are deferred
-beyond the current Phase 2 scaffold.
+Real Codex dogfood is the next checkpoint; it has not been verified by the
+current fake-command review-package proof.
 
 ## Available Local Loop
 

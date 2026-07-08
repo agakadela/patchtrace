@@ -12,6 +12,17 @@ from patchtrace.cli.app import app
 
 runner = CliRunner()
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "fake_agent.py"
+REQUIRED_ARTIFACTS = [
+    "run.json",
+    "agent-session.txt",
+    "git-before.txt",
+    "git-after.txt",
+    "changed-files.txt",
+    "patch.diff",
+    "SUMMARY.md",
+    "AGENT_FEEDBACK.md",
+    "VERIFICATION_BRIEF.md",
+]
 
 
 def test_fake_run_creates_run_folder_manifest_and_transcript(
@@ -35,22 +46,19 @@ def test_fake_run_creates_run_folder_manifest_and_transcript(
     feedback = (run_dir / "AGENT_FEEDBACK.md").read_text(encoding="utf-8")
     verification_brief = (run_dir / "VERIFICATION_BRIEF.md").read_text(encoding="utf-8")
 
+    assert f"PatchTrace review package written to {run_dir}" in result.output
+    assert "Review the package before deciding next steps." in result.output
+    assert "accepted" not in result.output.lower()
+    assert "correct" not in result.output.lower()
+    assert "safe" not in result.output.lower()
+    assert "production verified" not in result.output.lower()
     assert manifest["run_id"] == run_dir.name
     assert manifest["command"] == [sys.executable, str(FIXTURE)]
     assert manifest["trigger_source"] == "manual_cli"
     assert manifest["wrapped_command_exit_status"] == 0
     assert manifest["outcome"] == "completed"
-    assert manifest["artifact_paths"] == [
-        "run.json",
-        "agent-session.txt",
-        "git-before.txt",
-        "git-after.txt",
-        "changed-files.txt",
-        "patch.diff",
-        "SUMMARY.md",
-        "AGENT_FEEDBACK.md",
-        "VERIFICATION_BRIEF.md",
-    ]
+    assert manifest["artifact_paths"] == REQUIRED_ARTIFACTS
+    _assert_required_artifacts_exist(run_dir)
     assert manifest["git_evidence"]["patch_material_present"] is False
     assert "started_at" in manifest
     assert "ended_at" in manifest
@@ -103,11 +111,12 @@ def test_nonzero_fake_run_records_exit_without_claiming_success(
     feedback = (run_dir / "AGENT_FEEDBACK.md").read_text(encoding="utf-8")
     verification_brief = (run_dir / "VERIFICATION_BRIEF.md").read_text(encoding="utf-8")
 
+    assert f"PatchTrace review package written to {run_dir}" in result.output
+    assert "Review the package before deciding next steps." in result.output
     assert manifest["wrapped_command_exit_status"] == 7
     assert manifest["outcome"] == "wrapped_command_failed"
-    assert "SUMMARY.md" in manifest["artifact_paths"]
-    assert "AGENT_FEEDBACK.md" in manifest["artifact_paths"]
-    assert "VERIFICATION_BRIEF.md" in manifest["artifact_paths"]
+    assert manifest["artifact_paths"] == REQUIRED_ARTIFACTS
+    _assert_required_artifacts_exist(run_dir)
     assert "success" not in manifest
     assert "fake agent exiting with 7" in transcript
     assert "- Exit status: `7`" in summary
@@ -129,6 +138,11 @@ def _init_git_repo(path: Path) -> None:
     (path / "tracked.txt").write_text("baseline\n", encoding="utf-8")
     _git(path, "add", "tracked.txt")
     _git(path, "commit", "-m", "initial")
+
+
+def _assert_required_artifacts_exist(run_dir: Path) -> None:
+    for artifact_path in REQUIRED_ARTIFACTS:
+        assert (run_dir / artifact_path).is_file()
 
 
 def _git(path: Path, *args: str) -> None:

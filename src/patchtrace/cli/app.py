@@ -141,11 +141,13 @@ def run(ctx: typer.Context) -> None:
     )
     write_run_manifest(run_paths, manifest)
 
-    typer.echo(f"PatchTrace run material written to {run_paths.run_dir}")
+    display_run_dir = run_paths.run_dir.relative_to(workspace).as_posix()
+    typer.echo(f"PatchTrace review package written to {display_run_dir}")
+    typer.echo("Review the package before deciding next steps.")
     if recorded_session.exit_status != 0:
         typer.echo(
             "Wrapped command exited with status "
-            f"{recorded_session.exit_status}; run material recorded.",
+            f"{recorded_session.exit_status}; review package recorded.",
             err=True,
         )
         raise typer.Exit(recorded_session.exit_status)

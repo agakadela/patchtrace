@@ -31,7 +31,8 @@ def test_interactive_run_captures_prompt_response_and_exit_status(
         child.expect("fake interactive prompt:")
         child.sendline("Aga typed proof")
         child.expect("fake interactive response: Aga typed proof")
-        child.expect("PatchTrace run material written to")
+        child.expect("PatchTrace review package written to")
+        child.expect("Review the package before deciding next steps.")
         child.expect(pexpect.EOF)
         child.close()
     finally:
