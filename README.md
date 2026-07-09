@@ -12,8 +12,7 @@ next with better evidence.
 
 ## Status
 
-- Stage: Python V0 Phase 3 fake-command review-package checkpoint available
-  locally; real Codex dogfood not verified yet
+- Stage: Python V0 Phase 3 real Codex dogfood proof captured locally
 - Current phase: see `docs/PLAN.md`
 - Product spec: see `docs/SPEC.md`
 - Architecture: see `docs/ARCHITECTURE.md`
