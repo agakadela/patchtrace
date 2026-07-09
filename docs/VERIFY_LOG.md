@@ -8,6 +8,54 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-07-08 - Phase 3 Close: Real Codex Dogfood Walking Skeleton
+
+- Commit: this commit.
+- Scope: Phase 3 closed after the first real local Codex dogfood run through
+  PatchTrace. `uv run patchtrace run -- codex` launched an interactive Codex
+  CLI session, captured the transcript and git evidence, and wrote the full
+  Phase 3 review-package shape after Codex exited.
+- Checks:
+  - Runtime dogfood:
+    `uv run patchtrace run -- codex`
+  - Inspected
+    `.patchtrace/runs/20260708T233816243730Z-b7c9d17e/run.json`,
+    `agent-session.txt`, `SUMMARY.md`, `AGENT_FEEDBACK.md`, and
+    `VERIFICATION_BRIEF.md`.
+  - `uv run ruff check .`
+  - `uv run ruff format --check .`
+  - `uv run mypy src tests`
+  - `uv run pytest`
+  - `uv build`
+- Runtime proof: real Codex dogfood run wrote
+  `.patchtrace/runs/20260708T233816243730Z-b7c9d17e/`. `run.json` recorded
+  command `codex`, exit status `0`, outcome `completed`, and artifact paths for
+  `run.json`, `agent-session.txt`, `git-before.txt`, `git-after.txt`,
+  `changed-files.txt`, `patch.diff`, `SUMMARY.md`, `AGENT_FEEDBACK.md`, and
+  `VERIFICATION_BRIEF.md`. `changed-files.txt` listed only `README.md`, and
+  `patch.diff` contained the tiny README status update from the dogfood prompt.
+  The transcript captured the prompt, the README edit, `git diff -- README.md`,
+  and `[patchtrace] wrapped command exited with status 0`.
+- Report proof: `SUMMARY.md`, `AGENT_FEEDBACK.md`, and
+  `VERIFICATION_BRIEF.md` reflected transcript `present`, diff material
+  `present`, changed file `README.md`, and the Phase 3 evidence gaps without
+  claiming correctness, safety, acceptance, or production readiness.
+- Known follow-up: command/test signal detection captured some interactive
+  Codex ANSI/control noise and a GitHub MCP environment warning
+  (`GITHUB_PAT_TOKEN` not set) as command/test signals. This does not block the
+  Phase 3 dogfood proof, but it should inform a future transcript-sanitization
+  or signal-detection cleanup.
+- Source docs: N/A; this close verifies the local PatchTrace CLI path and does
+  not introduce new version-sensitive provider or library behavior.
+- Observability: no external telemetry added. The local run folder remains the
+  V0 observability surface for this phase.
+- Cannot verify in Phase 3: semantic claim-vs-diff matching, correctness or
+  safety of arbitrary agent patches, LLM calls inside PatchTrace, external
+  services, package publishing, GitHub integration, `analyze`, `watch`, and
+  hosted/SaaS behavior.
+- Verdict: Phase 3 real Codex dogfood walking skeleton is locally verified and
+  ready for PR review.
+
 ### 2026-07-08 - Phase 3 Task 5 Full Fake-Command Review Package Checkpoint
 
 - Commit: this commit.
