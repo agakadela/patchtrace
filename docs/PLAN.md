@@ -56,16 +56,21 @@ clean claim-bearing transcript
 The tasks are intentionally sequential because they evolve the same analysis
 interface and report contract. Parallel implementation is N/A for this phase.
 
-Suggested implementation branch: `agent/phase-4-claim-evidence`
+Planning PR branch: `agent/phase-4-claim-evidence` (merged in PR #12; do not
+reuse for implementation).
 
-Branch/PR rule: create the suggested branch after this plan is approved, commit
-each verified task as a save point, push the branch, and keep one draft PR open
-for the phase. Mark it ready only after the full Phase 4 checks, runtime dogfood,
-review, simplification pass, and documentation close.
+Branch/PR rule: every task uses its own short-lived `agent/...` branch and its
+own draft PR. Start Task N from the latest `main` only after Task N-1 and its
+checkpoint, when applicable, are verified and merged. Commit and push only the
+current task, mark that task's PR ready after its required review and checks,
+and do not start the next task until the previous PR is merged. Never reuse an
+earlier task branch for a later task.
 
 ## Active Tasks
 
 ### Task 1: Clean Claim-Bearing Transcript
+
+**Suggested branch:** `agent/phase-4-task-1-transcript`
 
 **Visible result:** Existing reports show clean command/test signals, while
 ANSI sequences, terminal control noise, and unrelated environment warnings no
@@ -104,6 +109,8 @@ cleaned signals, or any private `.patchtrace/runs/` material.
 **Estimated scope:** Medium, about 4-5 files.
 
 ### Task 2: Show The First File/Change Claim Assessment
+
+**Suggested branch:** `agent/phase-4-task-2-file-claims`
 
 **Visible result:** `VERIFICATION_BRIEF.md` shows explicit file-change and
 completed-change claims with their first evidence relationships, source
@@ -152,6 +159,8 @@ analysis JSON, or non-Codex adapters.
 
 ### Task 3: Assess Test And Verification-Command Claims
 
+**Suggested branch:** `agent/phase-4-task-3-test-claims`
+
 **Visible result:** The verification brief distinguishes an agent mentioning a
 test command from evidence that the command passed, failed, or had no captured
 result.
@@ -188,6 +197,8 @@ the user's behalf, or claims about code correctness.
 **Estimated scope:** Medium, about 5 files.
 
 ### Task 4: Put The Quick Decision In The Summary
+
+**Suggested branch:** `agent/phase-4-task-4-summary`
 
 **Visible result:** `SUMMARY.md` leads with one conservative verdict, the most
 important evidence gap, and one recommended next action before metadata and
@@ -226,6 +237,8 @@ or report styling unrelated to decision clarity.
 **Estimated scope:** Medium, about 5 files.
 
 ### Task 5: Align Agent Feedback And Verification Detail
+
+**Suggested branch:** `agent/phase-4-task-5-reports`
 
 **Visible result:** `AGENT_FEEDBACK.md` gives the agent precise evidence gaps to
 close, while `VERIFICATION_BRIEF.md` gives the human the matching detailed
@@ -276,6 +289,8 @@ additional agent adapters.
   analysis module owns interpretation.
 
 ### Task 6: Prove The Phase 4 Fixture Matrix And Real Codex Flow
+
+**Suggested branch:** `agent/phase-4-task-6-dogfood`
 
 **Visible result:** A real `uv run patchtrace run -- codex` session produces a
 readable quick decision plus evidence-referenced claim detail, and the phase has
@@ -329,7 +344,7 @@ durable verification evidence.
   was introduced.
 - `$aga-simplify`, `$aga-review`, and `$aga-test` are complete.
 - `docs/VERIFY_LOG.md` contains the compact Phase 4 close entry.
-- The draft PR accurately lists scope, checks, runtime proof, docs, and
+- The Task 6 draft PR accurately lists scope, checks, runtime proof, docs, and
   cannot-verify items and is ready for Aga's merge decision.
 
 ## Deferred From Phase 3
