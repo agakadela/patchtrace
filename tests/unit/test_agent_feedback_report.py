@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
+from patchtrace.analysis.analyzer import analyze_run
 from patchtrace.models.run import GitEvidenceManifest, RunManifest, RunOutcome
 from patchtrace.reports.feedback import (
     build_agent_feedback_report,
@@ -41,7 +42,11 @@ def test_agent_feedback_references_local_evidence_and_followups(
         patch_material_present=True,
     )
 
-    report = build_agent_feedback_report(manifest, run_dir=tmp_path)
+    analysis_result = analyze_run(manifest, run_dir=tmp_path)
+    report = build_agent_feedback_report(
+        manifest,
+        analysis_result=analysis_result,
+    )
     markdown = render_agent_feedback_markdown(report)
 
     assert "# PatchTrace Agent Feedback" in markdown
@@ -52,7 +57,7 @@ def test_agent_feedback_references_local_evidence_and_followups(
     assert "- Diff material: `present`" in markdown
     assert "- `uv run pytest tests/unit/test_agent_feedback_report.py`" in markdown
     assert "Wrapped command exited with status 7." in markdown
-    assert "Address the wrapped command failure and rerun it." in markdown
+    assert "Address the wrapped command failure, rerun it" in markdown
     assert "- `AGENT_FEEDBACK.md`" in markdown
     assert "patch succeeded" not in markdown.lower()
     assert "patch is correct" not in markdown.lower()
@@ -84,22 +89,70 @@ def test_agent_feedback_asks_for_missing_test_and_patch_evidence(
         patch_material_present=False,
     )
 
-    report = build_agent_feedback_report(manifest, run_dir=tmp_path)
+    analysis_result = analyze_run(manifest, run_dir=tmp_path)
+    report = build_agent_feedback_report(
+        manifest,
+        analysis_result=analysis_result,
+    )
     markdown = render_agent_feedback_markdown(report)
 
     assert "- None captured." in markdown
     assert "- Diff material: `empty`" in markdown
     assert "No obvious command or test signals were detected." in markdown
-    assert "Run the relevant tests and paste the exact command output." in markdown
-    assert (
-        "Explain why no file changes were expected, or make the intended change."
-        in markdown
-    )
-    assert (
-        "Explain why no diff material was expected, or rerun after producing the patch."
-        in markdown
-    )
+    assert "Confirm that no change was intended" in markdown
     assert "success" not in markdown.lower()
+
+
+def test_agent_feedback_uses_shared_analysis_and_cites_unresolved_claim(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "agent-session.txt").write_text(
+        "\u2022 Final answer:\nImplemented `src/patchtrace/reports/missing.py`.\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "changed-files.txt").write_text(
+        "src/patchtrace/reports/feedback.py\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "patch.diff").write_text(
+        "diff --git a/src/patchtrace/reports/feedback.py "
+        "b/src/patchtrace/reports/feedback.py\n",
+        encoding="utf-8",
+    )
+    manifest = _manifest(
+        artifact_paths=[
+            "run.json",
+            "agent-session.txt",
+            "changed-files.txt",
+            "patch.diff",
+            "SUMMARY.md",
+            "AGENT_FEEDBACK.md",
+            "VERIFICATION_BRIEF.md",
+        ],
+        exit_status=0,
+        patch_material_present=True,
+    )
+    analysis_result = analyze_run(manifest, run_dir=tmp_path)
+    (tmp_path / "agent-session.txt").unlink()
+    (tmp_path / "changed-files.txt").unlink()
+    (tmp_path / "patch.diff").unlink()
+
+    report = build_agent_feedback_report(
+        manifest,
+        analysis_result=analysis_result,
+    )
+    markdown = render_agent_feedback_markdown(report)
+
+    assert report.verdict == analysis_result.verdict
+    assert report.most_important_gap == analysis_result.most_important_gap
+    assert report.next_action == analysis_result.next_action
+    assert "Implemented `src/patchtrace/reports/missing.py`." in markdown
+    assert (
+        "Confirm whether `src/patchtrace/reports/missing.py` changed and provide "
+        "the matching diff."
+    ) in markdown
+    assert "Transcript: `present`" in markdown
+    assert "Diff material: `present`" in markdown
 
 
 def _manifest(

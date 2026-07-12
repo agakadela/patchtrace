@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import shlex
 from datetime import datetime
-from pathlib import Path
 
 from patchtrace.models.report import (
     AnalysisResult,
@@ -18,9 +17,8 @@ def build_verification_brief_report(
     manifest: RunManifest,
     *,
     analysis_result: AnalysisResult,
-    run_dir: Path | None = None,
 ) -> VerificationBriefReport:
-    summary = build_summary_report(manifest, run_dir=run_dir)
+    summary = build_summary_report(manifest, analysis_result=analysis_result)
     return VerificationBriefReport(
         run_id=summary.run_id,
         command=summary.command,

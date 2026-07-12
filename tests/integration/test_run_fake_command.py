@@ -4,10 +4,12 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from typer.testing import CliRunner
 
+from patchtrace.analysis.analyzer import analyze_run
 from patchtrace.cli.app import app
 
 runner = CliRunner()
@@ -32,9 +34,11 @@ def test_fake_run_creates_run_folder_manifest_and_transcript(
     _init_git_repo(tmp_path)
     monkeypatch.chdir(tmp_path)
 
-    result = runner.invoke(app, ["run", "--", sys.executable, str(FIXTURE)])
+    with patch("patchtrace.cli.app.analyze_run", wraps=analyze_run) as analyze_mock:
+        result = runner.invoke(app, ["run", "--", sys.executable, str(FIXTURE)])
 
     assert result.exit_code == 0
+    assert analyze_mock.call_count == 1
 
     run_dirs = list((Path(".patchtrace") / "runs").iterdir())
     assert len(run_dirs) == 1
@@ -78,10 +82,24 @@ def test_fake_run_creates_run_folder_manifest_and_transcript(
     ) in summary
     assert "# PatchTrace Agent Feedback" in feedback
     assert "Paste this back to the agent:" in feedback
+    assert "- Verdict: No captured file changes require review." in feedback
+    assert (
+        "- Highest-priority gap: PatchTrace cannot determine whether the absence "
+        "of changes was intended." in feedback
+    )
+    assert (
+        "- Recommended next action: Confirm that no change was intended; otherwise "
+        "capture the missing change." in feedback
+    )
+    assert (
+        'Gap "PatchTrace cannot determine whether the absence of changes was '
+        'intended.": Confirm that no change was intended; otherwise capture the '
+        "missing change." in feedback
+    )
     assert "- Exit status: `0`" in feedback
     assert "- Diff material: `empty`" in feedback
     assert "No obvious command or test signals were detected." in feedback
-    assert "Run the relevant tests and paste the exact command output." in feedback
+    assert "Confirm that no change was intended" in feedback
     assert "- `AGENT_FEEDBACK.md`" in feedback
     assert "success" not in feedback.lower()
     assert "# PatchTrace Verification Brief" in verification_brief
@@ -134,7 +152,7 @@ def test_nonzero_fake_run_records_exit_without_claiming_success(
     assert "success" not in summary.lower()
     assert "- Exit status: `7`" in feedback
     assert "Wrapped command exited with status 7." in feedback
-    assert "Address the wrapped command failure and rerun it." in feedback
+    assert "Address the wrapped command failure, rerun it" in feedback
     assert "success" not in feedback.lower()
     assert "- Exit status: `7`" in verification_brief
     assert "- Wrapped command: `non-zero exit 7`" in verification_brief

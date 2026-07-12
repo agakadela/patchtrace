@@ -248,6 +248,8 @@ or report styling unrelated to decision clarity.
 
 **Suggested branch:** `agent/phase-4-task-5-reports`
 
+**Status:** Complete (2026-07-12).
+
 **Visible result:** `AGENT_FEEDBACK.md` gives the agent precise evidence gaps to
 close, while `VERIFICATION_BRIEF.md` gives the human the matching detailed
 claim/evidence record. Both agree with `SUMMARY.md` because they consume the

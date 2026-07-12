@@ -53,7 +53,6 @@ def test_verification_brief_includes_bounded_evidence_and_review_targets(
     report = build_verification_brief_report(
         manifest,
         analysis_result=analysis_result,
-        run_dir=tmp_path,
     )
     markdown = render_verification_brief_markdown(report)
 
@@ -127,7 +126,6 @@ def test_verification_brief_labels_missing_and_failed_evidence_conservatively(
     report = build_verification_brief_report(
         manifest,
         analysis_result=analysis_result,
-        run_dir=tmp_path,
     )
     markdown = render_verification_brief_markdown(report)
 
@@ -145,6 +143,52 @@ def test_verification_brief_labels_missing_and_failed_evidence_conservatively(
     )
     assert "No bounded explicit final claims were extracted." in markdown
     assert "success" not in markdown.lower()
+
+
+def test_verification_brief_uses_shared_analysis_for_all_evidence(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "agent-session.txt").write_text(
+        "\u2022 Final answer:\n"
+        "Implemented `src/patchtrace/reports/verification_brief.py`.\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "changed-files.txt").write_text(
+        "src/patchtrace/reports/verification_brief.py\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "patch.diff").write_text(
+        "diff --git a/src/patchtrace/reports/verification_brief.py "
+        "b/src/patchtrace/reports/verification_brief.py\n",
+        encoding="utf-8",
+    )
+    manifest = _manifest(
+        artifact_paths=[
+            "run.json",
+            "agent-session.txt",
+            "changed-files.txt",
+            "patch.diff",
+            "SUMMARY.md",
+            "AGENT_FEEDBACK.md",
+            "VERIFICATION_BRIEF.md",
+        ],
+        exit_status=0,
+        patch_material_present=True,
+    )
+    analysis_result = analyze_run(manifest, run_dir=tmp_path)
+    (tmp_path / "agent-session.txt").unlink()
+    (tmp_path / "changed-files.txt").unlink()
+    (tmp_path / "patch.diff").unlink()
+
+    report = build_verification_brief_report(
+        manifest,
+        analysis_result=analysis_result,
+    )
+
+    assert report.transcript_status == "present"
+    assert report.diff_material_status == "present"
+    assert report.changed_files == ["src/patchtrace/reports/verification_brief.py"]
+    assert report.claim_assessments == analysis_result.claim_assessments
 
 
 def _manifest(
