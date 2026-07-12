@@ -114,6 +114,8 @@ cleaned signals, or any private `.patchtrace/runs/` material.
 
 **Suggested branch:** `agent/phase-4-task-2-file-claims`
 
+**Status:** Complete (2026-07-12).
+
 **Visible result:** `VERIFICATION_BRIEF.md` shows explicit file-change and
 completed-change claims with their first evidence relationships, source
 locators, gaps, and next actions.

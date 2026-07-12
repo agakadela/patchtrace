@@ -4,7 +4,12 @@ import shlex
 from datetime import datetime
 from pathlib import Path
 
-from patchtrace.models.report import SummaryReport, VerificationBriefReport
+from patchtrace.models.report import (
+    AnalysisResult,
+    ClaimAssessment,
+    SummaryReport,
+    VerificationBriefReport,
+)
 from patchtrace.models.run import RunManifest
 from patchtrace.reports.summary import build_summary_report
 
@@ -12,6 +17,7 @@ from patchtrace.reports.summary import build_summary_report
 def build_verification_brief_report(
     manifest: RunManifest,
     *,
+    analysis_result: AnalysisResult,
     run_dir: Path | None = None,
 ) -> VerificationBriefReport:
     summary = build_summary_report(manifest, run_dir=run_dir)
@@ -30,6 +36,8 @@ def build_verification_brief_report(
         command_test_signals=summary.command_test_signals,
         evidence_gaps=summary.evidence_gaps,
         review_first_targets=_review_first_targets(summary),
+        claim_material_status=analysis_result.claim_material_status,
+        claim_assessments=analysis_result.claim_assessments,
     )
 
 
@@ -71,18 +79,67 @@ def render_verification_brief_markdown(report: VerificationBriefReport) -> str:
         "## Review First",
         *[f"- {target}" for target in report.review_first_targets],
         "",
+        "## Claim Assessments",
+        *_render_claim_assessments(report),
+        "",
         "## Artifacts Written",
         *[f"- `{artifact_path}`" for artifact_path in report.artifact_paths],
         "",
         "## Evidence Gaps",
         *[f"- {gap}" for gap in report.evidence_gaps],
         "",
-        "## Phase 3 Limits",
-        "- Phase 3 does not perform full claim-vs-diff matching or prove correctness.",
-        "- This brief reports bounded local evidence only.",
+        "## Assessment Limits",
+        "- Claim relationships describe captured evidence only; they do not prove "
+        "correctness, safety, acceptance, or production readiness.",
+        "- Only explicit claims in uniquely identified final output are assessed.",
         "",
     ]
     return "\n".join(lines)
+
+
+def _render_claim_assessments(report: VerificationBriefReport) -> list[str]:
+    if not report.claim_assessments:
+        return [
+            "- No explicit final file/change claims were extracted.",
+            f"- Claim material: `{report.claim_material_status}`.",
+        ]
+
+    lines: list[str] = []
+    for index, assessment in enumerate(report.claim_assessments, start=1):
+        if lines:
+            lines.append("")
+        lines.extend(_render_claim_assessment(index, assessment))
+    return lines
+
+
+def _render_claim_assessment(
+    index: int,
+    assessment: ClaimAssessment,
+) -> list[str]:
+    category = assessment.category.value.replace("_", " ").capitalize()
+    lines = [
+        f"### Claim {index}: {category}",
+        f"- Claim: {assessment.claim}",
+        "- Source: "
+        f"`{assessment.claim_source.artifact_path}` "
+        f"(`{assessment.claim_source.locator}`)",
+        f"- Relationship: **{assessment.relationship}**",
+        "- Evidence:",
+    ]
+    if assessment.evidence_references:
+        lines.extend(
+            "  - "
+            f"`{reference.artifact_path}` (`{reference.locator}`): "
+            f"{reference.description}"
+            for reference in assessment.evidence_references
+        )
+    else:
+        lines.append("  - None matched.")
+    if assessment.evidence_gap is not None:
+        lines.append(f"- Evidence gap: {assessment.evidence_gap}")
+    if assessment.next_action is not None:
+        lines.append(f"- Next action: {assessment.next_action}")
+    return lines
 
 
 def _review_first_targets(report: SummaryReport) -> list[str]:
