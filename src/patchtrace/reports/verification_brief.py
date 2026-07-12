@@ -100,7 +100,7 @@ def render_verification_brief_markdown(report: VerificationBriefReport) -> str:
 def _render_claim_assessments(report: VerificationBriefReport) -> list[str]:
     if not report.claim_assessments:
         return [
-            "- No explicit final file/change claims were extracted.",
+            "- No bounded explicit final claims were extracted.",
             f"- Claim material: `{report.claim_material_status}`.",
         ]
 

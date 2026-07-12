@@ -23,6 +23,8 @@ ClaimRelationship = Literal[
 class ClaimCategory(StrEnum):
     FILE_CHANGE = "file_change"
     COMPLETED_CHANGE = "completed_change"
+    TEST = "test"
+    VERIFICATION_COMMAND = "verification_command"
 
 
 class ClaimSupport(StrEnum):

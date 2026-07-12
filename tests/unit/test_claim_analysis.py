@@ -157,6 +157,86 @@ def test_analyze_run_does_not_infer_claims_from_ambiguous_output(
     assert result.claim_assessments == []
 
 
+def test_analyze_run_assesses_test_and_verification_command_results(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "agent-session.txt").write_text(
+        "\n".join(
+            (
+                "• Ran uv run pytest tests/unit/test_claim_analysis.py",
+                "4 passed in 0.05s",
+                "• Ran uv run mypy src tests",
+                "Found 1 error in 1 file (checked 20 source files)",
+                "• Ran uv run ruff check .",
+                "• Ran uv run pytest tests/unit/test_unrelated.py",
+                "1 passed in 0.01s",
+                "• Final answer:",
+                "Tests passed: `uv run pytest tests/unit/test_claim_analysis.py`.",
+                "Verification passed: `uv run mypy src tests`.",
+                "Checks: `uv run ruff check .`.",
+                "Tests passed: `uv run pytest tests/unit/test_missing.py`.",
+            )
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "changed-files.txt").write_text("", encoding="utf-8")
+    (tmp_path / "patch.diff").write_text("", encoding="utf-8")
+
+    result = analyze_run(_manifest(), run_dir=tmp_path)
+
+    assert len(result.claim_assessments) == 4
+
+    passing_test = result.claim_assessments[0]
+    assert passing_test.category is ClaimCategory.TEST
+    assert passing_test.support is ClaimSupport.SUPPORTED
+    assert [reference.locator for reference in passing_test.evidence_references] == [
+        "normalized transcript line 1",
+        "normalized transcript line 2",
+    ]
+    assert passing_test.evidence_gap is None
+    assert passing_test.next_action is None
+
+    failing_verification = result.claim_assessments[1]
+    assert failing_verification.category is ClaimCategory.VERIFICATION_COMMAND
+    assert failing_verification.support is ClaimSupport.CONTRADICTED
+    assert failing_verification.relationship == (
+        "Available evidence conflicts with this claim"
+    )
+    assert [
+        reference.locator for reference in failing_verification.evidence_references
+    ] == ["normalized transcript line 3", "normalized transcript line 4"]
+    assert failing_verification.evidence_gap == (
+        "Captured output reports that the claimed verification command failed."
+    )
+    assert failing_verification.next_action == (
+        "Address the captured failure, rerun the same command, and capture its output."
+    )
+
+    command_only = result.claim_assessments[2]
+    assert command_only.category is ClaimCategory.VERIFICATION_COMMAND
+    assert command_only.support is ClaimSupport.PARTIALLY_SUPPORTED
+    assert [reference.locator for reference in command_only.evidence_references] == [
+        "normalized transcript line 5"
+    ]
+    assert command_only.evidence_gap == (
+        "The command is captured, but no pass or fail result is available."
+    )
+    assert command_only.next_action == (
+        "Capture the result output for `uv run ruff check .`."
+    )
+
+    missing_command = result.claim_assessments[3]
+    assert missing_command.category is ClaimCategory.TEST
+    assert missing_command.support is ClaimSupport.UNSUPPORTED
+    assert missing_command.evidence_references == []
+    assert missing_command.evidence_gap == (
+        "No captured command matches `uv run pytest tests/unit/test_missing.py`."
+    )
+    assert missing_command.next_action == (
+        "Run `uv run pytest tests/unit/test_missing.py` and capture its result output."
+    )
+
+
 def _manifest() -> RunManifest:
     return RunManifest(
         run_id="run-123",

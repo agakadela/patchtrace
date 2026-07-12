@@ -15,10 +15,12 @@ def test_verification_brief_includes_bounded_evidence_and_review_targets(
     tmp_path: Path,
 ) -> None:
     (tmp_path / "agent-session.txt").write_text(
+        "• Ran uv run pytest tests/unit/test_verification_brief_report.py\n"
+        "2 passed in 0.04s\n"
         "• Final answer:\n"
         "Implemented `src/patchtrace/reports/verification_brief.py`.\n"
         "Implemented clearer verification detail.\n"
-        "`uv run pytest tests/unit/test_verification_brief_report.py`\n",
+        "Tests: `uv run pytest tests/unit/test_verification_brief_report.py`\n",
         encoding="utf-8",
     )
     (tmp_path / "changed-files.txt").write_text(
@@ -84,6 +86,14 @@ def test_verification_brief_includes_bounded_evidence_and_review_targets(
         "- Next action: Name the changed file or diff location that demonstrates "
         "this change." in markdown
     )
+    assert "### Claim 3: Test" in markdown
+    assert (
+        "- Claim: Tests: `uv run pytest "
+        "tests/unit/test_verification_brief_report.py`" in markdown
+    )
+    assert "`agent-session.txt` (`normalized transcript line 1`)" in markdown
+    assert "`agent-session.txt` (`normalized transcript line 2`)" in markdown
+    assert "- Relationship: **Evidence supports this claim**" in markdown
     assert (
         "Claim relationships describe captured evidence only; they do not prove "
         "correctness, safety, acceptance, or production readiness." in markdown
@@ -133,7 +143,7 @@ def test_verification_brief_labels_missing_and_failed_evidence_conservatively(
         "No changed files were captured; inspect git evidence artifacts first."
         in markdown
     )
-    assert "No explicit final file/change claims were extracted." in markdown
+    assert "No bounded explicit final claims were extracted." in markdown
     assert "success" not in markdown.lower()
 
 
