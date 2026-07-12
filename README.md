@@ -5,14 +5,14 @@ Record Codex CLI sessions and turn agent work into a local verification package.
 PatchTrace is a local-first devtool for the moment after an AI coding agent says
 "done." It captures the agent session, collects local git evidence, and writes
 practical next-step artifacts. Deeper claim-vs-diff comparison is target V0
-work beyond the current fake-command checkpoint.
+work now planned as Phase 4.
 
 PatchTrace does not replace human code review. It helps you decide what to do
 next with better evidence.
 
 ## Status
 
-- Stage: Python V0 Phase 3 real Codex dogfood proof captured locally
+- Stage: Python V0 Phase 4 evidence-backed explicit claim assessment planned
 - Current phase: see `docs/PLAN.md`
 - Product spec: see `docs/SPEC.md`
 - Architecture: see `docs/ARCHITECTURE.md`
@@ -44,7 +44,7 @@ Risk-triggered docs are created only when triggered:
 | Launch prep | `docs/OPERATIONS.md` |
 | Client delivery | `docs/HANDOFF.md` |
 
-## Current Phase 3 Fake-Command Checkpoint
+## Completed Phase 3 Review-Package Checkpoint
 
 The implemented local checkpoint can run a fake command through PatchTrace:
 
@@ -103,8 +103,9 @@ transcript, capture git state before and after the agent run, and write:
 
 `patchtrace analyze` remains a manual fallback. `patchtrace watch` is planned as
 a secondary patch-only safety net when no session transcript is available.
-Real Codex dogfood is the next checkpoint; it has not been verified by the
-current fake-command review-package proof.
+Phase 3 also verified this artifact flow through a real local
+`uv run patchtrace run -- codex` dogfood session. Phase 4 will add bounded,
+deterministic claim-vs-evidence assessment to these reports.
 
 ## Available Local Loop
 
@@ -114,6 +115,7 @@ These commands are available in the current scaffold:
 uv sync
 uv run patchtrace --help
 uv run patchtrace run -- python tests/fixtures/fake_agent.py
+uv run patchtrace run -- codex
 uv run ruff check .
 uv run ruff format --check .
 uv run mypy src tests
