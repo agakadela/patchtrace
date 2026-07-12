@@ -8,6 +8,28 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-07-12 - Phase 4 Task 1 Clean Claim-Bearing Transcript
+
+- Commit: this commit.
+- Scope: added deterministic session transcript normalization, conservative
+  final-output identification, and cleaned command/test signal extraction from
+  a synthetic Codex-style fixture without tracking private run material.
+- Checks: `uv run ruff check .`, `uv run ruff format --check .`,
+  `uv run mypy src tests`, `uv run pytest`, `uv build`, and the Task 1 manual
+  rendered-fixture check.
+- Runtime proof: all 20 tests passed; interactive and fake-command capture
+  remained green; rendered fixture signals excluded ANSI/control noise and the
+  unrelated GitHub MCP environment warning while retaining command/result
+  evidence.
+- Source docs: N/A; this task adds local deterministic text processing and no
+  version-sensitive provider or library behavior.
+- Observability: no telemetry added or needed; local run artifacts remain the
+  V0 observability surface.
+- Cannot verify in Task 1: semantic claim extraction or claim-vs-evidence
+  assessment, `analyze`, `watch`, non-Codex adapters, and private real
+  transcript shapes beyond the bounded synthetic fixture.
+- Verdict: Task 1 is locally verified and ready for PR review.
+
 ### 2026-07-08 - Phase 3 Close: Real Codex Dogfood Walking Skeleton
 
 - Commit: this commit.

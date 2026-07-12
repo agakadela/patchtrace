@@ -72,6 +72,8 @@ earlier task branch for a later task.
 
 **Suggested branch:** `agent/phase-4-task-1-transcript`
 
+**Status:** Complete (2026-07-12).
+
 **Visible result:** Existing reports show clean command/test signals, while
 ANSI sequences, terminal control noise, and unrelated environment warnings no
 longer masquerade as agent evidence. Analysis receives a bounded final-response
