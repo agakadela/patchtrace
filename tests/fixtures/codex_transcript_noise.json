@@ -1,0 +1,10 @@
+{
+  "raw_transcript": "\u001b[?25l\u001b[2K\r› Update the transcript parser\r\n\u001b[32m• Ran uv run pytest tests/unit/test_transcript_normalization.py\u001b[0m\r\n2 passed in 0.04s\r\n⚠ GitHub MCP startup warning: GITHUB_PAT_TOKEN not set\r\n\u001b]0;codex\u0007• Final answer:\r\nImplemented `src/patchtrace/session/transcript.py`.\r\n- Tests: `uv run pytest tests/unit/test_transcript_normalization.py`\r\n\u001b[?25h",
+  "normalized_text": "› Update the transcript parser\n• Ran uv run pytest tests/unit/test_transcript_normalization.py\n2 passed in 0.04s\n• Final answer:\nImplemented `src/patchtrace/session/transcript.py`.\n- Tests: `uv run pytest tests/unit/test_transcript_normalization.py`",
+  "final_output": "Implemented `src/patchtrace/session/transcript.py`.\n- Tests: `uv run pytest tests/unit/test_transcript_normalization.py`",
+  "command_test_signals": [
+    "uv run pytest tests/unit/test_transcript_normalization.py",
+    "2 passed in 0.04s",
+    "- Tests: uv run pytest tests/unit/test_transcript_normalization.py"
+  ]
+}

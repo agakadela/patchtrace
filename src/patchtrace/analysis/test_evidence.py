@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import re
-
-_ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+from patchtrace.session.transcript import normalize_transcript
 
 _COMMAND_SIGNAL_MARKERS = (
     "uv run pytest",
@@ -41,7 +39,8 @@ def extract_command_test_signals(
     signals: list[str] = []
     seen: set[str] = set()
 
-    for raw_line in transcript_text.splitlines():
+    normalized_transcript = normalize_transcript(transcript_text)
+    for raw_line in normalized_transcript.normalized_text.splitlines():
         line = _normalize_transcript_line(raw_line)
         if not line or not _is_command_test_signal(line):
             continue
@@ -57,8 +56,8 @@ def extract_command_test_signals(
 
 
 def _normalize_transcript_line(raw_line: str) -> str:
-    line = _ANSI_ESCAPE_RE.sub("", raw_line.replace("\r", "")).strip()
-    for prompt in ("$ ", "> "):
+    line = raw_line.replace("`", "").strip()
+    for prompt in ("$ ", "> ", "› ", "• Ran "):
         if line.startswith(prompt):
             return line[len(prompt) :].strip()
     return line
