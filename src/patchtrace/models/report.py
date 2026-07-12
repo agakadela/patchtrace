@@ -103,6 +103,9 @@ class AgentFeedbackReport(BaseModel):
     diff_material_status: DiffMaterialStatus
     command_test_signals: list[str]
     evidence_gaps: list[str]
+    verdict: str
+    most_important_gap: str
+    next_action: str
     requested_followups: list[str]
 
 

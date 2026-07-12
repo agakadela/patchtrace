@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import shlex
-from pathlib import Path
 
-from patchtrace.models.report import AgentFeedbackReport, SummaryReport
+from patchtrace.models.report import AgentFeedbackReport, AnalysisResult
 from patchtrace.models.run import RunManifest
 from patchtrace.reports.summary import build_summary_report
 
@@ -11,9 +10,9 @@ from patchtrace.reports.summary import build_summary_report
 def build_agent_feedback_report(
     manifest: RunManifest,
     *,
-    run_dir: Path | None = None,
+    analysis_result: AnalysisResult,
 ) -> AgentFeedbackReport:
-    summary = build_summary_report(manifest, run_dir=run_dir)
+    summary = build_summary_report(manifest, analysis_result=analysis_result)
     return AgentFeedbackReport(
         run_id=summary.run_id,
         command=summary.command,
@@ -25,7 +24,10 @@ def build_agent_feedback_report(
         diff_material_status=summary.diff_material_status,
         command_test_signals=summary.command_test_signals,
         evidence_gaps=summary.evidence_gaps,
-        requested_followups=_requested_followups(summary),
+        verdict=summary.verdict,
+        most_important_gap=summary.most_important_gap,
+        next_action=summary.next_action,
+        requested_followups=_requested_followups(analysis_result),
     )
 
 
@@ -37,6 +39,11 @@ def render_agent_feedback_markdown(report: AgentFeedbackReport) -> str:
         "",
         "```text",
         f"PatchTrace captured bounded local evidence for run `{report.run_id}`.",
+        "",
+        "PatchTrace assessment:",
+        f"- Verdict: {report.verdict}",
+        f"- Highest-priority gap: {report.most_important_gap}",
+        f"- Recommended next action: {report.next_action}",
         "",
         "Wrapped command:",
         f"- Command: `{shlex.join(report.command)}`",
@@ -59,11 +66,15 @@ def render_agent_feedback_markdown(report: AgentFeedbackReport) -> str:
             else ["  - None detected."]
         ),
         "",
-        "Evidence gaps to close:",
+        "Evidence limits and gaps:",
         *[f"- {gap}" for gap in report.evidence_gaps],
         "",
         "Follow-up work requested:",
-        *[f"- {followup}" for followup in report.requested_followups],
+        *(
+            [f"- {followup}" for followup in report.requested_followups]
+            if report.requested_followups
+            else ["- None beyond the recommended next action above."]
+        ),
         "",
         "Local artifacts to reference:",
         *[f"- `{artifact_path}`" for artifact_path in report.artifact_paths],
@@ -73,31 +84,9 @@ def render_agent_feedback_markdown(report: AgentFeedbackReport) -> str:
     return "\n".join(lines)
 
 
-def _requested_followups(report: SummaryReport) -> list[str]:
-    followups: list[str] = []
-
-    if report.wrapped_command_exit_status != 0:
-        followups.append("Address the wrapped command failure and rerun it.")
-    if report.transcript_status == "missing":
-        followups.append(
-            "Rerun with transcript capture or attach the missing transcript."
-        )
-    if not report.changed_files:
-        followups.append(
-            "Explain why no file changes were expected, or make the intended change."
-        )
-    if report.diff_material_status == "empty":
-        followups.append(
-            "Explain why no diff material was expected, or rerun after producing the patch."
-        )
-    elif report.diff_material_status == "missing":
-        followups.append("Rerun where git patch material can be captured.")
-    if not report.command_test_signals:
-        followups.append("Run the relevant tests and paste the exact command output.")
-
-    if not followups:
-        followups.append(
-            "Point reviewers to the captured artifacts and exact command/test signals."
-        )
-
-    return followups
+def _requested_followups(analysis_result: AnalysisResult) -> list[str]:
+    return [
+        f'Claim "{assessment.claim}": {assessment.next_action}'
+        for assessment in analysis_result.claim_assessments
+        if assessment.next_action is not None
+    ]

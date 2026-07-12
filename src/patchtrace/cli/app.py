@@ -128,7 +128,10 @@ def run(ctx: typer.Context) -> None:
         render_summary_markdown(summary),
         encoding="utf-8",
     )
-    feedback = build_agent_feedback_report(manifest, run_dir=run_paths.run_dir)
+    feedback = build_agent_feedback_report(
+        manifest,
+        analysis_result=analysis_result,
+    )
     run_paths.feedback_path.write_text(
         render_agent_feedback_markdown(feedback),
         encoding="utf-8",
@@ -136,7 +139,6 @@ def run(ctx: typer.Context) -> None:
     verification_brief = build_verification_brief_report(
         manifest,
         analysis_result=analysis_result,
-        run_dir=run_paths.run_dir,
     )
     run_paths.verification_brief_path.write_text(
         render_verification_brief_markdown(verification_brief),
