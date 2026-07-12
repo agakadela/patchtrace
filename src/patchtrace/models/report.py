@@ -62,6 +62,14 @@ class AnalysisResult(BaseModel):
     run_id: str
     claim_material_status: ClaimMaterialStatus
     claim_assessments: list[ClaimAssessment]
+    verdict: str
+    most_important_gap: str
+    next_action: str
+    transcript_status: TranscriptStatus
+    changed_files: list[str]
+    diff_material_status: DiffMaterialStatus
+    command_test_signals: list[str]
+    evidence_gaps: list[str]
 
 
 class SummaryReport(BaseModel):
@@ -77,6 +85,9 @@ class SummaryReport(BaseModel):
     diff_material_status: DiffMaterialStatus
     command_test_signals: list[str]
     evidence_gaps: list[str]
+    verdict: str
+    most_important_gap: str
+    next_action: str
 
 
 class AgentFeedbackReport(BaseModel):

@@ -206,6 +206,8 @@ the user's behalf, or claims about code correctness.
 
 **Suggested branch:** `agent/phase-4-task-4-summary`
 
+**Status:** Complete (2026-07-12).
+
 **Visible result:** `SUMMARY.md` leads with one conservative verdict, the most
 important evidence gap, and one recommended next action before metadata and
 detail.

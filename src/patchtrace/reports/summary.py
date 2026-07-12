@@ -4,15 +4,38 @@ import shlex
 from pathlib import Path
 
 from patchtrace.analysis.test_evidence import extract_command_test_signals
-from patchtrace.models.report import DiffMaterialStatus, SummaryReport, TranscriptStatus
+from patchtrace.models.report import (
+    AnalysisResult,
+    DiffMaterialStatus,
+    SummaryReport,
+    TranscriptStatus,
+)
 from patchtrace.models.run import RunManifest
 
 
 def build_summary_report(
     manifest: RunManifest,
     *,
+    analysis_result: AnalysisResult | None = None,
     run_dir: Path | None = None,
 ) -> SummaryReport:
+    if analysis_result is not None:
+        return SummaryReport(
+            run_id=manifest.run_id,
+            command=manifest.command,
+            wrapped_command_exit_status=manifest.wrapped_command_exit_status,
+            outcome=manifest.outcome,
+            artifact_paths=manifest.artifact_paths,
+            transcript_status=analysis_result.transcript_status,
+            changed_files=analysis_result.changed_files,
+            diff_material_status=analysis_result.diff_material_status,
+            command_test_signals=analysis_result.command_test_signals,
+            evidence_gaps=analysis_result.evidence_gaps,
+            verdict=analysis_result.verdict,
+            most_important_gap=analysis_result.most_important_gap,
+            next_action=analysis_result.next_action,
+        )
+
     transcript_text = _read_artifact_text(
         run_dir,
         _find_artifact_path(manifest.artifact_paths, "agent-session.txt"),
@@ -59,12 +82,20 @@ def build_summary_report(
         diff_material_status=diff_material_status,
         command_test_signals=command_test_signals,
         evidence_gaps=evidence_gaps,
+        verdict="Analysis decision unavailable.",
+        most_important_gap="The shared analysis result was not provided.",
+        next_action="Generate the shared analysis result before rendering the summary.",
     )
 
 
 def render_summary_markdown(report: SummaryReport) -> str:
     lines = [
         "# PatchTrace Summary",
+        "",
+        "## Quick Decision",
+        f"- Verdict: {report.verdict}",
+        f"- Most important gap: {report.most_important_gap}",
+        f"- Recommended next action: {report.next_action}",
         "",
         "## Run",
         f"- Run ID: `{report.run_id}`",

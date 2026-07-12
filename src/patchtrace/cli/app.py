@@ -122,7 +122,8 @@ def run(ctx: typer.Context) -> None:
             patch_material_present=git_evidence.patch_material_present,
         ),
     )
-    summary = build_summary_report(manifest, run_dir=run_paths.run_dir)
+    analysis_result = analyze_run(manifest, run_dir=run_paths.run_dir)
+    summary = build_summary_report(manifest, analysis_result=analysis_result)
     run_paths.summary_path.write_text(
         render_summary_markdown(summary),
         encoding="utf-8",
@@ -132,7 +133,6 @@ def run(ctx: typer.Context) -> None:
         render_agent_feedback_markdown(feedback),
         encoding="utf-8",
     )
-    analysis_result = analyze_run(manifest, run_dir=run_paths.run_dir)
     verification_brief = build_verification_brief_report(
         manifest,
         analysis_result=analysis_result,

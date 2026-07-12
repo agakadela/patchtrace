@@ -7,6 +7,7 @@ from pathlib import Path
 from patchtrace.analysis.test_evidence import (
     CommandEvidence,
     collect_command_evidence,
+    extract_command_test_signals,
     is_verification_command,
 )
 from patchtrace.models.report import (
@@ -16,6 +17,7 @@ from patchtrace.models.report import (
     ClaimMaterialStatus,
     ClaimRelationship,
     ClaimSupport,
+    DiffMaterialStatus,
     EvidenceReference,
 )
 from patchtrace.models.run import RunManifest
@@ -73,29 +75,33 @@ class _CommandClaim:
 
 def analyze_run(manifest: RunManifest, *, run_dir: Path) -> AnalysisResult:
     """Assess bounded explicit final claims against local run evidence."""
+    path_evidence = _load_path_evidence(manifest, run_dir)
     transcript_path = _find_artifact_path(
         manifest.artifact_paths,
         "agent-session.txt",
     )
     transcript_text = _read_artifact_text(run_dir, transcript_path)
     if transcript_text is None:
-        return AnalysisResult(
-            run_id=manifest.run_id,
+        return _build_analysis_result(
+            manifest,
             claim_material_status="missing",
             claim_assessments=[],
+            path_evidence=path_evidence,
+            transcript_text=None,
         )
 
     normalized = normalize_transcript(transcript_text)
     status: ClaimMaterialStatus = normalized.final_output_status
     if normalized.final_output is None:
-        return AnalysisResult(
-            run_id=manifest.run_id,
+        return _build_analysis_result(
+            manifest,
             claim_material_status=status,
             claim_assessments=[],
+            path_evidence=path_evidence,
+            transcript_text=transcript_text,
         )
 
     transcript_artifact = transcript_path or "agent-session.txt"
-    path_evidence = _load_path_evidence(manifest, run_dir)
     command_evidence = collect_command_evidence(
         normalized.normalized_text,
         artifact_path=transcript_artifact,
@@ -106,10 +112,184 @@ def analyze_run(manifest: RunManifest, *, run_dir: Path) -> AnalysisResult:
         path_evidence,
         command_evidence,
     )
-    return AnalysisResult(
-        run_id=manifest.run_id,
+    return _build_analysis_result(
+        manifest,
         claim_material_status=status,
         claim_assessments=assessments,
+        path_evidence=path_evidence,
+        transcript_text=transcript_text,
+    )
+
+
+def _build_analysis_result(
+    manifest: RunManifest,
+    *,
+    claim_material_status: ClaimMaterialStatus,
+    claim_assessments: list[ClaimAssessment],
+    path_evidence: _PathEvidence,
+    transcript_text: str | None,
+) -> AnalysisResult:
+    verdict, most_important_gap, next_action = _quick_decision(
+        manifest,
+        claim_material_status=claim_material_status,
+        claim_assessments=claim_assessments,
+        path_evidence=path_evidence,
+    )
+    return AnalysisResult(
+        run_id=manifest.run_id,
+        claim_material_status=claim_material_status,
+        claim_assessments=claim_assessments,
+        verdict=verdict,
+        most_important_gap=most_important_gap,
+        next_action=next_action,
+        transcript_status="present" if transcript_text is not None else "missing",
+        changed_files=list(path_evidence.changed_files),
+        diff_material_status=_diff_material_status(manifest, path_evidence),
+        command_test_signals=(
+            extract_command_test_signals(transcript_text) if transcript_text else []
+        ),
+        evidence_gaps=_evidence_gaps(
+            manifest,
+            transcript_text=transcript_text,
+            path_evidence=path_evidence,
+            most_important_gap=most_important_gap,
+        ),
+    )
+
+
+def _diff_material_status(
+    manifest: RunManifest,
+    path_evidence: _PathEvidence,
+) -> DiffMaterialStatus:
+    if manifest.git_evidence is None or not path_evidence.patch_available:
+        return "missing"
+    return "present" if manifest.git_evidence.patch_material_present else "empty"
+
+
+def _evidence_gaps(
+    manifest: RunManifest,
+    *,
+    transcript_text: str | None,
+    path_evidence: _PathEvidence,
+    most_important_gap: str,
+) -> list[str]:
+    gaps = [
+        most_important_gap,
+        "PatchTrace has not verified correctness, safety, or production readiness.",
+    ]
+    if transcript_text is None:
+        gaps.append("Transcript artifact is missing for this run.")
+    if manifest.git_evidence is None:
+        gaps.append("Git evidence was not captured for this run.")
+    elif not path_evidence.changed_files:
+        gaps.append("No changed files were captured for this run.")
+    diff_status = _diff_material_status(manifest, path_evidence)
+    if diff_status == "empty":
+        gaps.append("No git patch material was captured for this run.")
+    elif diff_status == "missing":
+        gaps.append("Git patch material is missing for this run.")
+    if not transcript_text or not extract_command_test_signals(transcript_text):
+        gaps.append("No obvious command or test signals were detected.")
+    return list(dict.fromkeys(gaps))
+
+
+def _quick_decision(
+    manifest: RunManifest,
+    *,
+    claim_material_status: ClaimMaterialStatus,
+    claim_assessments: list[ClaimAssessment],
+    path_evidence: _PathEvidence,
+) -> tuple[str, str, str]:
+    if manifest.wrapped_command_exit_status != 0:
+        return (
+            "Review required: the wrapped command failed.",
+            f"Wrapped command exited with status {manifest.wrapped_command_exit_status}.",
+            "Address the wrapped command failure, rerun it, and review the new evidence.",
+        )
+
+    if claim_material_status == "missing":
+        return (
+            "Review blocked: agent claims could not be assessed.",
+            "Transcript evidence is missing for this run.",
+            (
+                "Capture the agent transcript and rerun PatchTrace before relying "
+                "on its claims."
+            ),
+        )
+
+    priority = (
+        ClaimSupport.CONTRADICTED,
+        ClaimSupport.UNSUPPORTED,
+        ClaimSupport.CANNOT_DETERMINE,
+        ClaimSupport.PARTIALLY_SUPPORTED,
+    )
+    for support in priority:
+        assessment = next(
+            (
+                candidate
+                for candidate in claim_assessments
+                if candidate.support is support
+            ),
+            None,
+        )
+        if assessment is None:
+            continue
+        verdict = {
+            ClaimSupport.CONTRADICTED: (
+                "Review required: available evidence conflicts with an assessed claim."
+            ),
+            ClaimSupport.UNSUPPORTED: (
+                "Review required: an assessed claim lacks supporting evidence."
+            ),
+            ClaimSupport.CANNOT_DETERMINE: (
+                "Review required: an assessed claim cannot be resolved from available "
+                "material."
+            ),
+            ClaimSupport.PARTIALLY_SUPPORTED: (
+                "Review required: an assessed claim has incomplete supporting evidence."
+            ),
+        }[support]
+        return (
+            verdict,
+            assessment.evidence_gap
+            or "The highest-priority assessed claim has an unresolved evidence gap.",
+            assessment.next_action
+            or "Inspect the claim and its evidence references before deciding next steps.",
+        )
+
+    no_changes = (
+        manifest.git_evidence is not None
+        and not manifest.git_evidence.patch_material_present
+        and path_evidence.changed_files_available
+        and path_evidence.patch_available
+        and not path_evidence.changed_files
+        and not path_evidence.patch_paths
+    )
+    if no_changes:
+        return (
+            "No captured file changes require review.",
+            "PatchTrace cannot determine whether the absence of changes was intended.",
+            "Confirm that no change was intended; otherwise capture the missing change.",
+        )
+
+    if claim_material_status == "ambiguous":
+        return (
+            "Review blocked: claim-bearing final output could not be identified.",
+            "The transcript does not contain one unambiguous final response.",
+            "Capture one explicit final response and rerun PatchTrace.",
+        )
+
+    if not claim_assessments:
+        return (
+            "Review required: no explicit final claims were available to assess.",
+            "No bounded file, change, test, or verification-command claim was extracted.",
+            "Review the local evidence directly and request specific final claims.",
+        )
+
+    return (
+        "Available evidence supports the assessed claims; human review is still required.",
+        "Evidence support does not establish correctness, safety, or acceptance.",
+        "Review the referenced changes before deciding whether to accept them.",
     )
 
 
