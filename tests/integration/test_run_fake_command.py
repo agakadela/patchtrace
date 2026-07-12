@@ -91,11 +91,7 @@ def test_fake_run_creates_run_folder_manifest_and_transcript(
         "- Recommended next action: Confirm that no change was intended; otherwise "
         "capture the missing change." in feedback
     )
-    assert (
-        'Gap "PatchTrace cannot determine whether the absence of changes was '
-        'intended.": Confirm that no change was intended; otherwise capture the '
-        "missing change." in feedback
-    )
+    assert "- None beyond the recommended next action above." in feedback
     assert "- Exit status: `0`" in feedback
     assert "- Diff material: `empty`" in feedback
     assert "No obvious command or test signals were detected." in feedback

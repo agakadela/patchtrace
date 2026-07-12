@@ -155,6 +155,50 @@ def test_agent_feedback_uses_shared_analysis_and_cites_unresolved_claim(
     assert "Diff material: `present`" in markdown
 
 
+def test_agent_feedback_requests_no_work_for_supported_claims(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "agent-session.txt").write_text(
+        "• Final answer:\nImplemented `src/patchtrace/reports/feedback.py`.\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "changed-files.txt").write_text(
+        "src/patchtrace/reports/feedback.py\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "patch.diff").write_text(
+        "diff --git a/src/patchtrace/reports/feedback.py "
+        "b/src/patchtrace/reports/feedback.py\n",
+        encoding="utf-8",
+    )
+    manifest = _manifest(
+        artifact_paths=[
+            "run.json",
+            "agent-session.txt",
+            "changed-files.txt",
+            "patch.diff",
+            "SUMMARY.md",
+            "AGENT_FEEDBACK.md",
+            "VERIFICATION_BRIEF.md",
+        ],
+        exit_status=0,
+        patch_material_present=True,
+    )
+    analysis_result = analyze_run(manifest, run_dir=tmp_path)
+
+    report = build_agent_feedback_report(
+        manifest,
+        analysis_result=analysis_result,
+    )
+    markdown = render_agent_feedback_markdown(report)
+
+    assert report.requested_followups == []
+    assert (
+        "Follow-up work requested:\n"
+        "- None beyond the recommended next action above." in markdown
+    )
+
+
 def _manifest(
     *,
     artifact_paths: list[str],

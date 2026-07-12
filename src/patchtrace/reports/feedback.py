@@ -73,7 +73,7 @@ def render_agent_feedback_markdown(report: AgentFeedbackReport) -> str:
         *(
             [f"- {followup}" for followup in report.requested_followups]
             if report.requested_followups
-            else ["- None; review the referenced evidence."]
+            else ["- None beyond the recommended next action above."]
         ),
         "",
         "Local artifacts to reference:",
@@ -85,20 +85,8 @@ def render_agent_feedback_markdown(report: AgentFeedbackReport) -> str:
 
 
 def _requested_followups(analysis_result: AnalysisResult) -> list[str]:
-    followups = [
+    return [
         f'Claim "{assessment.claim}": {assessment.next_action}'
         for assessment in analysis_result.claim_assessments
         if assessment.next_action is not None
     ]
-    claim_actions = {
-        assessment.next_action
-        for assessment in analysis_result.claim_assessments
-        if assessment.next_action is not None
-    }
-    if analysis_result.next_action not in claim_actions:
-        followups.insert(
-            0,
-            f'Gap "{analysis_result.most_important_gap}": '
-            f"{analysis_result.next_action}",
-        )
-    return followups
