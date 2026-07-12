@@ -8,6 +8,31 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-07-12 - Phase 4 Task 3 Test And Verification-Command Claims
+
+- Commit: this commit.
+- Scope: extended the single `analyze_run(...) -> AnalysisResult` module to
+  assess explicit test and verification-command claims against exact captured
+  command invocations and pass, fail, or missing-result output locators.
+- Checks: `uv run ruff check .`, `uv run ruff format --check .`,
+  `uv run mypy src tests`, `uv run pytest` (25 passed), `uv build`, and the
+  Task 3 rendered-Markdown fixture readback.
+- Runtime proof: one claimed test pass rendered as supported with command and
+  output locators; a claimed verification pass with captured failure rendered
+  as contradicted; a captured command without result rendered as partially
+  supported with a concrete request for result output. An unrelated passing
+  command did not support a different claimed command.
+- Source-driven preflight: not needed; the task adds deterministic in-process
+  project logic without version-sensitive library or provider behavior.
+- Observability: no telemetry added or needed; evidence references in the
+  validated local analysis result and rendered run artifacts remain the V0
+  diagnostic surface.
+- Cannot verify in Task 3: correctness or coverage of the claimed code change,
+  broad command formats beyond the bounded rules, quick summary decisions,
+  cross-report alignment, `analyze`, or `watch`; these remain later Phase 4
+  tasks or deferred scope.
+- Verdict: Task 3 is locally verified and ready for PR review.
+
 ### 2026-07-12 - Phase 4 Task 2 First File/Change Claim Assessment
 
 - Commit: this commit.

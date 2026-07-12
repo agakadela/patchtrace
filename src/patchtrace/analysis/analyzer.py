@@ -4,6 +4,11 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from patchtrace.analysis.test_evidence import (
+    CommandEvidence,
+    collect_command_evidence,
+    is_verification_command,
+)
 from patchtrace.models.report import (
     AnalysisResult,
     ClaimAssessment,
@@ -30,6 +35,16 @@ _GENERIC_COMPLETION_RE = re.compile(
     re.IGNORECASE,
 )
 _DIFF_HEADER_RE = re.compile(r"^diff --git a/(.+) b/(.+)$")
+_TEST_CLAIM_RE = re.compile(r"^(?:tests?|test commands?)\b", re.IGNORECASE)
+_VERIFICATION_CLAIM_RE = re.compile(
+    r"^(?:verification(?: commands?)?|checks?|ran|executed)\b",
+    re.IGNORECASE,
+)
+_PASSED_CLAIM_RE = re.compile(
+    r"\b(?:pass|passed|succeeded|successfully)\b",
+    re.IGNORECASE,
+)
+_FAILED_CLAIM_RE = re.compile(r"\b(?:fail|failed)\b", re.IGNORECASE)
 
 _RELATIONSHIPS: dict[ClaimSupport, ClaimRelationship] = {
     ClaimSupport.SUPPORTED: "Evidence supports this claim",
@@ -49,8 +64,15 @@ class _PathEvidence:
     material_references: tuple[EvidenceReference, ...]
 
 
+@dataclass(frozen=True)
+class _CommandClaim:
+    category: ClaimCategory
+    command: str
+    claimed_result: str | None
+
+
 def analyze_run(manifest: RunManifest, *, run_dir: Path) -> AnalysisResult:
-    """Assess explicit final file/change claims against local run evidence."""
+    """Assess bounded explicit final claims against local run evidence."""
     transcript_path = _find_artifact_path(
         manifest.artifact_paths,
         "agent-session.txt",
@@ -72,11 +94,17 @@ def analyze_run(manifest: RunManifest, *, run_dir: Path) -> AnalysisResult:
             claim_assessments=[],
         )
 
+    transcript_artifact = transcript_path or "agent-session.txt"
     path_evidence = _load_path_evidence(manifest, run_dir)
+    command_evidence = collect_command_evidence(
+        normalized.normalized_text,
+        artifact_path=transcript_artifact,
+    )
     assessments = _assess_final_output(
         normalized.final_output,
-        transcript_path or "agent-session.txt",
+        transcript_artifact,
         path_evidence,
+        command_evidence,
     )
     return AnalysisResult(
         run_id=manifest.run_id,
@@ -89,6 +117,7 @@ def _assess_final_output(
     final_output: str,
     transcript_path: str,
     path_evidence: _PathEvidence,
+    command_evidence: list[CommandEvidence],
 ) -> list[ClaimAssessment]:
     assessments: list[ClaimAssessment] = []
     for line_number, raw_line in enumerate(final_output.splitlines(), start=1):
@@ -105,6 +134,13 @@ def _assess_final_output(
             assessments.append(_assess_no_files_changed(claim, source, path_evidence))
             continue
 
+        command_claim = _extract_command_claim(claim)
+        if command_claim is not None:
+            assessments.append(
+                _assess_command_claim(claim, source, command_claim, command_evidence)
+            )
+            continue
+
         claimed_path = _extract_path(claim)
         if claimed_path is not None and _CHANGE_VERB_RE.match(claim):
             assessments.append(
@@ -116,6 +152,106 @@ def _assess_final_output(
             assessments.append(_assess_completed_change(claim, source))
 
     return assessments
+
+
+def _extract_command_claim(claim: str) -> _CommandClaim | None:
+    command: str | None = None
+    for candidate in _BACKTICKED_TEXT_RE.findall(claim):
+        normalized = " ".join(candidate.strip().split())
+        if is_verification_command(normalized):
+            command = normalized
+            break
+    if command is None:
+        return None
+
+    if _TEST_CLAIM_RE.match(claim):
+        category = ClaimCategory.TEST
+    elif _VERIFICATION_CLAIM_RE.match(claim):
+        category = ClaimCategory.VERIFICATION_COMMAND
+    else:
+        return None
+
+    claimed_result: str | None = None
+    if _FAILED_CLAIM_RE.search(claim):
+        claimed_result = "failed"
+    elif _PASSED_CLAIM_RE.search(claim):
+        claimed_result = "passed"
+    return _CommandClaim(category, command, claimed_result)
+
+
+def _assess_command_claim(
+    claim: str,
+    source: EvidenceReference,
+    command_claim: _CommandClaim,
+    command_evidence: list[CommandEvidence],
+) -> ClaimAssessment:
+    evidence = next(
+        (
+            candidate
+            for candidate in command_evidence
+            if candidate.command == command_claim.command
+        ),
+        None,
+    )
+    if evidence is None:
+        return _assessment(
+            claim=claim,
+            category=command_claim.category,
+            source=source,
+            support=ClaimSupport.UNSUPPORTED,
+            evidence_references=[],
+            evidence_gap=f"No captured command matches `{command_claim.command}`.",
+            next_action=(
+                f"Run `{command_claim.command}` and capture its result output."
+            ),
+        )
+
+    references = [evidence.command_reference]
+    if evidence.result_reference is not None:
+        references.append(evidence.result_reference)
+
+    if evidence.result == "unknown":
+        return _assessment(
+            claim=claim,
+            category=command_claim.category,
+            source=source,
+            support=ClaimSupport.PARTIALLY_SUPPORTED,
+            evidence_references=references,
+            evidence_gap="The command is captured, but no pass or fail result is available.",
+            next_action=f"Capture the result output for `{command_claim.command}`.",
+        )
+
+    if (
+        command_claim.claimed_result is not None
+        and command_claim.claimed_result != evidence.result
+    ):
+        return _assessment(
+            claim=claim,
+            category=command_claim.category,
+            source=source,
+            support=ClaimSupport.CONTRADICTED,
+            evidence_references=references,
+            evidence_gap=(
+                "Captured output reports that the claimed verification command "
+                f"{evidence.result}."
+            ),
+            next_action=(
+                "Address the captured failure, rerun the same command, and capture "
+                "its output."
+                if evidence.result == "failed"
+                else "Reconcile the failure claim with the captured passing output."
+            ),
+        )
+
+    return _assessment(
+        claim=claim,
+        category=command_claim.category,
+        source=source,
+        support=ClaimSupport.SUPPORTED,
+        evidence_references=references,
+        evidence_gap=None,
+        next_action=None,
+    )
 
 
 def _assess_file_change(

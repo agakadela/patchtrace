@@ -83,7 +83,7 @@ def test_fake_run_creates_run_folder_manifest_and_transcript(
     assert "- Diff material: `empty`" in verification_brief
     assert "- Command/test signals: `missing`" in verification_brief
     assert "- `VERIFICATION_BRIEF.md`" in verification_brief
-    assert "No explicit final file/change claims were extracted." in verification_brief
+    assert "No bounded explicit final claims were extracted." in verification_brief
     assert "- Claim material: `ambiguous`." in verification_brief
     assert "success" not in verification_brief.lower()
 

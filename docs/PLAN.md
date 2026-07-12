@@ -165,6 +165,8 @@ analysis JSON, or non-Codex adapters.
 
 **Suggested branch:** `agent/phase-4-task-3-test-claims`
 
+**Status:** Complete (2026-07-12).
+
 **Visible result:** The verification brief distinguishes an agent mentioning a
 test command from evidence that the command passed, failed, or had no captured
 result.
