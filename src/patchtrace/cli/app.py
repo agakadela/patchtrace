@@ -5,6 +5,7 @@ from pathlib import Path
 
 import typer
 
+from patchtrace.analysis.analyzer import analyze_run
 from patchtrace.models.run import GitEvidenceManifest, RunManifest, RunOutcome
 from patchtrace.reports.feedback import (
     build_agent_feedback_report,
@@ -131,8 +132,10 @@ def run(ctx: typer.Context) -> None:
         render_agent_feedback_markdown(feedback),
         encoding="utf-8",
     )
+    analysis_result = analyze_run(manifest, run_dir=run_paths.run_dir)
     verification_brief = build_verification_brief_report(
         manifest,
+        analysis_result=analysis_result,
         run_dir=run_paths.run_dir,
     )
     run_paths.verification_brief_path.write_text(

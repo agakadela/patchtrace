@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
+from patchtrace.analysis.analyzer import analyze_run
 from patchtrace.models.run import GitEvidenceManifest, RunManifest, RunOutcome
 from patchtrace.reports.verification_brief import (
     build_verification_brief_report,
@@ -14,7 +15,10 @@ def test_verification_brief_includes_bounded_evidence_and_review_targets(
     tmp_path: Path,
 ) -> None:
     (tmp_path / "agent-session.txt").write_text(
-        "agent note\nuv run pytest tests/unit/test_verification_brief_report.py\n",
+        "• Final answer:\n"
+        "Implemented `src/patchtrace/reports/verification_brief.py`.\n"
+        "Implemented clearer verification detail.\n"
+        "`uv run pytest tests/unit/test_verification_brief_report.py`\n",
         encoding="utf-8",
     )
     (tmp_path / "changed-files.txt").write_text(
@@ -43,7 +47,12 @@ def test_verification_brief_includes_bounded_evidence_and_review_targets(
         patch_material_present=True,
     )
 
-    report = build_verification_brief_report(manifest, run_dir=tmp_path)
+    analysis_result = analyze_run(manifest, run_dir=tmp_path)
+    report = build_verification_brief_report(
+        manifest,
+        analysis_result=analysis_result,
+        run_dir=tmp_path,
+    )
     markdown = render_verification_brief_markdown(report)
 
     assert "# PatchTrace Verification Brief" in markdown
@@ -61,9 +70,23 @@ def test_verification_brief_includes_bounded_evidence_and_review_targets(
     assert "- `uv run pytest tests/unit/test_verification_brief_report.py`" in markdown
     assert "## Review First" in markdown
     assert "Review `src/patchtrace/reports/verification_brief.py` first." in markdown
+    assert "## Claim Assessments" in markdown
+    assert "### Claim 1: File change" in markdown
     assert (
-        "Phase 3 does not perform full claim-vs-diff matching or prove correctness."
+        "- Claim: Implemented `src/patchtrace/reports/verification_brief.py`."
         in markdown
+    )
+    assert "- Relationship: **Evidence supports this claim**" in markdown
+    assert "`changed-files.txt` (`line 1`)" in markdown
+    assert "### Claim 2: Completed change" in markdown
+    assert "- Relationship: **Cannot assess from available material**" in markdown
+    assert (
+        "- Next action: Name the changed file or diff location that demonstrates "
+        "this change." in markdown
+    )
+    assert (
+        "Claim relationships describe captured evidence only; they do not prove "
+        "correctness, safety, acceptance, or production readiness." in markdown
     )
     assert "patch is correct" not in markdown.lower()
     assert "patch is safe" not in markdown.lower()
@@ -90,7 +113,12 @@ def test_verification_brief_labels_missing_and_failed_evidence_conservatively(
         patch_material_present=False,
     )
 
-    report = build_verification_brief_report(manifest, run_dir=tmp_path)
+    analysis_result = analyze_run(manifest, run_dir=tmp_path)
+    report = build_verification_brief_report(
+        manifest,
+        analysis_result=analysis_result,
+        run_dir=tmp_path,
+    )
     markdown = render_verification_brief_markdown(report)
 
     assert "- Transcript: `missing`" in markdown
@@ -105,6 +133,7 @@ def test_verification_brief_labels_missing_and_failed_evidence_conservatively(
         "No changed files were captured; inspect git evidence artifacts first."
         in markdown
     )
+    assert "No explicit final file/change claims were extracted." in markdown
     assert "success" not in markdown.lower()
 
 

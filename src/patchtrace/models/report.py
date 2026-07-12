@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from enum import StrEnum
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
@@ -9,6 +10,56 @@ from patchtrace.models.run import RunOutcome, TriggerSource
 
 DiffMaterialStatus = Literal["present", "empty", "missing"]
 TranscriptStatus = Literal["present", "missing"]
+ClaimMaterialStatus = Literal["identified", "ambiguous", "missing"]
+ClaimRelationship = Literal[
+    "Evidence supports this claim",
+    "Evidence partially supports this claim",
+    "No supporting evidence found",
+    "Available evidence conflicts with this claim",
+    "Cannot assess from available material",
+]
+
+
+class ClaimCategory(StrEnum):
+    FILE_CHANGE = "file_change"
+    COMPLETED_CHANGE = "completed_change"
+
+
+class ClaimSupport(StrEnum):
+    SUPPORTED = "supported"
+    PARTIALLY_SUPPORTED = "partially_supported"
+    UNSUPPORTED = "unsupported"
+    CONTRADICTED = "contradicted"
+    CANNOT_DETERMINE = "cannot_determine"
+
+
+class EvidenceReference(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    artifact_path: str
+    locator: str
+    description: str
+
+
+class ClaimAssessment(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    claim: str
+    category: ClaimCategory
+    claim_source: EvidenceReference
+    support: ClaimSupport
+    relationship: ClaimRelationship
+    evidence_references: list[EvidenceReference]
+    evidence_gap: str | None
+    next_action: str | None
+
+
+class AnalysisResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    run_id: str
+    claim_material_status: ClaimMaterialStatus
+    claim_assessments: list[ClaimAssessment]
 
 
 class SummaryReport(BaseModel):
@@ -59,3 +110,5 @@ class VerificationBriefReport(BaseModel):
     command_test_signals: list[str]
     evidence_gaps: list[str]
     review_first_targets: list[str]
+    claim_material_status: ClaimMaterialStatus
+    claim_assessments: list[ClaimAssessment]
