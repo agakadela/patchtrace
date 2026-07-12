@@ -12,8 +12,8 @@ Template rules:
 
 ## Status
 
-- Last reviewed: 2026-07-02
-- Reviewed by: `$aga-spec` foundation interview
+- Last reviewed: 2026-07-12
+- Reviewed by: `$aga-spec` Phase 4 interview and product-architecture review
 - Related ADRs: `docs/decisions/ADR-0001-project-foundation.md`
 
 ## Stack
@@ -78,6 +78,7 @@ src/
       git.py
       snapshot.py
     analysis/
+      analyzer.py
       claims.py
       risk.py
       test_evidence.py
@@ -111,9 +112,13 @@ developer runs `patchtrace run -- codex`
   -> session launches Codex CLI through PTY
   -> session records transcript locally
   -> vcs records post-run git state, changed files, and diff
-  -> analysis extracts explicit agent claims from transcript
-  -> analysis evaluates patch evidence, test evidence, risk, gaps, verdict
-  -> reports write SUMMARY.md, AGENT_FEEDBACK.md, VERIFICATION_BRIEF.md
+  -> session normalizes terminal noise and isolates claim-bearing final output
+  -> analysis consumes normalized transcript and local evidence once
+  -> analysis extracts a bounded set of explicit agent claims
+  -> analysis returns one validated AnalysisResult with evidence relationships,
+     gaps, next actions, and a conservative verdict
+  -> reports render SUMMARY.md, AGENT_FEEDBACK.md, and VERIFICATION_BRIEF.md
+     from that shared result
 ```
 
 Fallback manual flow:
@@ -141,6 +146,13 @@ Notes:
 - Missing local/provided material should produce explicit gaps, not confident
   guesses.
 - Full claim-vs-evidence analysis requires session material.
+- The Phase 4 analysis module has one conceptual interface:
+  `analyze_run(run_evidence) -> AnalysisResult`. Its implementation may use
+  private pure-function seams, but callers and report tests use the single
+  result-producing interface.
+- Report renderers do not parse raw artifacts or independently rerun analysis.
+- `analyze` and `watch` may later supply different evidence inputs to the same
+  analysis interface; Phase 4 does not implement those command flows.
 
 ## Trust Boundaries
 
@@ -174,6 +186,7 @@ once implementation exists.
 | Git snapshot | `.patchtrace/runs/<run-id>/git-before.txt`, `git-after.txt`, `patch.diff`, `changed-files.txt` | `vcs` | Local patch material before/after wrapped session. |
 | Agent claim | In-memory/report object | `analysis` | Explicit claim extracted from transcript/session material. |
 | Evidence source | In-memory/report object | `models`, `analysis` | Source-backed material: transcript span, diff hunk, file path, test output, command output. |
+| Analysis result | In-memory validated object | `models`, `analysis` | Single source for claim assessments, evidence gaps, next actions, review targets, and conservative verdict consumed by all reports. |
 | Risk area | In-memory/report object | `analysis` | Conservative risk classification tied to evidence. |
 | Verification package | Markdown files plus manifest | `reports`, `storage` | `SUMMARY.md`, `AGENT_FEEDBACK.md`, `VERIFICATION_BRIEF.md`. |
 
@@ -208,6 +221,9 @@ and matching risk-triggered docs.
 
 - V0 must be useful without an LLM.
 - Full claim-vs-evidence analysis depends on session transcript material.
+- Phase 4 intentionally recognizes only explicit claims about changed files,
+  completed changes, tests, and verification commands; arbitrary semantic
+  understanding is deferred.
 - `patchtrace watch` is a secondary safety net, not the source of full session
   truth.
 - Markdown report quality and ready-to-paste agent feedback are the product bar.
@@ -230,4 +246,5 @@ and matching risk-triggered docs.
 
 | Date | Change | Reason | Commit/PR |
 |---|---|---|---|
+| 2026-07-12 | Added the Phase 4 single-analysis-result seam and bounded deterministic claim flow | Accepted `$aga-spec` Phase 4 architecture review | N/A |
 | 2026-07-02 | Reframed architecture for Python V0 as Codex CLI session recorder and local verification package | New `$aga-spec` direction | N/A |

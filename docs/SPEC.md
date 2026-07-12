@@ -12,9 +12,9 @@ Template rules:
 ## Status
 
 - Product name: PatchTrace
-- Spec status: accepted for Python V0 planning
+- Spec status: accepted for Python V0 and Phase 4 planning
 - Owner: project maintainer(s)
-- Last updated: 2026-07-02
+- Last updated: 2026-07-12
 - Current implementation phase: see `docs/PLAN.md`
 
 ## Objective
@@ -105,6 +105,88 @@ V0 will:
 - support a secondary `patchtrace watch` concept as a patch-only safety net,
   clearly labeled as limited when no session transcript is available;
 - stay useful without any required LLM call or external service.
+
+## Phase 4 Slice: Evidence-Backed Explicit Claim Assessment
+
+### Problem
+
+Phase 3 proved that `patchtrace run -- codex` can capture a real Codex session,
+local git evidence, and the complete review-package shape. The generated
+reports still stop at bounded evidence inventory: they do not yet tell the
+reviewer how explicit agent claims relate to that evidence.
+
+### User And Flow
+
+The primary user remains a developer reviewing a completed Codex session. When
+the wrapped session ends, PatchTrace should:
+
+1. normalize captured terminal text and isolate claim-bearing final output;
+2. extract explicit claims about changed files, completed changes, tests, and
+   verification commands;
+3. compare each extracted claim with available local patch and command/test
+   evidence;
+4. produce one conservative assessment result used by every Markdown report;
+5. present a quick decision and next action before claim-level detail.
+
+PatchTrace must ignore plans, speculative reasoning, and ambiguous conversational
+statements rather than turning them into claims.
+
+### Visible Result
+
+The reviewer should understand the report's recommended next action within
+seconds. `VERIFICATION_BRIEF.md` then provides, for every extracted claim:
+
+- the claim text and category;
+- a plain-language evidence relationship;
+- evidence references with an artifact and the most precise practical
+  locator;
+- missing or conflicting evidence;
+- one concrete next action when the evidence is incomplete.
+
+User-facing relationships are:
+
+- `Evidence supports this claim`;
+- `Evidence partially supports this claim`;
+- `No supporting evidence found`;
+- `Available evidence conflicts with this claim`;
+- `Cannot assess from available material`.
+
+These labels describe the relationship between a claim and available evidence.
+They do not declare the code correct, safe, accepted, or production ready.
+
+### Phase 4 Acceptance Criteria
+
+- One deterministic analysis result drives `SUMMARY.md`, `AGENT_FEEDBACK.md`,
+  and `VERIFICATION_BRIEF.md`; the reports do not independently reinterpret
+  the run.
+- Fixture scenarios cover supported, partially supported, unsupported,
+  contradicted, and cannot-assess outcomes without requiring an LLM.
+- File-change claims link to changed-file or diff evidence when present.
+- Test and verification-command claims distinguish a command mention from
+  result evidence and preserve failure or ambiguity.
+- Generic completion statements such as `fixed`, `done`, or `everything
+  works` are not treated as proof and remain unassessed without specific local
+  evidence.
+- Missing transcript, patch, command output, or test output produces an
+  explicit evidence gap and useful next action.
+- A real `uv run patchtrace run -- codex` dogfood run produces the layered
+  quick-decision and claim-detail report without external calls.
+- Existing lint, format, typecheck, test, and build checks remain green.
+
+### Phase 4 Boundaries
+
+- Always: remain local, deterministic, rules-first, conservative, and
+  evidence-referenced.
+- Ask first: new dependencies, LLM/API use, external data transfer, or changes
+  to the established capability-package convention.
+- Never: infer unstated claims, equate missing evidence with falsehood, or
+  claim correctness, safety, acceptance, or production readiness.
+- Out of scope: `patchtrace analyze`, `patchtrace watch`, broad semantic
+  understanding of arbitrary agent prose, expanded non-Codex adapters,
+  expanded risk classification, public JSON output, and required LLM analysis.
+
+Architecture and module ownership for this slice remain canonical in
+`docs/ARCHITECTURE.md`.
 
 ## Required V0 Artifacts
 
@@ -462,6 +544,10 @@ interfaces, or will surprise future maintainers.
 - Local-first/no-cloud/no-required-LLM boundary.
 - Claim support taxonomy: `supported`, `partially_supported`, `unsupported`,
   `contradicted`, `cannot_determine`.
+- Single analysis-result seam shared by all report renderers. This needs an ADR
+  only if it becomes a persisted or externally consumed interface.
+- Separation between internal claim-support values and plain-language
+  user-facing labels.
 - Verdict taxonomy: `ready_for_review`, `needs_manual_review`,
   `run_more_checks`, `send_agent_back`, `insufficient_material`.
 - Fixture-first session-capture and analyzer development.
@@ -470,8 +556,7 @@ interfaces, or will surprise future maintainers.
 
 ### Blocking
 
-- N/A. Blocking product and foundation decisions for writing the Python V0 spec
-  are resolved.
+- N/A. Blocking product and Phase 4 scope decisions are resolved.
 
 ### Non-Blocking
 
@@ -480,11 +565,16 @@ interfaces, or will surprise future maintainers.
   metadata.
 - Whether real Codex CLI transcript formats need a dedicated parser beyond
   generic transcript rules.
+- How precise evidence locators can be for every supported diff and transcript
+  shape; Phase 4 should preserve the best available artifact/path/span without
+  inventing precision.
+- Whether the analysis result should later be persisted in `run.json` or a
+  separate optional JSON artifact.
 - Package publishing timing and package ownership.
 - Whether later non-Codex adapters belong in this package or separate plugins.
 
 ## Review Notes
 
 - Accepted by: project maintainer
-- Date: 2026-07-02
+- Date: 2026-07-02 for Python V0; 2026-07-12 for the Phase 4 slice
 - Links to discussion/PR: N/A; accepted in local `$aga-spec` interview.
