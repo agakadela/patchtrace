@@ -8,6 +8,34 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-07-12 - Phase 4 Close: Explicit Claim Assessment
+
+- Commit: this commit.
+- Scope: closed Phase 4 with one deterministic
+  `analyze_run(...) -> AnalysisResult` seam, a sanitized seven-scenario fixture
+  matrix, and Codex CLI `0.144.1` transcript cleanup for final-marker redraw and
+  shutdown noise. All three Markdown reports consume the same validated result.
+- Checks: RED transcript regression test, focused transcript/analyzer/matrix
+  tests, `uv run ruff check .`, `uv run ruff format --check .`,
+  `uv run mypy src tests`, `uv run pytest`, and `uv build`.
+- Runtime proof: `uv run patchtrace run -- codex` wrote the complete nine-file
+  local package for run `20260712T221047316849Z-c4c5faa4`. `SUMMARY.md` led with
+  a conflicting-evidence verdict and next action; `AGENT_FEEDBACK.md` requested
+  reconciliation for the exact `No files changed.` claim; and
+  `VERIFICATION_BRIEF.md` preserved the file-change category, final-response
+  locator, three changed-file evidence references, evidence gap, and next action.
+- Source docs: Codex CLI `0.144.1` was checked against the official interactive
+  CLI workflow at `https://learn.chatgpt.com/docs/codex/cli`.
+- Observability: no new telemetry was needed. `run.json`, wrapped-command exit
+  status, transcript status, git evidence, and the three local reports answer
+  the four operator questions for this local-only V0 flow.
+- Cannot verify: PatchTrace does not establish correctness, safety, acceptance,
+  or production readiness; transcripts without one identifiable final marker
+  remain conservatively unassessed; `analyze`, `watch`, package publishing,
+  hosted services, and broader agent adapters remain out of scope.
+- Verdict: Phase 4 fixture coverage and real Codex claim-detail flow are locally
+  verified and ready for PR review.
+
 ### 2026-07-12 - Phase 4 Task 4 Quick Summary Decision
 
 - Commit: this commit.
