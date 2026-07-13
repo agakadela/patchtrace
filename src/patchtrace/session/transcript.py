@@ -10,6 +10,9 @@ _OSC_ESCAPE_RE = re.compile(r"\x1b\].*?(?:\x07|\x1b\\)", re.DOTALL)
 _CSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 _OTHER_ESCAPE_RE = re.compile(r"\x1b(?:[ -/][@-~]|[@-_])")
 _FINAL_OUTPUT_MARKERS = frozenset(("Final answer:", "• Final answer:"))
+_CODEX_MARKER_REDRAW_RE = re.compile(r"^(?P<marker>(?:• )?Final answer:)›.+$")
+_CODEX_EXIT_MENU_SUFFIX_RE = re.compile(r"(?:/exit){2,}\s+exit Codex.*$")
+_CODEX_SHUTDOWN_MARKER = "Shutting down..."
 _UNRELATED_ENV_WARNING_RE = re.compile(
     r"GitHub MCP.*GITHUB_PAT_TOKEN.*not set",
     re.IGNORECASE,
@@ -30,6 +33,9 @@ def normalize_transcript(transcript_text: str) -> NormalizedTranscript:
 
     for raw_line in text.replace("\r\n", "\n").split("\n"):
         line = _normalize_terminal_line(raw_line)
+        marker_redraw = _CODEX_MARKER_REDRAW_RE.fullmatch(line)
+        if marker_redraw is not None:
+            line = marker_redraw.group("marker")
         if _UNRELATED_ENV_WARNING_RE.search(line):
             continue
         normalized_lines.append(line)
@@ -45,7 +51,7 @@ def normalize_transcript(transcript_text: str) -> NormalizedTranscript:
     if len(marker_indexes) != 1:
         return NormalizedTranscript(normalized_text, "ambiguous", None)
 
-    final_output = _join_lines(lines[marker_indexes[0] + 1 :])
+    final_output = _bound_final_output(lines[marker_indexes[0] + 1 :])
     if not final_output:
         return NormalizedTranscript(normalized_text, "ambiguous", None)
     return NormalizedTranscript(normalized_text, "identified", final_output)
@@ -55,6 +61,15 @@ def _strip_terminal_sequences(text: str) -> str:
     text = _OSC_ESCAPE_RE.sub("", text)
     text = _CSI_ESCAPE_RE.sub("", text)
     return _OTHER_ESCAPE_RE.sub("", text)
+
+
+def _bound_final_output(lines: list[str]) -> str:
+    bounded_lines: list[str] = []
+    for line in lines:
+        if _CODEX_SHUTDOWN_MARKER in line:
+            break
+        bounded_lines.append(_CODEX_EXIT_MENU_SUFFIX_RE.sub("", line).rstrip())
+    return _join_lines(bounded_lines)
 
 
 def _normalize_terminal_line(raw_line: str) -> str:
