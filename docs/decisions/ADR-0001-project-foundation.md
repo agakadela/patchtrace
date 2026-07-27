@@ -4,6 +4,22 @@
 - Status: accepted
 - Owner: project maintainer(s)
 
+## Proposed Amendment Notice
+
+The Python stack and `src/patchtrace/<capability>` module convention remain
+accepted. If the 2026-07-27 re-baseline is approved:
+
+- ADR-0002 supersedes the worktree run-storage location and outcome/verdict
+  contract;
+- ADR-0003 makes structured `codex exec` the canonical trusted interface while
+  keeping interactive Codex secondary;
+- ADR-0004 supersedes the original whole-worktree/limited dirty attribution;
+- ADR-0005 makes one Markdown task payload and final PatchTrace verification
+  part of the trusted flow.
+
+Until those proposed ADRs are accepted, this ADR still describes implemented V0
+foundation truth.
+
 ## Context
 
 PatchTrace Python is a local-first devtool for recording Codex CLI sessions and

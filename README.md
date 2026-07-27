@@ -1,10 +1,10 @@
 # PatchTrace
 
-Local evidence and a decisive verification verdict for the moment after a
-coding agent says "done."
+Local evidence and a decisive task-fulfillment verdict for the moment after
+Codex says "done."
 
-PatchTrace records one agent run, binds it to local task and repository
-material, and produces a review package that helps a human answer:
+PatchTrace binds one explicit task to a local Codex run, repository delta, final
+verification, and review package so a developer can answer:
 
 - what was requested;
 - what the agent claimed;
@@ -13,9 +13,10 @@ material, and produces a review package that helps a human answer:
 - what is incomplete, conflicting, or not verifiable;
 - where review should start and what feedback to send back.
 
-PatchTrace is not a correctness oracle, a general AI code reviewer, or an
-autonomous approval agent. It gives a decisive recommendation; the human keeps
-the final decision.
+PatchTrace is not a correctness oracle or general AI code reviewer. It makes a
+strong decision about task fulfillment — `ready_to_accept`, `send_back`,
+`review_required`, `rerun_required`, or `cannot_assess` — while the developer
+performs the final action.
 
 ## Current Status
 
@@ -33,19 +34,21 @@ The current Python V0 implements:
 
 The current implementation does **not** yet provide:
 
-- task-contract capture or requirement coverage;
+- task-contract capture;
 - session-scoped Git attribution;
 - a real Codex adapter boundary;
 - structured Codex JSONL or final-message ingestion;
 - repository-state freshness for command/test evidence;
 - separate wrapped-command, analysis, and package outcomes;
+- final-state required verification or complete requirement coverage;
 - an implemented `patchtrace analyze` or `patchtrace watch` command.
 
 Those limits matter. Today, the final Git diff can include pre-existing worktree
 changes, final-output recognition depends on a Codex TUI marker, and
 command/test results are inferred from transcript text.
 
-See `docs/SPEC.md` for the target product, full capability roadmap, and scope.
+See `docs/SPEC.md` for the target product and scope.
+See `docs/ROADMAP.md` for the complete project roadmap.
 See `docs/PLAN.md` for the detailed next phase.
 
 ## Current Workflow
@@ -86,29 +89,29 @@ exit with explicit not-implemented behavior.
 ## Target Trust Chain
 
 ```text
-task contract
+validated Markdown task
   -> one resolved repository execution root
   -> private run storage outside the tracked worktree
-  -> recorded agent session
-  -> final claims + Git changes + command/test evidence
-  -> provenance and session attribution
-  -> deterministic analysis
-  -> one shared result
-  -> verification verdict, recommended action, and evidence detail
-  -> human decision
+  -> unchanged user payload + versioned PatchTrace execution/response protocol
+  -> structured `codex exec`
+  -> structured final claims + session-attributed Git delta
+  -> final required verification
+  -> deterministic requirement coverage
+  -> one shared AnalysisResult
+  -> decisive verdict + action + three reports
 ```
 
-The next phase strengthens evidence ownership before PatchTrace adds broader
-analysis. In particular, it introduces explicit task binding, session-attributed
-Git evidence, a concrete Codex boundary, structured evidence where Codex
-provides it, command-result freshness, and separate process/analysis/package
-outcomes.
+The next phase delivers this complete trusted flow end to end. Later committed
+phases add review prioritization, compatible post-hoc analysis, continuous local
+watch, OSS distribution, and Windows portability. Conditional integrations are
+recorded separately and require real demand.
 
 ## Source Of Truth
 
 | Area | File |
 |---|---|
-| Product definition, scope, success criteria, roadmap | `docs/SPEC.md` |
+| Product definition, scope, success criteria | `docs/SPEC.md` |
+| Complete phase sequence and status | `docs/ROADMAP.md` |
 | Proposed next phase and detailed active tasks | `docs/PLAN.md` |
 | Current and target architecture, trust boundaries | `docs/ARCHITECTURE.md` |
 | Domain language | `CONTEXT.md` |
@@ -147,8 +150,9 @@ process running as the same user.
 
 ## Platform And Product Boundaries
 
-- V0 targets macOS/Linux-style local CLI workflows.
-- Windows PTY support is deferred.
+- Current V0 targets macOS/POSIX-style local CLI workflows.
+- The roadmap adds Linux before public OSS release and a later explicit Windows
+  portability phase.
 - SaaS, auth, teams, billing, databases, queues, dashboards, automatic fixes,
   broad agent plugins, and required LLM analysis are out of scope.
 - Optional integrations require a demonstrated use case and explicit approval.

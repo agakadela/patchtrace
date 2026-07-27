@@ -3,7 +3,7 @@
 ## Process
 
 - Read `docs/AGENT_WORKFLOW.md` for the long-form workflow before non-trivial work.
-- Read `docs/PLAN.md` before any work. Work on ONE task at a time.
+- Read `docs/ROADMAP.md` and `docs/PLAN.md` before any work. Work on ONE task at a time.
 - Use `using-agent-skills` at session start or when the right skill is unclear.
 - Build vertical slices: every task ends in a user-visible, verifiable result.
 - Run the smallest relevant test loop while editing.
@@ -30,6 +30,8 @@
 - Organize code by product/domain ownership, not global technical-layer dumps.
   Use the module convention recorded in `docs/ARCHITECTURE.md` / `ADR-0001`.
 - When work changes project truth, update the matching doc in `docs/` in the same PR.
+- Keep the complete product sequence in `docs/ROADMAP.md`; keep only the
+  active/proposed phase's detailed tasks in `docs/PLAN.md`.
 - Do not create risk-triggered docs before their trigger exists.
 - Do not invent. If unknown, write `UNKNOWN`. If not applicable, write `N/A` and why.
 

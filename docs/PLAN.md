@@ -1,529 +1,610 @@
 # PLAN.md
 
-Execution source of truth: nearest proposed phase and active tasks only.
+Detailed execution source of truth for the proposed next phase only.
 
-Hygiene rules:
+- Product contract: `docs/SPEC.md`
+- Complete phase sequence: `docs/ROADMAP.md`
+- System design: `docs/ARCHITECTURE.md`
+- Decisions: `docs/decisions/`
 
-- Keep only the nearest proposed/current phase, active tasks, deferred items,
-  and rejected items for this phase.
-- Move a closed phase summary to `docs/VERIFY_LOG.md`; completed task detail
-  belongs in git and PR history.
-- Keep the complete capability roadmap in `docs/SPEC.md`.
-- Work on one task at a time.
+Work on one task at a time. Each task is a production vertical slice with a
+user-visible result, failure-path proof, focused tests, typecheck, and commit.
 
 ## Branch And Baseline
 
 This plan is based on commit `d8c98c4`, the head of open PR #19, which contains
-the completed Phase 4 implementation and closeout.
+the Phase 4 implementation and closeout.
 
-The product/architecture re-baseline is stacked on PR #19. Its PR should target
-`agent/phase-4-task-6-dogfood` until PR #19 merges, then be retargeted to
-`main` only after confirming that `main` contains `d8c98c4` and the retargeted
-diff contains only this re-baseline.
+The product/architecture re-baseline remains stacked on PR #19 until that PR
+merges. Retarget to `main` only after confirming:
 
-## Proposed Next Phase: Phase 5 — Trusted Run Evidence And Provenance
+- `main` contains `d8c98c4`;
+- the retargeted diff contains only the re-baseline;
+- no Phase 4 verification history is lost.
 
-This phase becomes current only after the proposed re-baseline and ADRs receive
-human acceptance.
+## Proposed Next Phase: Phase 5 — End-to-End Trusted Run
+
+This phase becomes current only after the project owner approves this plan and
+proposed ADR-0002 through ADR-0005.
 
 ### Phase Goal
 
-Make one PatchTrace run trustworthy enough to answer which task material, final
-output, Git changes, and command results belong to the captured session before
-adding broader analysis.
+Deliver the complete production trusted-run decision:
+
+```text
+one Markdown task
+  -> structured Codex execution
+  -> session-scoped Git delta
+  -> final required verification
+  -> requirement coverage
+  -> decisive verdict and three aligned reports
+```
+
+The phase is not complete at "better provenance." It closes only when the user
+can receive a real `ready_to_accept` or the correct actionable non-accept
+verdict.
 
 ### User-Visible Result
 
-A user can run PatchTrace with an explicit task file and target repository, then
-receive a verification package that:
-
-- binds the copied task material to the run;
-- runs the child and Git capture from one resolved repository root while storing
-  private artifacts in Git metadata outside the worktree;
-- distinguishes `session-attributed`, `pre-existing`, and `unattributable` Git
-  changes;
-- states how final-message and command evidence were captured;
-- binds structured verification results to the final analyzed repository state;
-- separates wrapped-command, analysis, and package outcomes;
-- exposes integrity/version metadata;
-- gives a decisive verification verdict and recommended action without claiming
-  autonomous acceptance or correctness proof.
-
-Target command shape:
+Target command:
 
 ```bash
-patchtrace run --task-file ./TASK.md --repo . -- codex
+patchtrace run --task-file ./TASK.md
 ```
 
-For an explicitly non-interactive Codex invocation, the concrete Codex adapter
-may use documented JSONL and final-message capture:
+PatchTrace:
 
-```bash
-patchtrace run --task-file ./TASK.md --repo . -- codex exec "<prompt>"
-```
+1. validates and privately binds the task;
+2. passes the unchanged task payload to a PatchTrace-constructed `codex exec`
+   command with a versioned structured response protocol;
+3. records the session and a bounded private Git baseline;
+4. attributes the session delta, including supported dirty-repo changes;
+5. runs the task's authorized `Required Verification` commands against the
+   final repository state;
+6. evaluates every requirement and acceptance criterion;
+7. writes one decisive verdict, one next action, and three reports from the same
+   `AnalysisResult`.
 
-PatchTrace must not silently convert interactive `codex` into `codex exec`.
+Interactive Codex remains available as a secondary mode but cannot emit
+`ready_to_accept` without the complete trusted contract.
 
-### Phase Dependencies
+### Confirmed Decisions
 
-- Phase 4 head `d8c98c4` and its fixture matrix.
-- Existing PTY capture, local run storage, Git evidence, shared
-  `AnalysisResult`, and three report renderers.
-- Official Codex CLI 0.144.1 structured `exec` behavior documented in
-  `docs/ARCHITECTURE.md` and ADR-0003.
+- Primary user: the project owner using local Codex.
+- Primary trusted transport: structured `codex exec`.
+- Task Contract V1: fixed-section Markdown.
+- Task delivery: unchanged user task plus a separate versioned PatchTrace
+  execution/response protocol.
+- Storage: private Git metadata under `patchtrace/runs/`, outside the worktree.
+- Dirty repositories: supported when the bounded baseline makes the delta
+  complete.
+- Final verification: PatchTrace executes only explicit user-authorized
+  commands after agent capture.
+- Highest verdict: `ready_to_accept`.
+- Analysis: task fulfillment and evidence quality, not general code review.
+- Stack/module convention: existing Python capability ownership; no new runtime
+  dependency unless necessary.
+
+### Dependencies
+
+- Phase 4 commit `d8c98c4`, fixtures, `AnalysisResult`, and report renderers;
+- approved `docs/SPEC.md` and `docs/ROADMAP.md`;
+- approved ADR-0002 through ADR-0005;
+- documented Codex CLI structured `exec` behavior;
+- documented Git path/worktree behavior;
+- existing local quality and package build loop.
 
 ### Phase Exit Criteria
 
-- A raw task contract is explicitly supplied, copied into the run folder, and
-  bound by digest; absence is represented as a named analysis limitation.
-- The caller cwd, requested/resolved repository, child cwd, Git metadata root,
-  and private run root are recorded. The child cwd and Git scope are the same
-  resolved repository root; storage is outside the tracked worktree and refuses
-  unsafe/colliding roots before launch.
-  Codex `-C` mismatches and `--add-dir` multi-workspace scope cannot silently
-  receive complete Git attribution.
-- Clean, dirty, staged, unstaged, new-untracked, pre-existing-untracked,
-  descendant-commit, and non-descendant-HEAD fixtures produce the documented
-  attribution labels and limitations.
-- The concrete Codex boundary owns Codex-specific TUI normalization and
-  structured-event parsing; generic capture contains no Codex markers.
-- Structured `codex exec` capture preserves JSONL event boundaries and
-  stdout/stderr separation. Its integrity is explicitly `complete`,
-  `incomplete`, `malformed`, or `mismatched`; failed structured capture cannot
-  silently fall back to transcript inference.
-- Evidence records separate kind, capture method, directness, attribution, and
-  integrity metadata through closed enums and cross-field validation.
-- Wrapped-command and analysis outcomes have tested operational semantics,
-  including spawn failure, non-zero exit, signal/interruption, missing final
-  output, Git collection failure, and parser failure. Package outcome separately
-  covers complete, partial, and failed artifact publication.
-- CLI exit semantics preserve usable wrapped-command exits, use documented
-  PatchTrace failure behavior, and never substitute the verification verdict
-  for process status.
-- The run manifest has a schema version, PatchTrace producer version, adapter
-  and parser versions where applicable, and SHA-256 digests for bound artifacts.
-- Run folders and newly written sensitive artifacts use private local
-  permissions where the platform supports them.
-- Structured command results record a completion-state repository fingerprint;
-  freshness is `state_bound`, `stale`, `unknown`, or `N/A`, and PTY text alone
-  cannot satisfy final-state required verification.
-- Reports safely escape displayed material and minimize copied task, prompt,
-  command-output, and final-message content.
-- All reports consume one `AnalysisResult`, show a provenance-aware verification
-  verdict chosen by one tested precedence rule, show one recommended action, and
-  keep human authority explicit.
-- Sanitized fixtures and at least one real interactive Codex dogfood run prove
-  the fallback path; a structured `codex exec` dogfood run proves the JSONL
-  path.
-- `uv run ruff check .`, `uv run ruff format --check .`,
-  `uv run mypy src tests`, `uv run pytest`, and `uv build` pass.
-- Human review confirms the attribution labels and report usefulness before
-  Phase 5 closes.
+#### Contract And Lifecycle
+
+- Task Contract V1 validation, closed item taxonomy, requirement/criterion
+  links, closed typed acceptance-predicate declarations, stable IDs,
+  byte-preserving copy, digest, and execution-protocol separation are
+  implemented.
+- Caller cwd, requested/resolved repo, child cwd, Git metadata root, run path,
+  requested/effective command, and protocol/schema versions are recorded.
+- Run storage is private, atomic, bounded, collision-safe, outside the worktree,
+  and cannot be staged by ordinary Git commands.
+- Wrapped-command, analysis, and package outcomes are independent and
+  failure-path tested.
+- CLI exit semantics are documented, compatible, and fixture-proven.
+
+#### Structured Codex
+
+- PatchTrace constructs one canonical `codex exec` invocation and preserves
+  stdout JSONL, stderr, final message, and schema-bound response separately.
+- Only canonical Codex `exited(0)` with complete compatible evidence proceeds
+  to fulfillment analysis; not-started, spawn, non-zero, signal, interruption,
+  unknown, containment, and quiescence failures select the closed non-accept
+  outcome.
+- Every `REQ-*` and `AC-*` receives a structured agent status/claim entry or a
+  named protocol failure; `VER-*` and `OOS-*` retain their distinct semantics.
+- Security-relevant Codex configuration is recorded and constrained so hooks,
+  notifications, MCP/plugins, sandbox/network settings, inherited
+  environment/credentials, temp paths, and writable roots cannot create
+  unaccounted trusted scope.
+- Unknown events are preserved; malformed, truncated, missing, or mismatched
+  structured evidence never silently becomes trusted text inference.
+- Interactive Codex remains usable and explicitly labels its weaker evidence.
+
+#### Git And Verification
+
+- Baseline/agent-end evidence covers clean, dirty, staged, unstaged, untracked,
+  deleted, renamed, binary, committed-during-run, unborn, and non-descendant
+  cases under documented limits.
+- A pre-existing dirty/untracked path can still expose its later
+  `session-attributed` delta when baseline bytes were captured completely.
+- Symlinks are not followed; FIFOs, sockets, and devices are not opened;
+  file/byte/path/time limits degrade only affected evidence where possible.
+- PatchTrace never mutates the worktree, index, branch, history, or Git config.
+- Git collection uses non-refresh/non-optional-lock behavior and proves that
+  index bytes and semantic Git state remain unchanged.
+- Required verification runs after agent capture under a recorded default-deny
+  effect profile, records contained process-tree lifecycle and bounded output,
+  and is bound across separate quiescent agent-end and verification-end
+  repository fingerprints.
+- Relevant verification-phase state is captured separately from the agent
+  delta and produces `send_back`; it is never silently folded into accepted
+  work.
+- Timeout, signal, spawn, output-limit, repository-mutation, and command-failure
+  behavior is explicit and tested.
+- Delayed/background/detached descendant behavior is contained and
+  fixture-proven; incomplete containment cannot produce `ready_to_accept`.
+
+#### Analysis And Reports
+
+- Every requirement and acceptance criterion has an explicit fulfillment and
+  evidence-coverage result, or a named protocol failure.
+- Every acceptance criterion has a supported closed independent evidence
+  predicate; an
+  agent claim alone cannot support acceptance.
+- One analyzer-owned precedence rule emits exactly one of:
+  `ready_to_accept`, `send_back`, `review_required`, `rerun_required`,
+  `cannot_assess`.
+- A valid failed required check yields `send_back`; stale/missing/broken capture
+  yields `rerun_required`.
+- A closed failure-class to analysis-outcome to verdict table distinguishes
+  repeatable capture failures from incompatible/unrepairable runs.
+- `SUMMARY.md` leads with verdict, decisive reason, coverage, final verification,
+  attribution limits, and next action.
+- `AGENT_FEEDBACK.md` is immediately pasteable into Codex without relaying raw
+  untrusted task/evidence bytes into a new prompt.
+- `VERIFICATION_BRIEF.md` preserves the complete task/claim/evidence path.
+- All reports consume one `AnalysisResult` and render untrusted content as inert
+  text.
+
+#### Production Proof
+
+- Unit/integration fixture matrices cover the supported happy paths and failure
+  taxonomy.
+- Three real sanitized dogfood runs pass:
+  1. clean `ready_to_accept`;
+  2. dirty baseline with correctly separated session delta;
+  3. omitted, failed, or stale evidence producing the correct non-accept
+     verdict.
+- The project owner confirms that the verdict and generated feedback produce the
+  right next decision.
+- Ruff lint, Ruff format check, mypy, pytest, build, and PR CI pass.
+- `docs/VERIFY_LOG.md` receives one Phase 5 close entry only after implementation
+  and human verification.
 
 ### Out Of Scope
 
-- Parsed requirement coverage and semantic completeness analysis;
-- generic adapter/plugin architecture or non-Codex adapters;
-- worktree virtualization or proof of causal agent authorship;
-- exhaustive recovery of transient changes committed and later reset;
-- attribution across multiple repositories, submodule contents, or ignored
-  files;
-- `patchtrace analyze` and `patchtrace watch`;
-- review-priority scoring beyond making provenance gaps visible;
-- public JSON API, package publishing, external services, or LLM use.
+- generic code review, correctness scoring, vulnerability scanning;
+- review-priority ranking beyond decisive Phase 5 reasons;
+- post-hoc `analyze`;
+- continuous `watch`;
+- public package release;
+- Linux/Windows release claims;
+- non-Codex adapters or shared adapter framework;
+- LLM or external services;
+- public JSON contract;
+- automatic fixes, acceptance, or merge.
 
-### Plan-Change Triggers
+### Phase Plan-Change Triggers
 
-- If explicit task-file authoring is too disruptive in real dogfooding, pause
-  before adding inference and test a simpler explicit input mechanism.
-- If Codex JSONL does not preserve the events needed for final/command evidence,
-  keep structured mode degraded and revise ADR-0003; do not parse more TUI text
-  by default.
-- If path-level dirty-repo attribution produces misleading results, require a
-  clean baseline for complete analysis and keep dirty runs explicitly limited.
-- If supporting structured and PTY transports forces broad framework
-  abstraction, keep two concrete capture paths until a second real adapter
-  proves a shared protocol.
+- Codex structured output cannot reliably carry requirement-level final claims.
+- Task Contract V1 is unusable in three real dogfood runs.
+- Dirty baseline storage or capture cost makes normal repositories impractical.
+- Final verification authorization is unsafe or too surprising.
+- Representative trusted tasks require network or external-writer effects that
+  the Phase 5 controlled profile excludes.
+- Supported macOS primitives cannot enforce the required Codex/verification
+  process containment and quiescent checkpoint contract.
+- Deterministic coverage produces misleading accept decisions.
+- A task cannot be completed as a production vertical slice without changing the
+  accepted trust contract.
 
 ## Active Tasks
 
-### Task 1: Bind The Raw Task And Target Repository To The Run
+### Task 1 — Trusted Task, Repository, Storage, And Lifecycle Contract
 
-**Description:** Add explicit `--task-file` and `--repo` inputs, safely copy the
-task material into the private run folder, record the resolved repository
-identity, and bind the task artifact with a digest. The task is the evaluation
-contract; do not claim that the same bytes reached the agent without separate
-delivery evidence, and do not parse requirements yet. Resolve one execution
-anchor: the selected repository root is both child cwd and Git scope, while the
-run folder lives in PatchTrace-owned Git metadata outside the tracked worktree.
+**User-visible result**
 
-**Acceptance criteria:**
+`patchtrace run --task-file TASK.md` validates the task and repository, creates a
+private durable run manifest outside the worktree, shows the effective run
+contract, and leaves a diagnosable package for every supported outcome after
+safe storage is established. Earlier task/repository/storage preflight failures
+produce structured stderr and exit diagnostics without promising a run folder.
 
-- [ ] A run manifest records the requested and resolved repository plus the
-      caller cwd, child cwd, Git metadata/run roots, copied `task.md` artifact,
-      and SHA-256 digest.
-- [ ] Task input is a bounded regular non-symlink file with supported encoding;
-      unstable bytes during copy, oversize input, and symlink input fail before
-      child launch.
-- [ ] Missing/unreadable task input and non-Git target paths fail or degrade
-      according to documented reason codes without launching the wrapped command
-      under a false complete state.
-- [ ] Relative paths, symlinked repository paths, nested repositories, and
-      linked worktrees resolve under one explicit, tested scope rule.
-- [ ] The child starts in the resolved repository root; task-file resolution
-      remains relative to the original caller cwd.
-- [ ] Storage resolution refuses a symlink, regular file, worktree overlap, or
-      pre-existing directory without PatchTrace's ownership marker, and ordinary
-      `git add -A` cannot stage a generated private run.
+**Scope**
 
-**Verification:**
+- parse fixed Task Contract V1 headings, cardinalities, item taxonomy,
+  requirement/criterion links, and closed typed evidence-predicate
+  declarations;
+- preserve/digest original task bytes and validate stable `REQ-*`, `AC-*`,
+  `VER-*`, and `OOS-*` IDs under their distinct semantics;
+- build and digest a separate versioned execution/response protocol;
+- resolve caller cwd, repository root, child cwd, and Git metadata storage;
+- introduce manifest/evidence schema versions and integrity fields;
+- separate wrapped-command, analysis, and package outcomes;
+- define atomic manifest lifecycle and CLI exit behavior.
 
-- [ ] Focused CLI/model/storage tests pass.
-- [ ] A fake run proves the copied task and repository binding in `run.json`.
-- [ ] `uv run mypy src tests` passes before commit.
+**Acceptance criteria**
 
-**Dependencies:** None.
+- [ ] Missing, malformed, unstable, oversize, unsupported-encoding, symlinked,
+      or unreadable task input fails before Codex starts.
+- [ ] `Outcome` is singular/non-empty; requirements and acceptance criteria are
+      non-empty; verification/out-of-scope use their declared item or explicit
+      `N/A` forms.
+- [ ] Every acceptance criterion links to requirements and declares a supported
+      closed predicate over exact Git/artifact properties, expected named
+      `VER-*` outcomes, or explicit human inspection, with declared `all`/`any`
+      composition.
+- [ ] Generic file presence/change, agent claims, unsupported predicate atoms,
+      and ambiguous compositions cannot satisfy a criterion; malformed machine
+      predicates fail task validation.
+- [ ] Every requirement is linked from at least one acceptance criterion;
+      unmapped requirements fail contract validation.
+- [ ] The task payload and PatchTrace protocol are stored/digested separately.
+- [ ] Relative task/repo paths, symlinked repo paths, nested repos, and linked
+      worktrees resolve under one tested rule.
+- [ ] Child cwd and Git evidence scope are the same resolved worktree root.
+- [ ] `git rev-parse --path-format=absolute --git-path patchtrace/runs` or its
+      documented equivalent resolves storage, followed by explicit safety
+      validation.
+- [ ] Storage refuses worktree overlap, symlinks, regular-file collisions, and
+      unowned pre-existing directories.
+- [ ] Failures before safe storage exists return bounded structured diagnostics;
+      durable manifest/package guarantees begin only after storage creation.
+- [ ] Ordinary `git add -A` cannot stage any generated task, protocol, manifest,
+      or run artifact.
+- [ ] Manifest writes are private and atomic; partial preflight/spawn failure
+      remains diagnosable.
+- [ ] Outcome and CLI exit fixtures cover validation `2`, PatchTrace failure
+      `1`, normal child exits, signals, and interruption.
+- [ ] No new runtime dependency is added.
 
-**Likely files:** `src/patchtrace/cli/app.py`,
-`src/patchtrace/models/run.py`, `src/patchtrace/storage/runs.py`,
-`tests/integration/test_run_fake_command.py`.
+**Verification**
 
-**Suggested branch:** `agent/phase-5-task-1-run-binding`
+- [ ] Task parser/model unit tests.
+- [ ] Storage permissions/collision/atomicity integration tests.
+- [ ] Fake subprocess lifecycle and CLI exit tests.
+- [ ] Manual fake run inspection of `run.json`.
+- [ ] Ruff, format, mypy, focused pytest, full pytest, and build.
 
-### Task 2: Separate Wrapped-Command And Analysis Outcomes
+**Dependencies:** None after plan/ADR approval.
 
-**Description:** Replace the current single `outcome` field with explicit
-wrapped-command, analysis, and package outcomes, reason codes, documented CLI
-exit semantics, and early manifest writes that survive partial failure.
+**Likely ownership:** `cli`, `models`, `storage`, new task-contract parsing under
+a capability-owned module, and focused tests.
 
-**Acceptance criteria:**
+**Suggested branch:** `agent/phase-5-task-1-trusted-run-contract`
 
-- [ ] Wrapped process states distinguish not started, spawn failure, exited,
-      signaled, interrupted, and unknown without converting every signal into an
-      ordinary exit.
-- [ ] Analysis is `completed`, `degraded`, or `blocked` under explicit tested
-      invariants and reason codes; completion means one valid `AnalysisResult`
-      exists and does not depend on rendering.
-- [ ] Package outcome is `complete`, `partial`, or `failed`, and a report-write
-      failure cannot retroactively change analysis outcome or verdict.
-- [ ] The manifest exists before the child starts and is updated after capture,
-      analysis, and report boundaries so failures leave a diagnosable record.
-- [ ] CLI tests prove usage `2`, PatchTrace failure `1`, propagated normal child
-      exits, `128 + signal`, interruption `130`, and that verdict does not
-      replace process status.
+### Task 2 — Canonical Structured Codex Execution
 
-**Verification:**
+**User-visible result**
 
-- [ ] Fake-command tests cover zero/non-zero exit, spawn failure, signal, and
-      interrupted/unknown behavior.
-- [ ] Unit tests cover analysis/package outcome invariants and report-write
-      failure.
-- [ ] `uv run mypy src tests` passes before commit.
+PatchTrace launches the validated task through one structured trusted Codex path
+and captures a schema-valid final response covering every `REQ-*` and `AC-*`.
+
+**Scope**
+
+- add one concrete Codex adapter;
+- construct effective `codex exec` flags and stdin/prompt payload;
+- resolve, constrain, and record the security-relevant effective Codex profile;
+- use JSONL, final-message output, and output schema;
+- preserve raw stdout JSONL and stderr separately;
+- parse documented event shapes and structured final response;
+- keep interactive PTY mode available but explicitly secondary.
+
+**Acceptance criteria**
+
+- [ ] The user task bytes remain unchanged inside the effective prompt; the
+      versioned PatchTrace protocol is separately identifiable and digested.
+- [ ] Requested/effective commands, Codex version, adapter/parser/protocol/schema
+      versions, and output locators are recorded.
+- [ ] Trusted mode explicitly fixes sandbox, approval, cwd, and writable-scope
+      settings; explicitly configures network and temp behavior; allowlists and
+      redacts inherited environment/credential inputs; records the effective
+      config/profile and effect-scope digest; and rejects unaccounted hooks,
+      notification commands, MCP/plugin writers, roots, environment channels,
+      or unsafe bypass modes.
+- [ ] Canonical Codex and accounted descendants run under a source-checked
+      supervised containment boundary; agent-end capture waits for quiescence,
+      and surviving/escaped/unreaped descendants select `rerun_required`.
+- [ ] The response schema requires one result for every stable requirement and
+      acceptance-criterion ID.
+- [ ] The only response statuses are `claimed_done`, `not_done`, and `blocked`;
+      schema-valid `not_done`/`blocked` is explicit unfulfilled work and later
+      selects `send_back`.
+- [ ] Missing IDs, duplicates, invalid statuses, unexpected IDs, malformed or
+      truncated JSONL, missing final files, and event/file disagreement are
+      protocol/capture failures with explicit `rerun_required` or
+      `cannot_assess` integrity outcomes; they never become `not_done`.
+- [ ] Raw structured evidence remains authoritative; parse failure does not
+      silently fall back to TUI inference.
+- [ ] Canonical terminal mapping covers `not_started`, spawn failure, exit `0`,
+      non-zero exit even with valid final schema, signal, interruption, and
+      unknown outcome; only exit `0` can continue toward `ready_to_accept`.
+- [ ] User-supplied conflicting structured-output flags fail before launch.
+- [ ] Codex `-C/--cd` must match the selected repo; trusted mode rejects
+      additional writable roots, while secondary modes label the scope
+      incomplete and retain their verdict ceiling.
+- [ ] Generic process/session code contains no Codex markers or event rules.
+- [ ] Interactive mode preserves verified Phase 4 behavior and cannot emit
+      `ready_to_accept` under incomplete evidence.
+
+**Verification**
+
+- [ ] Synthetic JSONL/final-response fixture corpus covering success and every
+      supported integrity failure.
+- [ ] Fake piped process proves stdout/stderr separation, timeout, signal, and
+      output limits.
+- [ ] Delayed/background/detached child fixtures prove Codex process-tree
+      containment and quiescent agent-end capture on supported macOS.
+- [ ] Existing interactive transcript fixtures pass through the adapter.
+- [ ] One sanitized real structured Codex run proves the installed documented
+      path.
+- [ ] Ruff, format, mypy, focused pytest, full pytest, and build.
 
 **Dependencies:** Task 1.
 
-**Likely files:** `src/patchtrace/models/run.py`,
-`src/patchtrace/session/recorder.py`, `src/patchtrace/cli/app.py`,
-`tests/integration/test_run_fake_command.py`.
+**Likely ownership:** `adapters/codex.py`, generic piped `session` capture,
+evidence models, CLI orchestration, sanitized fixtures, and focused tests.
 
-**Suggested branch:** `agent/phase-5-task-2-outcomes`
+**Suggested branch:** `agent/phase-5-task-2-structured-codex`
 
-### Task 3: Create Versioned Evidence And Integrity Models
+### Task 3 — Session Delta And Final Verification
 
-**Description:** Introduce the smallest validated evidence envelope needed by
-the trust chain. Keep evidence kind, capture method, directness, attribution,
-locator, and integrity as separate fields.
+**User-visible result**
 
-**Acceptance criteria:**
+The run package distinguishes pre-existing work from the session delta,
+including supported dirty files, then executes every authorized required check
+and captures a distinct verification-end state.
 
-- [ ] Manifest/evidence schemas include schema, producer, adapter, and parser
-      versions where applicable.
-- [ ] Bound artifacts carry path, SHA-256 digest, size, capture method, and
-      directness without treating those fields as correctness scores.
-- [ ] Command-result evidence can carry a repository state fingerprint and
-      closed freshness state without conflating freshness with pass/fail.
-- [ ] Evidence taxonomies are closed enums with cross-field validators, and
-      structured evidence records `complete`, `incomplete`, `malformed`,
-      `mismatched`, or `N/A` integrity.
-- [ ] Mutated or missing artifacts are detected before post-capture analysis and
-      produce named analysis limitations.
+**Scope**
 
-**Verification:**
+- capture bounded baseline/agent-end repository state and private dirty/untracked
+  content needed for later comparison;
+- capture distinct agent-end and verification-end repository states;
+- capture HEAD/index/worktree and descendant commit evidence;
+- compute session attribution without mutating Git;
+- execute final verification commands from the validated task;
+- enforce a recorded verification effect profile independently from command
+  authorization;
+- source-check and fixture-prove the installed `codex sandbox [COMMAND]...` as
+  the preferred host-OS verification launcher before considering any new
+  dependency;
+- bind command results across agent-end, per-command, and verification-end
+  repository fingerprints;
+- define resource, filesystem, process, and repository-mutation behavior.
 
-- [ ] Pydantic validation and mutation-detection tests pass.
-- [ ] A saved-run fixture proves stable serialization.
-- [ ] `uv run mypy src tests` passes before commit.
+**Acceptance criteria**
+
+- [ ] Clean tracked changes, additions, deletions, renames, binary paths, new
+      untracked files, and descendant commits are `session-attributed`.
+- [ ] Unchanged baseline changes remain `pre-existing`.
+- [ ] Changes after a completely captured dirty/untracked baseline are
+      `session-attributed`, including the same path.
+- [ ] Baseline HEAD/index/worktree layers remain decomposed when pre-existing
+      staged/unstaged content is partially or fully committed; moving identical
+      baseline bytes into a descendant commit does not relabel them as session
+      content.
+- [ ] Only genuinely inseparable, incomplete, rewritten, or out-of-scope
+      material is `unattributable`.
+- [ ] Unborn/non-descendant HEAD, submodules, sparse checkouts, linked
+      worktrees, ignored files, and extra repositories have explicit behavior.
+- [ ] Symlinks use `lstat` and are never followed; special files are never
+      opened.
+- [ ] Per-file, total-byte, path-count, elapsed-time, command-timeout, and
+      output limits are recorded and tested.
+- [ ] PatchTrace performs no index, worktree, branch, commit, or Git-config
+      mutation.
+- [ ] Every Git collector invocation uses `git --no-optional-locks` or the
+      tested equivalent; collection preserves index bytes and semantic
+      Git state in isolated fixtures.
+- [ ] Required verification runs only from the user-authorized task section and
+      only after agent capture.
+- [ ] Every command and descendant runs with network/external writers denied,
+      inherited environment allowlisted, credentials excluded/redacted, and
+      writable/temp roots bounded to the recorded Phase 5 profile; unsupported
+      expansion fails before execution.
+- [ ] The selected version-checked verification launcher proves effective
+      filesystem/network denial, descendant policy inheritance, and denial
+      diagnostics on supported macOS; command/flag presence alone is not proof.
+- [ ] Command authorization alone never grants network, credentials, external
+      roots, or unbounded subprocess effects.
+- [ ] A verification result is `state_bound` only when it applies to
+      verification-end state and no later relevant change made it stale.
+- [ ] A relevant repository delta observed from agent-end to verification-end
+      invalidates acceptance: it is reported as verification-phase and the
+      verdict is `send_back`. The snapshots
+      establish that the change happened during the phase, not which concurrent
+      process wrote it. Ignored/declared ephemeral outputs remain outside the
+      relevant fingerprint.
+- [ ] Verification process outcomes use one closed mapping: captured exit `0`
+      follows normal evidence rules; captured non-zero exit, declared-timeout
+      termination, or unrequested signal selects `send_back`; spawn failure,
+      PatchTrace/user interruption, or lost exit status selects
+      `rerun_required`.
+- [ ] Bounded saved output continues draining to a reliable process outcome;
+      truncation alone does not change a known exit-based verdict, but
+      truncating output explicitly required as evidence or terminating/loss of
+      outcome at the cap selects `rerun_required`.
+- [ ] Verification-end capture waits until every accounted descendant is
+      terminated/reaped and the effect boundary is quiescent; surviving,
+      escaped, or unaccounted descendants select `rerun_required`.
+- [ ] Valid pass, valid fail, spawn failure, timeout, signal, output limit, and
+      stale-state fixtures prove the mapping.
+
+**Verification**
+
+- [ ] Temporary-repository integration matrix for all accepted Git cases.
+- [ ] Dirty-baseline-to-descendant-commit fixtures cover staged, unstaged,
+      partial-commit, and same-path later-edit cases.
+- [ ] Special-file, symlink, huge-file/tree, and cap fixtures.
+- [ ] Fake verification command process matrix.
+- [ ] Credential/network/external-root denial plus delayed/background/detached
+      writer fixtures.
+- [ ] Manual dirty-repo artifact inspection without private material committed.
+- [ ] Ruff, format, mypy, focused pytest, full pytest, and build.
 
 **Dependencies:** Tasks 1–2.
 
-**Likely files:** `src/patchtrace/models/run.py`,
-`src/patchtrace/models/evidence.py`, `src/patchtrace/storage/runs.py`,
-`tests/unit/test_evidence_models.py`.
+**Likely ownership:** `vcs`, verification process capture, evidence/run models,
+CLI orchestration, and integration fixtures.
+
+**Suggested branch:** `agent/phase-5-task-3-session-delta-verification`
+
+### Task 4 — Requirement Coverage, Decisive Reports, And Phase Proof
+
+**User-visible result**
+
+The complete trusted flow emits one production decision, one exact next action,
+and three aligned reports, then proves the result in clean, dirty, and failure
+dogfood scenarios.
+
+**Scope**
+
+- map task requirements/acceptance criteria to structured Codex claims, Git
+  evidence, and final verification;
+- enforce independent acceptance evidence and define coverage, evidence gaps,
+  the closed failure/outcome/verdict mapping, and next actions;
+- preserve one `AnalysisResult`;
+- update all three renderers and CLI completion output;
+- neutralize untrusted Markdown/control content;
+- run the complete fixture and real dogfood matrix;
+- reconcile docs/ADR status with implemented truth at close.
+
+**Acceptance criteria**
+
+- [ ] Every `REQ-*` and `AC-*` has a deterministic coverage result and evidence
+      locators; every `VER-*` and `OOS-*` has its distinct assessment.
+- [ ] Only `REQ-*` and `AC-*` require structured agent entries; `VER-*` results
+      come from PatchTrace and `OOS-*` constraints are checked against evidence.
+- [ ] An `OOS-*` constraint that cannot be assessed deterministically selects
+      `review_required`; absence of an agent scope claim is not proof.
+- [ ] No acceptance criterion reaches supported coverage from an agent claim
+      alone; a declared human-inspection basis selects `review_required`.
+- [ ] Only the task's closed typed predicate determines machine support;
+      misleading generic changed-file bases and unsupported natural-language
+      inference cannot promote `ready_to_accept`.
+- [ ] Missing agent entries and unsupported/contradicted claims cannot disappear
+      from the verdict.
+- [ ] A missing/duplicate/invalid structured entry remains a protocol capture
+      failure and selects `rerun_required`; a schema-valid `not_done` or
+      `blocked` entry is an explicit fulfillment failure and selects
+      `send_back`.
+- [ ] `ready_to_accept` requires complete supported task coverage, passing
+      declared acceptance predicates, successful quiescent canonical Codex
+      execution, controlled Codex/verification effects, state-bound required
+      verification, identical relevant agent-end/verification-end state,
+      complete relevant session attribution, compatible integrity, and no
+      higher-precedence condition.
+- [ ] Valid required-check failure selects `send_back`.
+- [ ] Missing/stale/malformed/incomplete/mismatched required evidence selects
+      `rerun_required`.
+- [ ] Bounded ambiguity/unattributable risk selects `review_required`; blocked
+      trusted analysis selects `cannot_assess`.
+- [ ] Reports never perform general code review or claim semantic correctness.
+- [ ] `SUMMARY.md` shows verdict, decisive reason, coverage counts, final checks,
+      attribution limitations, and one action before secondary metadata.
+- [ ] `AGENT_FEEDBACK.md` is pasteable and contains only PatchTrace-authored
+      closed reason text, task IDs validated under a bounded ASCII grammar,
+      PatchTrace-generated evidence IDs, PatchTrace-controlled local artifact
+      locators, and the requested correction.
+- [ ] Raw task text, agent claims/output, command output, diff excerpts, and
+      user-controlled paths/file names never enter the paste-ready feedback
+      section; prompt-injection fixture bytes prove this boundary.
+- [ ] `VERIFICATION_BRIEF.md` preserves full provenance and review locators.
+- [ ] Untrusted headings, fences, links, images, control characters, and
+      terminal escape content remain inert through one renderer-independent
+      literal-text path.
+- [ ] Raw HTML, HTML entities, reference definitions, autolinks, remote
+      resources, and renderer-specific Markdown extensions remain inert.
+- [ ] Clean, dirty, and non-accept real dogfood scenarios pass.
+- [ ] The project owner explicitly approves report usefulness and Phase 5 close.
+
+**Verification**
+
+- [ ] Requirement/claim/predicate/evidence/verdict unit matrix, including
+      misleading-basis fixtures.
+- [ ] Cross-report agreement and Markdown-injection fixtures.
+- [ ] Full supported integration and partial-failure matrix.
+- [ ] Three real sanitized dogfood run inspections.
+- [ ] Ruff, format, mypy, full pytest, build, and PR CI.
+- [ ] `$aga-simplify`, `$aga-review`, `$aga-test`, and `$aga-verify-agent`, or
+      exact cannot-verify records.
+- [ ] One compact `docs/VERIFY_LOG.md` Phase 5 close entry after human approval.
+
+**Dependencies:** Tasks 1–3.
+
+**Likely ownership:** `analysis`, `models`, `reports`, CLI presentation, docs,
+fixtures, and phase-close verification.
+
+**Suggested branch:** `agent/phase-5-task-4-trusted-verdict`
+
+## Checkpoints
+
+### Checkpoint A — After Task 1
+
+- [ ] Human confirms Task Contract V1 authoring and CLI preflight ergonomics.
+- [ ] Manifest/outcome/storage contracts are stable enough for adapter and Git
+      work.
+- [ ] No worktree artifact can be staged accidentally.
 
-**Suggested branch:** `agent/phase-5-task-3-evidence-envelope`
+### Checkpoint B — After Task 2
 
-### Task 4: Attribute Clean-Baseline And Committed Git Changes
+- [ ] A real structured Codex task produces a schema-valid response for every
+      task item.
+- [ ] Interactive mode remains usable and honestly differentiated.
+- [ ] Protocol and external-format fixtures cover observed drift.
 
-**Description:** Capture HEAD/repository identity plus before/after path state
-and content fingerprints. Classify clean-baseline worktree changes, new
-untracked files, and descendant commits as session-attributed. Keep untracked
-inspection bounded and non-blocking for special filesystem entries.
+### Checkpoint C — After Task 3
 
-**Acceptance criteria:**
+- [ ] Dirty baseline attribution is understandable and useful in a real repo.
+- [ ] Final verification is demonstrably tied to final analyzed state.
+- [ ] Resource limits and special-file behavior do not hide whole-run failures.
 
-- [ ] Clean tracked modifications, additions, deletions, renames, binary-path
-      changes, and new untracked files receive tested session attribution.
-- [ ] A descendant `HEAD` change captures committed changes even when the final
-      worktree is clean.
-- [ ] Non-descendant/unborn HEAD, submodules, ignored files, and multi-repo scope
-      produce explicit bounded behavior instead of guessed attribution.
-- [ ] Untracked symlinks are not followed; FIFOs, sockets, and devices are never
-      opened; oversize/special paths become metadata-only and
-      `unattributable`.
-- [ ] Recorded per-file, total-byte, path-count, and elapsed-time caps make an
-      exceeded inventory explicitly incomplete/degraded rather than hanging or
-      claiming complete attribution.
+### Checkpoint D — After Task 4
 
-**Verification:**
+- [ ] The user receives the correct decision in all three real dogfood cases.
+- [ ] Reports agree and generated feedback is immediately actionable.
+- [ ] Full phase exit criteria and production proof pass.
 
-- [ ] Git integration fixtures cover the supported clean-baseline matrix.
-- [ ] Report input includes attribution basis and evidence locators.
-- [ ] `uv run mypy src tests` passes before commit.
+## Open Questions Owned By Phase 5
 
-**Dependencies:** Task 3.
+### Approval Gate Before Task 1
 
-**Likely files:** `src/patchtrace/vcs/snapshot.py`,
-`src/patchtrace/models/evidence.py`, `src/patchtrace/cli/app.py`,
-`tests/integration/test_git_evidence.py`.
-
-**Suggested branch:** `agent/phase-5-task-4-clean-git-attribution`
-
-### Task 5: Add Dirty-Repository Limited Attribution
+- The project owner must approve `docs/SPEC.md`, `docs/ROADMAP.md`,
+  `docs/ARCHITECTURE.md`, ADR-0002 through ADR-0005, and this plan.
+- This is a human approval gate, not an unresolved design question.
 
-**Description:** Preserve the pre-run dirty baseline and distinguish unchanged
-pre-existing paths from new session-attributed paths and overlapping
-unattributable paths.
+### Blocking Design Questions After Approval
 
-**Acceptance criteria:**
+- N/A.
 
-- [ ] Unchanged baseline dirt is labeled pre-existing.
-- [ ] A path clean at start and changed at end is session-attributed even when
-      other paths were already dirty.
-- [ ] A pre-existing tracked or untracked path that also changes during the
-      session is labeled unattributable at the inseparable scope, with the
-      baseline and final fingerprints retained.
+### Non-Blocking Until Their Owning Task
 
-**Verification:**
+- Task 1: exact Markdown syntax for the decided taxonomy/links/typed evidence
+  predicates, default task size limit, and lifecycle reason-code names.
+- Task 2: exact protocol version field, response schema shape, supported Codex
+  version matrix, version-checked config override keys, and source-checked macOS
+  containment primitive.
+- Task 3: exact snapshot/command/output/time defaults, verification-profile
+  enforcement primitive, and ignored/ephemeral fingerprint rules.
+- Task 4: final report wording and coverage state spellings.
 
-- [ ] Dirty/staged/unstaged/untracked overlap fixtures pass.
-- [ ] Reports do not present whole-worktree material as session-attributed.
-- [ ] `uv run mypy src tests` passes before commit.
-
-**Dependencies:** Task 4.
-
-**Likely files:** `src/patchtrace/vcs/snapshot.py`,
-`src/patchtrace/models/evidence.py`,
-`src/patchtrace/analysis/analyzer.py`,
-`tests/integration/test_git_evidence.py`.
-
-**Suggested branch:** `agent/phase-5-task-5-dirty-git-attribution`
-
-### Task 6: Establish The Concrete Codex Adapter Boundary
-
-**Description:** Move Codex-specific TUI marker/noise behavior out of generic
-session/analysis modules into one concrete adapter. Preserve the verified Phase
-4 fallback behavior and sanitized transcript corpus.
-
-**Acceptance criteria:**
-
-- [ ] Generic PTY recording contains no Codex-specific marker or shutdown rules.
-- [ ] `adapters/codex.py` owns current final-region normalization and returns
-      typed final-message evidence or an explicit missing/ambiguous result.
-- [ ] Codex `-C/--cd` must resolve to Task 1's selected repository; `--add-dir`
-      and other declared workspaces are recorded as incomplete attribution
-      scope rather than silently treated as covered.
-- [ ] No generic plugin registry, discovery mechanism, or hypothetical adapter
-      interface is introduced.
-
-**Verification:**
-
-- [ ] Existing Codex transcript fixtures pass through the new boundary.
-- [ ] Markerless and multi-marker transcripts remain unassessed.
-- [ ] `uv run mypy src tests` passes before commit.
-
-**Dependencies:** Tasks 1 and 3.
-
-**Likely files:** `src/patchtrace/adapters/codex.py`,
-`src/patchtrace/session/transcript.py`,
-`src/patchtrace/analysis/analyzer.py`,
-`tests/unit/test_transcript_normalization.py`,
-`tests/fixtures/codex_transcript_noise.json`.
-
-**Suggested branch:** `agent/phase-5-task-6-codex-boundary`
-
-### Task 7: Capture Structured Codex Exec Evidence
-
-**Description:** Add a concrete piped transport for explicitly requested
-`codex exec`, preserve stdout JSONL and stderr separately, and let the Codex
-adapter own PatchTrace-controlled JSONL/final-message capture.
-
-**Acceptance criteria:**
-
-- [ ] Interactive `codex` continues to use PTY capture; PatchTrace never silently
-      converts it to `codex exec`.
-- [ ] `codex exec` structured mode stores JSONL events and a fresh final message
-      inside this run's private folder, records requested/effective commands, and
-      rejects conflicting user-owned output flags.
-- [ ] Final-message selection, unknown events, malformed/truncated JSONL,
-      missing output files, and event/file disagreement have explicit behavior;
-      failed structured parsing never silently becomes text inference.
-- [ ] Structured integrity is `complete`, `incomplete`, `malformed`, or
-      `mismatched` under fixture-proven rules; raw JSONL remains authoritative
-      evidence even when derived selection fails.
-- [ ] Command events preserve invocation, lifecycle, exit/status information,
-      and source locators when Codex emits them. At event completion PatchTrace
-      records a repository state fingerprint for final-state freshness checks.
-
-**Verification:**
-
-- [ ] Sanitized JSONL fixtures cover successful, failed, unknown-event,
-      truncated, and mismatched-final-message cases.
-- [ ] A fake structured subprocess proves stdout/stderr separation.
-- [ ] A fixture with a passing command followed by a later file change is
-      `stale`; an unchanged completion/final fingerprint is `state_bound`; PTY
-      text remains `unknown`.
-- [ ] A real local `codex exec` dogfood run proves the documented 0.144.1 path
-      without tracking private output.
-- [ ] `uv run mypy src tests` passes before commit.
-
-**Dependencies:** Tasks 2, 3, and 6.
-
-**Likely files:** `src/patchtrace/adapters/codex.py`,
-`src/patchtrace/session/recorder.py`, `src/patchtrace/cli/app.py`,
-`tests/integration/test_structured_codex_capture.py`,
-`tests/fixtures/codex_exec_events.jsonl`.
-
-**Suggested branch:** `agent/phase-5-task-7-codex-structured-evidence`
-
-### Task 8: Make Analysis And Reports Provenance-Aware
-
-**Description:** Feed the bound task, attributed Git changes, final-message
-source, command evidence, and separate outcomes into the existing single
-analysis seam. Replace free-form verdict copy with a typed, decisive
-verification verdict and recommended action.
-
-**Acceptance criteria:**
-
-- [ ] One `AnalysisResult` exposes analysis outcome/reasons, evidence provenance,
-      attribution, gaps, verification verdict, and recommended action to all
-      renderers.
-- [ ] Reports distinguish direct structured evidence from deterministic text
-      inference and identify pre-existing/unattributable Git material.
-- [ ] Reports use `ready_for_human_acceptance`, `review_required`, `send_back`,
-      `rerun_required`, or `cannot_assess` under tested rules; Phase 5 cannot
-      emit `ready_for_human_acceptance` before requirement coverage exists.
-- [ ] One analyzer-owned precedence rule selects the verdict; renderers cannot
-      promote it. Mutated artifacts, unknown-incompatible schemas, and imported
-      bundles without equivalent trusted provenance cannot emit
-      `ready_for_human_acceptance`; compatible saved trusted runs are not
-      disqualified merely for re-analysis.
-- [ ] Reports may strongly recommend the next decision but do not perform
-      acceptance or represent the verdict as proof of correctness.
-- [ ] Reports safely escape excerpts and minimize sensitive raw task, prompt,
-      command-output, and final-message content.
-
-**Verification:**
-
-- [ ] The Phase 4 claim matrix still produces conservative claim relationships.
-- [ ] Report tests prove the three renderers agree on outcomes and provenance.
-- [ ] Injection fixtures prove untrusted headings, fence delimiters, control
-      characters, Markdown links, and remote-image syntax cannot alter report
-      structure or trigger a renderer fetch.
-- [ ] `uv run mypy src tests` passes before commit.
-
-**Dependencies:** Tasks 4–7.
-
-**Likely files:** `src/patchtrace/models/report.py`,
-`src/patchtrace/analysis/analyzer.py`,
-`src/patchtrace/reports/summary.py`,
-`src/patchtrace/reports/feedback.py`,
-`src/patchtrace/reports/verification_brief.py`.
-
-**Suggested branch:** `agent/phase-5-task-8-provenance-reports`
-
-### Task 9: Prove And Close The Trusted-Run Phase
-
-**Description:** Run the complete supported fixture matrix and real interactive
-plus structured Codex dogfood flows, then reconcile documentation with
-implemented truth.
-
-**Acceptance criteria:**
-
-- [ ] The Phase 5 exit-criteria matrix is recorded without private transcripts
-      or diffs.
-- [ ] Full quality gates and package build pass.
-- [ ] `README.md`, `docs/SPEC.md`, `docs/ARCHITECTURE.md`, `CONTEXT.md`, and ADR
-      statuses match implemented and human-accepted truth.
-- [ ] `docs/VERIFY_LOG.md` receives one compact Phase 5 close entry only after
-      human review.
-
-**Verification:**
-
-- [ ] Full automated gates and runtime artifact checks pass.
-- [ ] `$aga-simplify`, `$aga-review`, `$aga-test`, and `$aga-verify-agent` are
-      completed or exact cannot-verify items are recorded.
-- [ ] Human confirms whether Phase 6 should preserve the planned contract
-      authoring format.
-
-**Dependencies:** Tasks 1–8.
-
-**Likely files:** fixture/tests as required, then `README.md`,
-`docs/SPEC.md`, `docs/ARCHITECTURE.md`, `docs/PLAN.md`,
-`docs/VERIFY_LOG.md`.
-
-**Suggested branch:** `agent/phase-5-task-9-closeout`
-
-## Phase Checkpoints
-
-### Checkpoint A — After Tasks 1–3
-
-- [ ] Run/task/repository binding is explicit and versioned.
-- [ ] Partial failures leave a diagnosable manifest.
-- [ ] Human reviews outcome semantics before Git and adapter code depends on
-      them.
-
-### Checkpoint B — After Tasks 4–5
-
-- [ ] Attribution matrix is understandable and does not mix pre-existing
-      worktree changes into session-attributed evidence.
-- [ ] Dirty-repository limitations are acceptable in real dogfooding.
-
-### Checkpoint C — After Tasks 6–7
-
-- [ ] Interactive Codex behavior remains usable.
-- [ ] Structured Codex evidence is stronger than the TUI fallback and has no
-      silent fallback on parse failure.
-
-### Checkpoint D — After Tasks 8–9
-
-- [ ] Reports remain decisive, with human authority and correctness limits
-      stated once rather than repeated as defensive boilerplate.
-- [ ] Full phase exit criteria and runtime proof pass.
-
-## Deferred After Phase 5
-
-- Parsed task requirements and requirement coverage (Phase 6).
-- Evidence-quality review prioritization (Phase 7).
-- Post-hoc `patchtrace analyze` (Phase 8).
-- Package publishing and OSS readiness (Phase 9).
-- `watch`, non-Codex adapters, public JSON, GitHub integration, optional LLM,
-  and hosted surfaces remain trigger-dependent.
-
-## Rejected For Phase 5
-
-- Worktree virtualization or causal `agent-authored` claims.
-- Generic plugin/adapter framework.
-- Broad natural-language task interpretation.
-- LLM parsing of transcript, command output, or task material.
-- Review scoring or generic code review.
-- Implementing `analyze` or `watch` before the run evidence is trustworthy.
+These questions must be decided and tested inside the named task before that
+task can close. They do not authorize silent implementation assumptions.

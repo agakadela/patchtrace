@@ -53,20 +53,18 @@ Do not create a plugin registry, discovery layer, marketplace, or speculative
 generic adapter protocol. Consider a shared protocol only after a second real
 agent adapter exists.
 
-### Preserve Two Explicit Capture Modes
+### Make Structured Exec The Canonical Trusted Mode
 
-Interactive `codex`:
+Trusted `codex exec`:
 
-- remains PTY-based;
-- uses the concrete Codex TUI fallback;
-- labels final and command evidence as text-derived;
-- never guesses that transcript tail equals final output.
-
-Explicit `codex exec`:
-
+- is constructed by PatchTrace from one validated task file;
+- receives the unchanged task payload plus a separately versioned PatchTrace
+  requirement-ID/response protocol;
 - uses separate piped stdout/stderr;
 - stores JSONL event boundaries;
 - uses a PatchTrace-owned final-message path inside this run's private folder;
+- uses a PatchTrace-owned output schema requiring one result per `REQ-*` and
+  `AC-*`;
 - records requested and effective commands;
 - captures a repository state fingerprint when each structured command event
   completes, so later final-state comparison can detect stale verification;
@@ -74,7 +72,53 @@ Explicit `codex exec`:
   preserve the evidence contract;
 - never silently falls back to PTY text after structured parsing fails.
 
-PatchTrace never converts interactive `codex` to `codex exec` silently.
+Trusted mode also applies a version-checked controlled execution/effect profile:
+
+- explicitly set repository cwd, workspace-write sandbox, approval policy, and
+  the complete writable-root inventory;
+- explicitly set shell-network and temp behavior;
+- allowlist inherited environment variables, record names/policy, and redact
+  credential values;
+- distinguish the selected repository from a bounded PatchTrace scratch/temp
+  root and declared Codex authentication/runtime state; none of the latter is
+  task evidence;
+- place the canonical agent process and descendants inside a supervised
+  containment boundary and require a quiescent agent-end checkpoint;
+- record the effective security-relevant config/profile and effect-scope digest;
+- reject danger-full-access, unaccounted `--add-dir` or config writable roots,
+  command hooks, notification commands, unaccounted environment/effect channels,
+  and MCP/plugin tools that can write outside the selected evidence scope;
+- allow non-security user preferences only when they cannot widen the trusted
+  write/effect boundary.
+
+Phase 5 disables shell network access by default. Unknown writable roots,
+unbounded inherited environment, or an external writer/network requirement
+blocks trusted mode or applies an explicit verdict ceiling; repository evidence
+does not prove external side effects.
+
+The installed CLI's repeated `--config key=value` behavior and effective result
+must be fixture-proven for every supported Codex version. If PatchTrace cannot
+reliably expose or constrain that configuration, trusted preflight fails for
+that version. The official
+[Codex configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference)
+and [CLI reference](https://learn.chatgpt.com/docs/developer-commands?surface=cli)
+document the relevant config layers, hooks, notifier, MCP servers, sandbox
+writable roots, cwd, approval, `--add-dir`, and config overrides.
+
+Phase 5 must also source-check the supported macOS process-containment
+primitive. PatchTrace records descendant lifecycle, terminates/reaps accounted
+children before agent-end capture, and treats a surviving, escaped, or
+unaccounted descendant as incomplete trusted execution. Such a run selects
+`rerun_required` and cannot emit `ready_to_accept`.
+
+Interactive `codex` remains supported as an explicit secondary mode:
+
+- remains PTY-based;
+- uses the concrete Codex TUI fallback;
+- labels final and command evidence as text-derived;
+- never guesses that transcript tail equals final output;
+- cannot emit `ready_to_accept` without the complete structured trusted
+  contract.
 
 ### Final Message And Event Rules
 
@@ -87,7 +131,22 @@ PatchTrace never converts interactive `codex` to `codex exec` silently.
 - The structured final-message file and final agent-message event are reconciled
   when both exist; disagreement records `mismatched` integrity and degrades or
   blocks final-claim analysis.
+- Schema output must contain exactly one valid entry for every stable `REQ-*`
+  and `AC-*`; `VER-*` comes from PatchTrace execution and `OOS-*` is evaluated
+  against evidence. Missing, duplicate, unexpected, or invalid response entries
+  prevent trusted requirement coverage.
+- Structured fulfillment status is exactly `claimed_done`, `not_done`, or
+  `blocked`. A valid `not_done`/`blocked` entry is a fulfillment failure and
+  selects `send_back`; a missing, duplicate, unexpected, or invalid entry is a
+  protocol/capture defect and selects the applicable `rerun_required` or
+  `cannot_assess` integrity path.
 - Missing structured final output does not become TUI inference.
+
+For an otherwise valid supported run, missing/malformed/truncated/mismatched
+structured output is a named repeatable capture failure and therefore
+`rerun_required`. An unknown-incompatible protocol/schema or post-capture digest
+mutation is `cannot_assess` under ADR-0002; the adapter does not choose between
+them ad hoc.
 
 Structured capture integrity is a closed state:
 
@@ -100,8 +159,15 @@ Raw JSONL remains the authoritative captured artifact. A derived final-message
 file or future output schema can strengthen selection, but cannot replace or
 silently repair contradictory raw events.
 
-`--output-schema` is not forced in Phase 5. It changes the agent's requested
-response contract and is not required to capture trustworthy final output.
+`--output-schema` is required in trusted mode. It is part of PatchTrace's
+separately versioned execution protocol, not a mutation of the preserved user
+task payload.
+
+ADR-0002's terminal-state table applies even when a schema-valid final object
+exists: only `exited(0)` continues to fulfillment analysis. `not_started`,
+`spawn_failed`, non-zero exit, signal, interruption, or unknown outcome selects
+`rerun_required`; unknown-incompatible schema or post-capture integrity damage
+selects `cannot_assess`.
 
 ## Alternatives Considered
 
@@ -112,8 +178,9 @@ fragile, and stronger documented data exists for explicit `codex exec`.
 
 ### Replace Interactive Codex With Exec
 
-Rejected. Interactive Codex is the current dogfood workflow. `exec` has a
-different prompt, transport, and interaction model.
+Rejected as a removal of interactive support. Interactive Codex remains useful
+for live conversation, but it is no longer evidence-equivalent to the canonical
+trusted run.
 
 ### Read Codex Private Session Storage
 
@@ -140,8 +207,9 @@ inside an evidence tool.
 ### Positive
 
 - Codex format behavior has one real owner.
-- Structured final and command evidence is available when the user selects
-  `codex exec`.
+- The canonical trusted run captures structured final and command evidence.
+- Every requirement and acceptance criterion has a schema-enforced final
+  response position.
 - Interactive behavior remains supported.
 - Failed structured parsing cannot be disguised as weaker success.
 - Future second-adapter work can learn from a concrete implementation.
@@ -150,6 +218,7 @@ inside an evidence tool.
 
 - Session capture needs PTY and piped transports.
 - The two modes have different evidence strengths.
+- Trusted mode owns a versioned execution/response protocol.
 - PatchTrace must test against sanitized external event shapes.
 - Codex CLI version drift remains a compatibility concern.
 
@@ -158,6 +227,10 @@ inside an evidence tool.
 - JSONL can contain prompts, intermediate messages, commands, paths, and output;
   treat it as sensitive local evidence.
 - Final-message output is forced into this run's private folder.
+- Task payload, response protocol, and output schema are stored and digested
+  separately.
+- Effective security-relevant Codex configuration and writable scope are stored
+  and digested; unsafe or unaccounted writers block trusted mode.
 - Adapter-owned paths must be fresh, bounded regular non-symlink files and are
   digested before analysis.
 - No raw event, transcript, or final message is committed or uploaded.
@@ -169,6 +242,9 @@ inside an evidence tool.
 ## Revisit Triggers
 
 - Codex changes or removes documented `--json` or final-message behavior.
+- Supported macOS execution cannot provide the required descendant containment
+  and quiescent agent-end checkpoint.
 - Interactive Codex exposes a stable public structured stream.
 - A second real agent adapter is implemented.
-- Users need a PatchTrace-controlled structured response schema after dogfooding.
+- The structured response contract cannot represent real task items without
+  misleading coverage.

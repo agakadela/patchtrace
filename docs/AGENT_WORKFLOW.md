@@ -82,6 +82,7 @@ repo/
   docs/
     AGENT_WORKFLOW.md
     SPEC.md
+    ROADMAP.md
     PLAN.md
     ARCHITECTURE.md
     VERIFY_LOG.md
@@ -97,7 +98,8 @@ Canonical sources:
 | File                     | Source of truth for                                   |
 | ------------------------ | ----------------------------------------------------- |
 | `docs/SPEC.md`           | product problem, user, scope, success criteria        |
-| `docs/PLAN.md`           | current phase and active tasks                        |
+| `docs/ROADMAP.md`        | complete phase sequence, status, and dependencies     |
+| `docs/PLAN.md`           | active/proposed phase and detailed tasks              |
 | `docs/ARCHITECTURE.md`   | stack, module convention, data flow, trust boundaries |
 | `CONTEXT.md`             | domain language and naming                            |
 | `docs/VERIFY_LOG.md`     | verification evidence                                 |
@@ -106,9 +108,18 @@ Canonical sources:
 
 Do not duplicate truth. Link to the canonical file instead.
 
+`docs/ROADMAP.md` hygiene:
+
+- Keep completed, committed, and conditional capabilities visible.
+- Describe every committed phase by problem, value, dependencies, exit
+  criteria, out of scope, and plan-change triggers.
+- Keep detailed implementation tasks in `docs/PLAN.md`, not the roadmap.
+- Change phase status only after the matching human/verification gate.
+
 `docs/PLAN.md` hygiene:
 
-- Keep only the current phase, active tasks, deferred items, and rejected items for this phase.
+- Keep only the active/proposed phase, its tasks, deferred items, and rejected
+  items for that phase.
 - At phase close, move the summary to `docs/VERIFY_LOG.md`.
 - Completed task details live in git history and PRs, not forever in `PLAN.md`.
 
@@ -256,7 +267,7 @@ A phase is a coherent group of work with one visible goal.
 
 Start:
 
-1. Add current phase to `docs/PLAN.md`.
+1. Add the active/proposed phase to `docs/PLAN.md`.
 2. Use `$aga-spec` if the phase introduces a new domain.
 3. Use `$aga-plan` to create ordered vertical-slice tasks.
 
