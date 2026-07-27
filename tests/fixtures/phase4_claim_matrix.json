@@ -1,0 +1,93 @@
+[
+  {
+    "name": "supported",
+    "transcript": "• Final answer:\nUpdated `src/patchtrace/analysis/analyzer.py`.\n",
+    "changed_files": "src/patchtrace/analysis/analyzer.py\n",
+    "patch": "diff --git a/src/patchtrace/analysis/analyzer.py b/src/patchtrace/analysis/analyzer.py\n",
+    "patch_material_present": true,
+    "exit_status": 0,
+    "expected_supports": ["supported"],
+    "expected_claim_material_status": "identified",
+    "expected_transcript_status": "present",
+    "expected_diff_material_status": "present",
+    "expected_verdict": "Available evidence supports the assessed claims; human review is still required."
+  },
+  {
+    "name": "partially_supported",
+    "transcript": "• Ran uv run ruff check .\n• Final answer:\nChecks: `uv run ruff check .`.\n",
+    "changed_files": "",
+    "patch": "",
+    "patch_material_present": false,
+    "exit_status": 0,
+    "expected_supports": ["partially_supported"],
+    "expected_claim_material_status": "identified",
+    "expected_transcript_status": "present",
+    "expected_diff_material_status": "empty",
+    "expected_verdict": "Review required: an assessed claim has incomplete supporting evidence."
+  },
+  {
+    "name": "unsupported",
+    "transcript": "• Final answer:\nUpdated `src/patchtrace/missing.py`.\n",
+    "changed_files": "src/patchtrace/analysis/analyzer.py\n",
+    "patch": "diff --git a/src/patchtrace/analysis/analyzer.py b/src/patchtrace/analysis/analyzer.py\n",
+    "patch_material_present": true,
+    "exit_status": 0,
+    "expected_supports": ["unsupported"],
+    "expected_claim_material_status": "identified",
+    "expected_transcript_status": "present",
+    "expected_diff_material_status": "present",
+    "expected_verdict": "Review required: an assessed claim lacks supporting evidence."
+  },
+  {
+    "name": "contradicted",
+    "transcript": "• Final answer:\nNo files changed.\n",
+    "changed_files": "src/patchtrace/analysis/analyzer.py\n",
+    "patch": "diff --git a/src/patchtrace/analysis/analyzer.py b/src/patchtrace/analysis/analyzer.py\n",
+    "patch_material_present": true,
+    "exit_status": 0,
+    "expected_supports": ["contradicted"],
+    "expected_claim_material_status": "identified",
+    "expected_transcript_status": "present",
+    "expected_diff_material_status": "present",
+    "expected_verdict": "Review required: available evidence conflicts with an assessed claim."
+  },
+  {
+    "name": "cannot_assess",
+    "transcript": "• Final answer:\nCompleted deterministic claim assessment.\n",
+    "changed_files": "",
+    "patch": "",
+    "patch_material_present": false,
+    "exit_status": 0,
+    "expected_supports": ["cannot_determine"],
+    "expected_claim_material_status": "identified",
+    "expected_transcript_status": "present",
+    "expected_diff_material_status": "empty",
+    "expected_verdict": "Review required: an assessed claim cannot be resolved from available material."
+  },
+  {
+    "name": "missing_material",
+    "transcript": null,
+    "changed_files": null,
+    "patch": null,
+    "patch_material_present": false,
+    "exit_status": 0,
+    "expected_supports": [],
+    "expected_claim_material_status": "missing",
+    "expected_transcript_status": "missing",
+    "expected_diff_material_status": "missing",
+    "expected_verdict": "Review blocked: agent claims could not be assessed."
+  },
+  {
+    "name": "non_zero_exit",
+    "transcript": "• Final answer:\nNo files changed.\n",
+    "changed_files": "",
+    "patch": "",
+    "patch_material_present": false,
+    "exit_status": 7,
+    "expected_supports": ["supported"],
+    "expected_claim_material_status": "identified",
+    "expected_transcript_status": "present",
+    "expected_diff_material_status": "empty",
+    "expected_verdict": "Review required: the wrapped command failed."
+  }
+]

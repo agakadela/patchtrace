@@ -4,16 +4,16 @@ Record Codex CLI sessions and turn agent work into a local verification package.
 
 PatchTrace is a local-first devtool for the moment after an AI coding agent says
 "done." It captures the agent session, collects local git evidence, and writes
-practical next-step artifacts. Deeper claim-vs-diff comparison is target V0
-work now planned as Phase 4.
+practical next-step artifacts. Its bounded Phase 4 analysis compares explicit
+final agent claims with captured local evidence without requiring an LLM.
 
 PatchTrace does not replace human code review. It helps you decide what to do
 next with better evidence.
 
 ## Status
 
-- Stage: Python V0 Phase 4 evidence-backed explicit claim assessment planned
-- Current phase: see `docs/PLAN.md`
+- Stage: Python V0 Phase 4 evidence-backed explicit claim assessment verified
+- Current phase: none; see `docs/PLAN.md`
 - Product spec: see `docs/SPEC.md`
 - Architecture: see `docs/ARCHITECTURE.md`
 - Verification history: see `docs/VERIFY_LOG.md`
@@ -77,7 +77,7 @@ uv run patchtrace --help
 `patchtrace analyze` and `patchtrace watch` are visible in help but still exit
 with conservative placeholder behavior.
 
-## Target V0
+## Primary V0 Workflow
 
 The primary V0 workflow is:
 
@@ -103,9 +103,10 @@ transcript, capture git state before and after the agent run, and write:
 
 `patchtrace analyze` remains a manual fallback. `patchtrace watch` is planned as
 a secondary patch-only safety net when no session transcript is available.
-Phase 3 also verified this artifact flow through a real local
-`uv run patchtrace run -- codex` dogfood session. Phase 4 will add bounded,
-deterministic claim-vs-evidence assessment to these reports.
+Phase 4 verified this artifact flow through a real local
+`uv run patchtrace run -- codex` dogfood session. One deterministic
+`AnalysisResult` now drives the quick decision, agent feedback, and detailed
+claim/evidence record across the three reports.
 
 ## Available Local Loop
 
@@ -157,4 +158,6 @@ private diffs in README, docs, screenshots, commits, or chat.
 - PatchTrace does not claim a patch is safe or production verified.
 - V0 has no SaaS, auth, teams, GitHub integration, HTML report, or required LLM calls.
 - Full claim-vs-evidence analysis requires session transcript material.
+- Claim extraction requires one uniquely identified `Final answer:` region;
+  ambiguous transcripts remain explicitly unassessed.
 - V0 targets macOS/Linux-style PTY workflows first; Windows support is deferred.

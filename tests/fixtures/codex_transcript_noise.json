@@ -6,5 +6,7 @@
     "uv run pytest tests/unit/test_transcript_normalization.py",
     "2 passed in 0.04s",
     "- Tests: uv run pytest tests/unit/test_transcript_normalization.py"
-  ]
+  ],
+  "current_cli_raw_transcript": "\u001b[2m• \u001b[22mFinal answer:›Improve documentation in @filename\r\n  No files changed./exit/exit/exit  exit Codex\r\nExplain this codebase›Shutting down...Token usage: total=10\r\nTo continue this session, run codex resume SANITIZED\r\n\r\n[patchtrace] wrapped command exited with status 0",
+  "current_cli_final_output": "No files changed."
 }

@@ -15,6 +15,8 @@ class TranscriptFixture(TypedDict):
     normalized_text: str
     final_output: str
     command_test_signals: list[str]
+    current_cli_raw_transcript: str
+    current_cli_final_output: str
 
 
 def test_normalizes_synthetic_codex_transcript_and_identifies_final_output() -> None:
@@ -51,6 +53,15 @@ def test_command_test_signals_use_cleaned_transcript_lines() -> None:
     assert signals == fixture["command_test_signals"]
     assert all("\x1b" not in signal for signal in signals)
     assert all("GITHUB_PAT_TOKEN" not in signal for signal in signals)
+
+
+def test_bounds_current_codex_tui_final_output_before_shutdown_redraw() -> None:
+    fixture = _load_fixture()
+
+    transcript = normalize_transcript(fixture["current_cli_raw_transcript"])
+
+    assert transcript.final_output_status == "identified"
+    assert transcript.final_output == fixture["current_cli_final_output"]
 
 
 def _load_fixture() -> TranscriptFixture:
