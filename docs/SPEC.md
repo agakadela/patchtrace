@@ -3,7 +3,7 @@
 Product source of truth: problem, user, product boundaries, success criteria,
 and capability roadmap.
 
-`docs/PLAN.md` owns detailed tasks for the current phase.
+`docs/PLAN.md` owns detailed tasks for the nearest proposed phase.
 `docs/ARCHITECTURE.md` owns current and target system design.
 
 ## Status
@@ -12,7 +12,7 @@ and capability roadmap.
 - Spec status: proposed re-baseline after Phase 4 dogfooding
 - Baseline: commit `d8c98c4`, head of open PR #19
 - Last updated: 2026-07-27
-- Current execution phase: Phase 5 in `docs/PLAN.md`
+- Proposed next execution phase: Phase 5 in `docs/PLAN.md`
 - Human acceptance of this re-baseline: pending
 
 ## Product Definition
@@ -172,7 +172,7 @@ Current code and target architecture are intentionally separated in
 
 ```text
 explicit task contract + target repository
-  -> run identity and private run folder
+  -> one resolved execution root + private run folder outside the worktree
   -> wrapped-command capture
   -> agent-specific final-output evidence
   -> before/after Git evidence
@@ -188,6 +188,10 @@ explicit task contract + target repository
 
 - No task contract is inferred silently. An explicit task input is bound to the
   run or the limitation is named.
+- The selected repository root is the child's initial working directory, the
+  Git evidence scope, and the identity used to resolve private run storage.
+  PatchTrace records the caller, requested, and resolved paths rather than
+  allowing those scopes to drift.
 - The task contract is the user's evaluation contract. PatchTrace claims that
   the agent received identical task material only when prompt-delivery evidence
   separately establishes that fact.
@@ -200,7 +204,10 @@ explicit task contract + target repository
   of causal agent authorship.
 - Pre-existing dirty material cannot support an agent file claim as if it were
   created during the run.
-- Wrapped-command outcome and analysis outcome remain independent.
+- A required command/test result supports readiness only when its captured
+  repository state fingerprint matches the final state being analyzed.
+- Wrapped-command outcome, analysis outcome, and package outcome remain
+  independent.
 - Missing evidence produces `degraded`, `blocked`, or an item-level
   `cannot_assess` result under explicit reason codes.
 - Report renderers never reinterpret raw evidence independently.
@@ -227,6 +234,7 @@ GitEvidenceItem
 Run
   has -> WrappedCommandOutcome
   has -> AnalysisOutcome
+  has -> PackageOutcome
 
 AnalysisResult
   contains -> RequirementCoverage[]
@@ -247,7 +255,7 @@ Target verdicts:
 | `ready_for_human_acceptance` | Explicit task requirements, required verification, claims, and session-attributed evidence meet the accepted rules; the human can accept or inspect before accepting. |
 | `review_required` | Evidence exists but a human must inspect identified risk, ambiguity, or scope before deciding. |
 | `send_back` | A task requirement or agent claim is materially unsupported, contradicted, omitted, or outside the agreed scope and needs agent action. |
-| `rerun_required` | The relevant command/test/capture must be rerun because result evidence is missing, stale, malformed, or failed. |
+| `rerun_required` | The relevant command/test/capture must be rerun because result evidence is missing, stale, malformed, incomplete, or mismatched. |
 | `cannot_assess` | PatchTrace lacks enough trusted run material to produce a stronger recommendation. |
 
 The verdict should be decisive and appear early. Correctness limitations should
@@ -257,18 +265,20 @@ Verdict selection is centralized in `AnalysisResult`; renderers cannot select or
 upgrade it. Target precedence is:
 
 1. `cannot_assess` when trusted analysis is blocked;
-2. `rerun_required` when recapturing a failed, stale, malformed, incomplete, or
+2. `rerun_required` when recapturing a missing, stale, malformed, incomplete, or
    mismatched required result is the next necessary action;
-3. `send_back` when an explicit requirement is omitted or evidence materially
-   contradicts the agent;
+3. `send_back` when an explicit requirement is omitted, a valid required check
+   fails, or evidence materially contradicts the agent;
 4. `review_required` when evidence exists but risk, ambiguity, scope, or
    unattributable material requires inspection;
 5. `ready_for_human_acceptance` only when the supported run schema is current,
    required task coverage and required verification are complete, evidence
    integrity passes, and no higher-precedence condition exists.
 
-Post-hoc, legacy, mutated, unknown-version, or renderer-only paths cannot emit
-`ready_for_human_acceptance`.
+Mutated artifacts, unknown-incompatible schemas, and imported bundles without
+equivalent trusted provenance cannot emit `ready_for_human_acceptance`. A
+compatible saved trusted run may preserve or recompute the verdict after digest
+and compatibility checks; post-hoc execution alone is not a disqualifier.
 
 ## Major Proposal Pressure Test
 
@@ -311,6 +321,8 @@ Every major capability must answer the anti-overengineering questions.
 - Unknown/malformed inputs degrade explicitly.
 - Run artifacts have version/integrity metadata and private local permissions
   where supported.
+- Run artifacts default to Git metadata storage outside the selected worktree,
+  so ordinary `git add` cannot commit task, transcript, prompt, or output data.
 - Structured capture explicitly distinguishes complete, incomplete, malformed,
   and mismatched material.
 - Reports minimize copied sensitive material and prefer locators into private
@@ -363,10 +375,15 @@ the factual basis for review.
 **Exit criteria:**
 
 - explicit raw task and target-repository binding;
+- one execution/storage anchor: child cwd and Git scope use the resolved
+  repository root, while private artifacts live in Git metadata outside the
+  tracked worktree;
 - versioned/digested evidence envelope;
 - session-attributed/pre-existing/unattributable Git material;
 - concrete Codex adapter with structured exec path and explicit TUI fallback;
-- separate wrapped-command and analysis outcomes;
+- repository-state freshness for command/test results;
+- separate wrapped-command, analysis, and package outcomes plus documented CLI
+  exit semantics;
 - provenance-aware reports with decisive verdicts;
 - full fixture matrix, real dogfood, automated gates, and human review.
 
@@ -398,7 +415,8 @@ semantics, and trusted final/command evidence.
   result with linked claims/evidence;
 - omitted requirements appear in summary, brief, and agent feedback;
 - `ready_for_human_acceptance` requires complete required coverage plus required
-  verification under tested rules;
+  verification that is bound to the final analyzed repository state under
+  tested rules;
 - fixtures cover complete, partial, omitted, conflicting, and malformed
   contracts without LLM use;
 - human dogfood confirms authoring cost is acceptable.
@@ -559,8 +577,6 @@ Proposed ADRs become accepted only after human review.
 
 - Should the Phase 6 contract be structured Markdown, JSON, or both?
 - Which exact reason-code names produce the clearest reports?
-- Is `ready_for_human_acceptance` the best public spelling after real Phase 6
-  dogfooding?
 
 ## Source-Of-Truth Links
 

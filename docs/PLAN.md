@@ -1,11 +1,11 @@
 # PLAN.md
 
-Execution source of truth: current phase and active tasks only.
+Execution source of truth: nearest proposed phase and active tasks only.
 
 Hygiene rules:
 
-- Keep only the current phase, active tasks, deferred items, and rejected items
-  for this phase.
+- Keep only the nearest proposed/current phase, active tasks, deferred items,
+  and rejected items for this phase.
 - Move a closed phase summary to `docs/VERIFY_LOG.md`; completed task detail
   belongs in git and PR history.
 - Keep the complete capability roadmap in `docs/SPEC.md`.
@@ -21,7 +21,10 @@ The product/architecture re-baseline is stacked on PR #19. Its PR should target
 `main` only after confirming that `main` contains `d8c98c4` and the retargeted
 diff contains only this re-baseline.
 
-## Current Phase: Phase 5 — Trusted Run Evidence And Provenance
+## Proposed Next Phase: Phase 5 — Trusted Run Evidence And Provenance
+
+This phase becomes current only after the proposed re-baseline and ADRs receive
+human acceptance.
 
 ### Phase Goal
 
@@ -35,10 +38,13 @@ A user can run PatchTrace with an explicit task file and target repository, then
 receive a verification package that:
 
 - binds the copied task material to the run;
+- runs the child and Git capture from one resolved repository root while storing
+  private artifacts in Git metadata outside the worktree;
 - distinguishes `session-attributed`, `pre-existing`, and `unattributable` Git
   changes;
 - states how final-message and command evidence were captured;
-- separates wrapped-command outcome from analysis outcome;
+- binds structured verification results to the final analyzed repository state;
+- separates wrapped-command, analysis, and package outcomes;
 - exposes integrity/version metadata;
 - gives a decisive verification verdict and recommended action without claiming
   autonomous acceptance or correctness proof.
@@ -70,7 +76,10 @@ PatchTrace must not silently convert interactive `codex` into `codex exec`.
 
 - A raw task contract is explicitly supplied, copied into the run folder, and
   bound by digest; absence is represented as a named analysis limitation.
-- The target repository identity and effective working directory are recorded.
+- The caller cwd, requested/resolved repository, child cwd, Git metadata root,
+  and private run root are recorded. The child cwd and Git scope are the same
+  resolved repository root; storage is outside the tracked worktree and refuses
+  unsafe/colliding roots before launch.
   Codex `-C` mismatches and `--add-dir` multi-workspace scope cannot silently
   receive complete Git attribution.
 - Clean, dirty, staged, unstaged, new-untracked, pre-existing-untracked,
@@ -86,11 +95,18 @@ PatchTrace must not silently convert interactive `codex` into `codex exec`.
   integrity metadata through closed enums and cross-field validation.
 - Wrapped-command and analysis outcomes have tested operational semantics,
   including spawn failure, non-zero exit, signal/interruption, missing final
-  output, Git collection failure, parser failure, and report-write failure.
+  output, Git collection failure, and parser failure. Package outcome separately
+  covers complete, partial, and failed artifact publication.
+- CLI exit semantics preserve usable wrapped-command exits, use documented
+  PatchTrace failure behavior, and never substitute the verification verdict
+  for process status.
 - The run manifest has a schema version, PatchTrace producer version, adapter
   and parser versions where applicable, and SHA-256 digests for bound artifacts.
 - Run folders and newly written sensitive artifacts use private local
   permissions where the platform supports them.
+- Structured command results record a completion-state repository fingerprint;
+  freshness is `state_bound`, `stale`, `unknown`, or `N/A`, and PTY text alone
+  cannot satisfy final-state required verification.
 - Reports safely escape displayed material and minimize copied task, prompt,
   command-output, and final-message content.
 - All reports consume one `AnalysisResult`, show a provenance-aware verification
@@ -137,23 +153,28 @@ PatchTrace must not silently convert interactive `codex` into `codex exec`.
 task material into the private run folder, record the resolved repository
 identity, and bind the task artifact with a digest. The task is the evaluation
 contract; do not claim that the same bytes reached the agent without separate
-delivery evidence, and do not parse requirements yet.
+delivery evidence, and do not parse requirements yet. Resolve one execution
+anchor: the selected repository root is both child cwd and Git scope, while the
+run folder lives in PatchTrace-owned Git metadata outside the tracked worktree.
 
 **Acceptance criteria:**
 
 - [ ] A run manifest records the requested and resolved repository plus the
-      copied `task.md` artifact and SHA-256 digest.
+      caller cwd, child cwd, Git metadata/run roots, copied `task.md` artifact,
+      and SHA-256 digest.
 - [ ] Task input is a bounded regular non-symlink file with supported encoding;
       unstable bytes during copy, oversize input, and symlink input fail before
       child launch.
 - [ ] Missing/unreadable task input and non-Git target paths fail or degrade
       according to documented reason codes without launching the wrapped command
       under a false complete state.
-- [ ] Codex `-C` mismatch or `--add-dir` is detected by the Codex boundary and
-      reported as incomplete repository scope.
 - [ ] Relative paths, symlinked repository paths, nested repositories, and
-      multiple workspace declarations resolve under one explicit, tested scope
-      rule.
+      linked worktrees resolve under one explicit, tested scope rule.
+- [ ] The child starts in the resolved repository root; task-file resolution
+      remains relative to the original caller cwd.
+- [ ] Storage resolution refuses a symlink, regular file, worktree overlap, or
+      pre-existing directory without PatchTrace's ownership marker, and ordinary
+      `git add -A` cannot stage a generated private run.
 
 **Verification:**
 
@@ -172,8 +193,8 @@ delivery evidence, and do not parse requirements yet.
 ### Task 2: Separate Wrapped-Command And Analysis Outcomes
 
 **Description:** Replace the current single `outcome` field with explicit
-wrapped-command and analysis outcomes, reason codes, and early manifest writes
-that survive partial failure.
+wrapped-command, analysis, and package outcomes, reason codes, documented CLI
+exit semantics, and early manifest writes that survive partial failure.
 
 **Acceptance criteria:**
 
@@ -181,15 +202,22 @@ that survive partial failure.
       signaled, interrupted, and unknown without converting every signal into an
       ordinary exit.
 - [ ] Analysis is `completed`, `degraded`, or `blocked` under explicit tested
-      invariants and reason codes.
+      invariants and reason codes; completion means one valid `AnalysisResult`
+      exists and does not depend on rendering.
+- [ ] Package outcome is `complete`, `partial`, or `failed`, and a report-write
+      failure cannot retroactively change analysis outcome or verdict.
 - [ ] The manifest exists before the child starts and is updated after capture,
       analysis, and report boundaries so failures leave a diagnosable record.
+- [ ] CLI tests prove usage `2`, PatchTrace failure `1`, propagated normal child
+      exits, `128 + signal`, interruption `130`, and that verdict does not
+      replace process status.
 
 **Verification:**
 
 - [ ] Fake-command tests cover zero/non-zero exit, spawn failure, signal, and
       interrupted/unknown behavior.
-- [ ] Unit tests cover analysis outcome invariants.
+- [ ] Unit tests cover analysis/package outcome invariants and report-write
+      failure.
 - [ ] `uv run mypy src tests` passes before commit.
 
 **Dependencies:** Task 1.
@@ -212,6 +240,8 @@ locator, and integrity as separate fields.
       versions where applicable.
 - [ ] Bound artifacts carry path, SHA-256 digest, size, capture method, and
       directness without treating those fields as correctness scores.
+- [ ] Command-result evidence can carry a repository state fingerprint and
+      closed freshness state without conflating freshness with pass/fail.
 - [ ] Evidence taxonomies are closed enums with cross-field validators, and
       structured evidence records `complete`, `incomplete`, `malformed`,
       `mismatched`, or `N/A` integrity.
@@ -236,7 +266,8 @@ locator, and integrity as separate fields.
 
 **Description:** Capture HEAD/repository identity plus before/after path state
 and content fingerprints. Classify clean-baseline worktree changes, new
-untracked files, and descendant commits as session-attributed.
+untracked files, and descendant commits as session-attributed. Keep untracked
+inspection bounded and non-blocking for special filesystem entries.
 
 **Acceptance criteria:**
 
@@ -246,6 +277,12 @@ untracked files, and descendant commits as session-attributed.
       worktree is clean.
 - [ ] Non-descendant/unborn HEAD, submodules, ignored files, and multi-repo scope
       produce explicit bounded behavior instead of guessed attribution.
+- [ ] Untracked symlinks are not followed; FIFOs, sockets, and devices are never
+      opened; oversize/special paths become metadata-only and
+      `unattributable`.
+- [ ] Recorded per-file, total-byte, path-count, and elapsed-time caps make an
+      exceeded inventory explicitly incomplete/degraded rather than hanging or
+      claiming complete attribution.
 
 **Verification:**
 
@@ -302,6 +339,9 @@ session/analysis modules into one concrete adapter. Preserve the verified Phase
 - [ ] Generic PTY recording contains no Codex-specific marker or shutdown rules.
 - [ ] `adapters/codex.py` owns current final-region normalization and returns
       typed final-message evidence or an explicit missing/ambiguous result.
+- [ ] Codex `-C/--cd` must resolve to Task 1's selected repository; `--add-dir`
+      and other declared workspaces are recorded as incomplete attribution
+      scope rather than silently treated as covered.
 - [ ] No generic plugin registry, discovery mechanism, or hypothetical adapter
       interface is introduced.
 
@@ -311,7 +351,7 @@ session/analysis modules into one concrete adapter. Preserve the verified Phase
 - [ ] Markerless and multi-marker transcripts remain unassessed.
 - [ ] `uv run mypy src tests` passes before commit.
 
-**Dependencies:** Task 3.
+**Dependencies:** Tasks 1 and 3.
 
 **Likely files:** `src/patchtrace/adapters/codex.py`,
 `src/patchtrace/session/transcript.py`,
@@ -332,7 +372,7 @@ adapter own PatchTrace-controlled JSONL/final-message capture.
 - [ ] Interactive `codex` continues to use PTY capture; PatchTrace never silently
       converts it to `codex exec`.
 - [ ] `codex exec` structured mode stores JSONL events and a fresh final message
-      inside the current run folder, records requested/effective commands, and
+      inside this run's private folder, records requested/effective commands, and
       rejects conflicting user-owned output flags.
 - [ ] Final-message selection, unknown events, malformed/truncated JSONL,
       missing output files, and event/file disagreement have explicit behavior;
@@ -341,13 +381,17 @@ adapter own PatchTrace-controlled JSONL/final-message capture.
       `mismatched` under fixture-proven rules; raw JSONL remains authoritative
       evidence even when derived selection fails.
 - [ ] Command events preserve invocation, lifecycle, exit/status information,
-      and source locators when Codex emits them.
+      and source locators when Codex emits them. At event completion PatchTrace
+      records a repository state fingerprint for final-state freshness checks.
 
 **Verification:**
 
 - [ ] Sanitized JSONL fixtures cover successful, failed, unknown-event,
       truncated, and mismatched-final-message cases.
 - [ ] A fake structured subprocess proves stdout/stderr separation.
+- [ ] A fixture with a passing command followed by a later file change is
+      `stale`; an unchanged completion/final fingerprint is `state_bound`; PTY
+      text remains `unknown`.
 - [ ] A real local `codex exec` dogfood run proves the documented 0.144.1 path
       without tracking private output.
 - [ ] `uv run mypy src tests` passes before commit.
@@ -379,8 +423,10 @@ verification verdict and recommended action.
       `rerun_required`, or `cannot_assess` under tested rules; Phase 5 cannot
       emit `ready_for_human_acceptance` before requirement coverage exists.
 - [ ] One analyzer-owned precedence rule selects the verdict; renderers cannot
-      promote it, and incompatible, mutated, post-hoc, or renderer-failed runs
-      cannot emit `ready_for_human_acceptance`.
+      promote it. Mutated artifacts, unknown-incompatible schemas, and imported
+      bundles without equivalent trusted provenance cannot emit
+      `ready_for_human_acceptance`; compatible saved trusted runs are not
+      disqualified merely for re-analysis.
 - [ ] Reports may strongly recommend the next decision but do not perform
       acceptance or represent the verdict as proof of correctness.
 - [ ] Reports safely escape excerpts and minimize sensitive raw task, prompt,
@@ -390,6 +436,9 @@ verification verdict and recommended action.
 
 - [ ] The Phase 4 claim matrix still produces conservative claim relationships.
 - [ ] Report tests prove the three renderers agree on outcomes and provenance.
+- [ ] Injection fixtures prove untrusted headings, fence delimiters, control
+      characters, Markdown links, and remote-image syntax cannot alter report
+      structure or trigger a renderer fetch.
 - [ ] `uv run mypy src tests` passes before commit.
 
 **Dependencies:** Tasks 4–7.

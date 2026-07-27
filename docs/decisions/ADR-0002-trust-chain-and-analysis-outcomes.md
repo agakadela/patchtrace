@@ -4,6 +4,8 @@
 - Status: proposed
 - Owner: project maintainer(s)
 - Extends: ADR-0001
+- Supersedes when accepted: ADR-0001's worktree `.patchtrace/runs/` storage
+  location; the local-file storage decision remains
 
 ## Context
 
@@ -31,6 +33,8 @@ platform, or correctness oracle.
 Each trusted run binds:
 
 - one explicit target repository;
+- one resolved child/Git execution root;
+- one private PatchTrace-owned run folder in Git metadata outside the worktree;
 - one explicit raw task contract copied from a user-supplied file;
 - the requested and effective wrapped command;
 - captured evidence artifacts;
@@ -51,10 +55,18 @@ Every material evidence artifact records:
 - directness/interpretation method;
 - locator;
 - session attribution when applicable;
+- repository state fingerprint and verification freshness when command evidence
+  may satisfy a required check;
 - SHA-256 digest and size;
 - schema, producer, adapter, and parser versions where applicable.
 
 These are separate axes, not one confidence or quality score.
+
+A passing command supports final required verification only when its
+command-completion repository fingerprint matches the final analyzed
+fingerprint. A valid state-bound failing check is evidence for `send_back`;
+missing, stale, malformed, incomplete, or mismatched capture produces
+`rerun_required`.
 
 ### Separate Outcomes
 
@@ -69,15 +81,31 @@ Wrapped-command outcome distinguishes:
 
 Analysis outcome distinguishes:
 
-- `completed`: required bound inputs were interpreted and reports were written;
+- `completed`: required bound inputs were interpreted into a valid
+  `AnalysisResult`;
 - `degraded`: analysis completed with a named material limitation;
 - `blocked`: PatchTrace cannot safely perform the intended analysis.
 
 Reason codes explain the outcome.
 
+Package outcome independently distinguishes:
+
+- `complete`: manifest and all requested reports were published;
+- `partial`: a usable manifest/output exists but one or more writes failed;
+- `failed`: no usable verification package was published.
+
 The run manifest is created before child launch and updated atomically at
 meaningful capture/analysis/report boundaries. This preserves a diagnosable
 record without adding a general state machine.
+
+Rendering happens only after `AnalysisResult` is finalized. A report failure
+changes package outcome, not analysis outcome or verdict.
+
+CLI exit preserves the wrapped command's normal exit when the manifest,
+analysis, and package are usable. Usage/preflight errors return `2`;
+spawn/unknown/blocked/package failures return `1`; signals use `128 + signal`
+and interruption uses `130`. The verdict is read from the typed package and does
+not overload process exit.
 
 ### Preserve One Interpretation
 
@@ -109,14 +137,18 @@ requirement coverage and required-verification checks.
 The analyzer, not a renderer, applies one precedence order:
 
 1. `cannot_assess` for blocked analysis;
-2. `rerun_required` when recapture is necessary;
-3. `send_back` for omitted requirements or material contradictions;
+2. `rerun_required` when missing, stale, malformed, incomplete, or mismatched
+   evidence requires recapture;
+3. `send_back` for omitted requirements, valid required-check failures, or
+   material contradictions;
 4. `review_required` for bounded risk, ambiguity, or unattributable evidence;
 5. `ready_for_human_acceptance` only after complete required coverage,
    verification, and integrity under a supported current schema.
 
-Renderers cannot promote the result. Mutated, incompatible, post-hoc imported,
-or renderer-failed runs cannot emit `ready_for_human_acceptance`.
+Renderers cannot promote the result. Mutated artifacts, unknown-incompatible
+schemas, and imported bundles without equivalent trusted provenance cannot emit
+`ready_for_human_acceptance`. Compatible saved trusted runs may retain or
+recompute it after digest and compatibility checks.
 
 ## Alternatives Considered
 
@@ -171,7 +203,11 @@ material is missing.
 - Do not introduce database, queue, event bus, workflow engine, or external
   telemetry.
 - Keep raw artifacts local and private by default.
-- Minimize sensitive excerpts in reports and escape displayed artifact content.
+- Resolve default run storage through Git metadata outside the tracked worktree;
+  refuse an unsafe/colliding storage root before child launch.
+- Minimize sensitive excerpts in reports and render untrusted artifact content
+  as inert text: neutralize headings, fence delimiters, control characters,
+  links, and remote-image syntax under injection fixtures.
 
 ## Revisit Triggers
 

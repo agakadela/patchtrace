@@ -37,7 +37,8 @@ The current implementation does **not** yet provide:
 - session-scoped Git attribution;
 - a real Codex adapter boundary;
 - structured Codex JSONL or final-message ingestion;
-- separate wrapped-command and analysis outcomes;
+- repository-state freshness for command/test evidence;
+- separate wrapped-command, analysis, and package outcomes;
 - an implemented `patchtrace analyze` or `patchtrace watch` command.
 
 Those limits matter. Today, the final Git diff can include pre-existing worktree
@@ -86,6 +87,8 @@ exit with explicit not-implemented behavior.
 
 ```text
 task contract
+  -> one resolved repository execution root
+  -> private run storage outside the tracked worktree
   -> recorded agent session
   -> final claims + Git changes + command/test evidence
   -> provenance and session attribution
@@ -98,14 +101,15 @@ task contract
 The next phase strengthens evidence ownership before PatchTrace adds broader
 analysis. In particular, it introduces explicit task binding, session-attributed
 Git evidence, a concrete Codex boundary, structured evidence where Codex
-provides it, and separate process/analysis outcomes.
+provides it, command-result freshness, and separate process/analysis/package
+outcomes.
 
 ## Source Of Truth
 
 | Area | File |
 |---|---|
 | Product definition, scope, success criteria, roadmap | `docs/SPEC.md` |
-| Current phase and detailed active tasks | `docs/PLAN.md` |
+| Proposed next phase and detailed active tasks | `docs/PLAN.md` |
 | Current and target architecture, trust boundaries | `docs/ARCHITECTURE.md` |
 | Domain language | `CONTEXT.md` |
 | Irreversible decisions | `docs/decisions/` |
@@ -127,7 +131,9 @@ uv build
 ## Privacy
 
 Run artifacts may contain source paths, diffs, prompts, terminal output, command
-results, and agent messages. They stay local under `.patchtrace/` by default.
+results, and agent messages. The current implementation stores them locally
+under `.patchtrace/`. The Phase 5 target moves them to PatchTrace-owned Git
+metadata outside the tracked worktree, so ordinary `git add` cannot stage them.
 Do not commit or share private run folders, transcripts, diffs, secrets, tokens,
 customer data, or provider output.
 

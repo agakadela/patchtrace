@@ -66,8 +66,10 @@ Explicit `codex exec`:
 
 - uses separate piped stdout/stderr;
 - stores JSONL event boundaries;
-- uses a PatchTrace-owned final-message path inside the current run folder;
+- uses a PatchTrace-owned final-message path inside this run's private folder;
 - records requested and effective commands;
+- captures a repository state fingerprint when each structured command event
+  completes, so later final-state comparison can detect stale verification;
 - rejects conflicting user-owned `--json`/output paths where PatchTrace cannot
   preserve the evidence contract;
 - never silently falls back to PTY text after structured parsing fails.
@@ -155,7 +157,7 @@ inside an evidence tool.
 
 - JSONL can contain prompts, intermediate messages, commands, paths, and output;
   treat it as sensitive local evidence.
-- Final-message output is forced into the private current run folder.
+- Final-message output is forced into this run's private folder.
 - Adapter-owned paths must be fresh, bounded regular non-symlink files and are
   digested before analysis.
 - No raw event, transcript, or final message is committed or uploaded.

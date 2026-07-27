@@ -45,7 +45,7 @@ Record:
 - HEAD OID before/after or explicit unborn state;
 - ancestry relationship;
 - staged and unstaged status before/after;
-- tracked path state and content fingerprints plus the complete non-ignored
+- tracked path state and content fingerprints plus a bounded non-ignored
   untracked inventory visible to the selected repository before/after;
 - baseline and final diff material where representable;
 - descendant commit diff when HEAD advances;
@@ -54,6 +54,14 @@ Record:
 The target repository is explicit. Codex `-C/--cd` must match it.
 `--add-dir`, nested repositories, or other writable repositories create
 incomplete scope and prevent a claim of complete attribution.
+
+Untracked discovery uses Git's non-ignored inventory and `lstat`. PatchTrace
+does not open FIFOs, sockets, devices, or other special files and does not follow
+symlinks. Regular-file hashing is bounded by recorded per-file, total-byte,
+path-count, and elapsed-time caps. Oversize/special paths keep metadata but are
+`unattributable`; exceeding an inventory cap makes repository scope incomplete
+and analysis degraded. "Complete" attribution always means complete within
+these explicit recorded bounds.
 
 ### Attribution Rules
 
@@ -146,7 +154,8 @@ actor and would create false confidence.
 - Use the existing Git CLI and Python standard library.
 - Do not mutate the user's index, commits, branches, or working tree.
 - Do not create a hidden temporary commit.
-- Exclude PatchTrace's own `.patchtrace/` artifacts.
+- Keep PatchTrace run storage in Git metadata outside the tracked worktree, so
+  no blanket `.patchtrace/` exclusion hides a legitimate user path.
 - Keep attribution basis inspectable in the run folder/report.
 
 ## Revisit Triggers

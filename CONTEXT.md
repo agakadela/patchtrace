@@ -8,8 +8,8 @@ reports, plans, ADRs, and review discussion.
 | Term | Meaning | Do not confuse with |
 |---|---|---|
 | PatchTrace | Local-first CLI that binds one coding-agent run to task, Git, command, and final-claim evidence so a human can review the work. | AI code reviewer, correctness oracle, approval agent |
-| run | One PatchTrace execution with a stable ID, explicit target repository, and local run folder. | Test run, CI job, Codex account session |
-| run folder | `.patchtrace/runs/<run-id>/`, containing captured evidence, manifest data, and rendered reports. | Cache, build output, project root |
+| run | One PatchTrace execution with a stable ID, explicit target repository, explicit execution root, and local run folder. | Test run, CI job, Codex account session |
+| run folder | Private PatchTrace-owned storage for one run. The Phase 5 target is `<git-metadata-dir>/patchtrace/runs/<run-id>/`, outside the tracked worktree; the current implementation still uses `.patchtrace/runs/<run-id>/`. | Cache, build output, project root |
 | task contract | Explicit user-supplied evaluation contract stating requested outcome, requirements, acceptance criteria, required verification, and out-of-scope work. It does not by itself prove which prompt bytes the agent received. | Agent claim, inferred prompt intent, prompt-delivery evidence |
 | raw task contract | Task material copied and bound to a run before PatchTrace interprets requirement coverage. | Parsed task requirements |
 | task requirement | One explicit, reviewable obligation from the task contract. | Agent claim, evidence item |
@@ -28,14 +28,17 @@ reports, plans, ADRs, and review discussion.
 | final output | Agent message selected by an agent-specific structural source or an explicit conservative fallback. | Last transcript lines, entire transcript |
 | structured final message | Final agent message captured through a documented structured Codex mechanism and bound to the current run. | TUI marker fallback |
 | command result | Command invocation plus completion state/exit information when available. | Text mentioning a command |
+| repository state fingerprint | Digestable identity of the selected repository state: HEAD, index, and the bounded supported worktree inventory. | Full filesystem snapshot, correctness proof |
+| verification freshness | Whether command-result evidence is bound to the final analyzed repository state: `state_bound`, `stale`, `unknown`, or `N/A`. | Command success, evidence directness |
 | PTY command signal | Command-like or result-like text observed in the terminal stream without structured execution metadata. | Structured command result |
 | text inference | Deterministic interpretation of transcript text when no stronger structured evidence exists. | Direct evidence |
 | structured capture integrity | Whether the expected structured stream/artifact is `complete`, `incomplete`, `malformed`, or `mismatched`. | Analysis outcome |
 | wrapped command outcome | What happened to the wrapped process: not started, spawn failure, exited, signaled, interrupted, or unknown. | Analysis outcome |
 | analysis outcome | Whether PatchTrace completed, degraded, or blocked analysis, plus explicit reason codes. | Wrapped command outcome, verification verdict |
-| completed analysis | Required trusted inputs were bound and interpreted and reports were produced. | Code accepted or correct |
+| completed analysis | Required trusted inputs were bound and interpreted into one valid `AnalysisResult`. | Reports written, code accepted or correct |
 | degraded analysis | Analysis ran, but one or more evidence limitations materially reduce what it can assess. | Failed wrapped command |
 | blocked analysis | PatchTrace cannot safely perform the intended analysis from the captured material. | Rejected code |
+| package outcome | Whether the manifest and requested reports were published: `complete`, `partial`, or `failed`, with artifact-level reasons. | Analysis outcome, verification verdict |
 | claim support | Conservative relationship between one explicit agent claim and available evidence. | Correctness |
 | requirement coverage | Relationship between one task requirement, relevant agent claims, and evidence. | Claim support |
 | verification verdict | Decisive evidence-based recommendation: `ready_for_human_acceptance`, `review_required`, `send_back`, `rerun_required`, or `cannot_assess`. | Correctness proof, autonomous acceptance |
@@ -52,9 +55,12 @@ reports, plans, ADRs, and review discussion.
 | Task requirement / agent claim / evidence item | The task defines obligations, the agent describes its work, and evidence supports or conflicts with either. |
 | Session attribution / agent authorship | A controlled session boundary can attribute a delta to the session without proving which actor authored every byte. |
 | Wrapped command outcome / analysis outcome | A process may exit zero while analysis is degraded or blocked; a non-zero process may still leave useful evidence. |
+| Analysis outcome / package outcome | `AnalysisResult` is finalized before rendering; a report-write failure cannot retroactively change the analysis. |
 | Capture method / evidence kind / directness | JSONL is a transport/capture form, command result is a kind, and text inference is an interpretation method. |
+| Command result / verification freshness | A real passing command may still be stale for the final repository state. |
 | Claim support / requirement coverage / correctness | Supported claims can omit requirements, and neither relationship proves correct code. |
 | Verification verdict / human decision | PatchTrace recommends the next decision strongly; the reviewer retains final authority and may accept or override it. |
+| Verification verdict / CLI exit | The verdict recommends what to do with the work; CLI exit reports wrapper/tool execution status under the documented compatibility rule. |
 | Current implementation / target architecture / deferred idea | Planned boundaries must not be presented as implemented code. |
 
 ## Naming Rules
@@ -70,6 +76,11 @@ reports, plans, ADRs, and review discussion.
   that the code is mathematically proven correct.
 - Use `blocked` only for analysis that cannot safely proceed, not for ordinary
   missing support on one claim.
+- A required verification result can support `ready_for_human_acceptance` only
+  when its repository state fingerprint matches the final analyzed state.
+- Use `rerun_required` for missing, stale, malformed, incomplete, or mismatched
+  result capture. A valid failing result is evidence for `send_back`, not a
+  reason to recapture the same failure.
 - Use `Codex adapter` for the one concrete agent-specific boundary. Do not call
   it a plugin system.
 - Use `structured` only when the source is a documented machine-readable
