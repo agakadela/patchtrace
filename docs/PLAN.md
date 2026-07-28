@@ -134,24 +134,25 @@ analysis was usable, and whether the package was written.
 - replace the combined lifecycle meaning with process, analysis, and package
   outcomes;
 - preserve evidence verdict as a separate concern;
-- define the smallest explicit failure mapping for current capture, parsing,
-  analysis, and write paths;
+- define the smallest explicit failure mapping for current capture, analysis,
+  and write paths;
 - keep CLI exit behavior documented and testable.
 
 ### Acceptance
 
 - successful process plus degraded analysis is representable;
-- task parsing or delivery failure can be represented without overloading
-  process outcome;
 - partial or failed package writes cannot be reported as a complete package;
 - reports and manifest do not confuse lifecycle facts with verdict;
+- the model can be extended by later tasks without T4 inventing task-parsing or
+  task-delivery reason catalogs;
 - no workflow state machine is introduced.
 
 ### Verification
 
 - model validation tests;
 - fake-command success and non-zero exit cases;
-- injected analysis and package failure cases;
+- current missing/ambiguous transcript-analysis and injected package failure
+  cases;
 - backwards-compatibility decision for Phase 4 fixtures recorded in the task
   commit.
 
@@ -176,6 +177,7 @@ claiming requirement satisfaction.
   `Required Verification`, and `Out of Scope`;
 - parse simple ordered items with deterministic run-local IDs;
 - link raw and parsed task material to the run;
+- add only the task-parsing reason mappings required by these new paths;
 - allow a run without a task with an explicit trust limitation.
 
 ### Acceptance
@@ -200,48 +202,58 @@ claiming requirement satisfaction.
 Predicate syntax, `all`/`any` expressions, policy evaluation, semantic matching,
 and coverage verdicts.
 
-## T6 — Deliver the same task through Codex-specific modes
+## T6 — Establish the interactive Codex boundary and deliver the same task
 
 ### Outcome
 
-The user supplies the task once; supported Codex-specific modes use the
-preserved raw artifact as the initial prompt source and record honest delivery
-evidence.
+The user supplies the task once; the existing interactive Codex workflow uses
+the preserved raw artifact as its initial prompt source and records honest
+delivery evidence without changing the PTY experience.
 
 ### Scope
 
-- add an explicit Codex interactive task path without changing the generic
-  wrapped-command promise;
-- add optional `codex exec --json` structured task mode;
+- add the concrete Codex-specific boundary with the interactive implementation;
+- preserve the current PTY interaction and generic wrapped-command promise;
 - submit prompt material from the preserved artifact rather than a re-rendered
   parse;
 - record delivery mode, artifact digest, attempted boundary, confirmation, and
   limitations in the manifest;
-- interpret only documented structured event types needed by the run;
-- map delivery failures into the T4 lifecycle model.
+- move Codex TUI rules, marker-based final-output extraction, and
+  Codex-specific evidence locators out of generic session and analysis code;
+- add only the task-delivery reason mappings required by the new interactive
+  path.
 
 ### Acceptance
 
 - the prompt source and preserved task artifact have the same digest;
-- tests assert the nearest reliable invocation, stdin, or event boundary the
-  official transport exposes;
+- tests assert the nearest reliable invocation or stdin boundary the official
+  interactive transport exposes;
 - no test or report claims byte-for-byte receipt when it is unobservable;
 - no result claims that Codex or the model understood the task;
+- generic session and analysis code contain no Codex-specific final markers or
+  Codex TUI interpretation rules;
+- the concrete boundary owns final-output selection and Codex evidence
+  locators without creating a plugin registry or empty adapter abstraction;
 - generic commands retain task material for analysis and mark delivery
   unverified;
-- structured task mode remains separate from interactive PTY.
+- the normal interactive Codex PTY experience remains intact.
 
 ### Verification
 
-- fake Codex executable tests for argument/stdin boundaries and failures;
-- official structured-event fixtures for final messages, commands, file
-  changes, and lifecycle;
-- one real structured task dogfood where locally supported.
+- fake interactive Codex executable tests for argument/stdin boundaries, TUI
+  markers, and delivery failures;
+- ownership tests for Codex final-output extraction and evidence locators;
+- one real interactive Codex task-delivery dogfood where locally supported.
 
 ### Out of scope
 
-Automatic replacement of interactive UX, private Codex formats, generic agent
-plugins, and full requirement evaluation.
+Production `codex exec --json`, a JSONL parser, structured-task dogfood, App
+Server integration, automatic replacement of interactive UX, private Codex
+formats, generic agent plugins, and full requirement evaluation.
+
+`codex exec --json` remains an accepted candidate for a separate slice. It can
+enter Phase 5 only after separate human approval or a concrete dogfood trigger
+and does not depend on the Task 7 App Server result.
 
 ## T7 — Time-box App Server structured-interactive feasibility
 

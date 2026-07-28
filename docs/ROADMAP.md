@@ -26,8 +26,9 @@ not, and what remains uncertain before relying on later analysis.
 - provenance propagated consistently through analysis and reports;
 - separate process, analysis, and package outcomes;
 - Task Contract V1 capture and run binding;
-- the preserved raw task artifact as the sole Codex-specific prompt source;
-- a separate optional structured Codex task mode;
+- a concrete interactive Codex boundary for task delivery and TUI
+  interpretation;
+- the preserved raw task artifact as the sole interactive Codex prompt source;
 - a time-boxed App Server feasibility prototype for structured-interactive
   capture;
 - real dogfooding of clean, dirty, committed, failed, and degraded runs.
@@ -50,6 +51,8 @@ capture does not depend on full requirement evaluation.
   run;
 - Codex-specific delivery records the supported transport boundary it can
   actually confirm;
+- generic session and analysis code contain no Codex TUI markers or
+  interpretation rules;
 - the App Server prototype records `GO`, `NO-GO`, or `CANNOT VERIFY` against
   explicit criteria;
 - the PTY trust ceiling remains explicit if structured-interactive capture is
@@ -64,6 +67,8 @@ high-trust final output, and reports and verdicts must respect that ceiling.
 - full requirement satisfaction;
 - advanced Git forensics or hunk authorship;
 - a custom Codex TUI, large protocol proxy, or private-format integration;
+- a production `codex exec --json` mode, JSONL parser, or structured-task
+  dogfood in the current plan;
 - final verification freshness;
 - a generic adapter framework.
 
@@ -72,6 +77,10 @@ high-trust final output, and reports and verdicts must respect that ceiling.
 Change the plan only if dogfooding disproves the attribution model, an official
 Codex surface changes materially, or the prototype shows that a small supported
 integration can preserve the same interactive session.
+
+`codex exec --json` remains an accepted candidate for a separate slice. It may
+enter Phase 5 only after separate human approval or a concrete dogfood trigger;
+it does not depend on the App Server result.
 
 ## Phase 6 — Task Coverage and Final Verification
 
