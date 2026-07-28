@@ -1,122 +1,120 @@
 # PatchTrace
 
-Record Codex CLI sessions and turn agent work into a local verification package.
+PatchTrace is a local evidence and verification layer for coding-agent runs. It
+helps a developer decide whether the captured evidence is sufficient to review
+or accept a run, whether more verification is needed, or whether work should be
+sent back to the agent.
 
-PatchTrace is a local-first devtool for the moment after an AI coding agent says
-"done." It captures the agent session, collects local git evidence, and writes
-practical next-step artifacts. Its bounded Phase 4 analysis compares explicit
-final agent claims with captured local evidence without requiring an LLM.
+PatchTrace does not prove semantic correctness and does not make the final
+decision for the developer.
 
-PatchTrace does not replace human code review. It helps you decide what to do
-next with better evidence.
+## Current status
 
-## Status
-
-- Stage: Python V0 Phase 4 evidence-backed explicit claim assessment verified
-- Current phase: none; see `docs/PLAN.md`
-- Product spec: see `docs/SPEC.md`
-- Architecture: see `docs/ARCHITECTURE.md`
-- Verification history: see `docs/VERIFY_LOG.md`
-- Agent workflow: see `docs/AGENT_WORKFLOW.md`
-
-## Source Of Truth
-
-| Area | File |
-|---|---|
-| Product scope and success criteria | `docs/SPEC.md` |
-| Current execution plan | `docs/PLAN.md` |
-| Stack, package convention, data flow, trust boundaries | `docs/ARCHITECTURE.md` |
-| Domain language | `CONTEXT.md` |
-| Irreversible decisions | `docs/decisions/` |
-| Verification proof | `docs/VERIFY_LOG.md` |
-| Agent operating workflow | `docs/AGENT_WORKFLOW.md` |
-
-Risk-triggered docs are created only when triggered:
-
-| Trigger | File |
-|---|---|
-| First protected route/user | `docs/AUTH_ACCESS_MODEL.md` |
-| Shared endpoint/action/webhook/public API | `docs/API_CONTRACTS.md` |
-| Second view | `docs/UI_SYSTEM.md` |
-| First AI call | `docs/AI_BOUNDARIES.md` |
-| Provider with webhook/callback | `docs/INTEGRATIONS.md` |
-| Existing/rescue repo | `docs/SYSTEM_MAP.md` |
-| Launch prep | `docs/OPERATIONS.md` |
-| Client delivery | `docs/HANDOFF.md` |
-
-## Completed Phase 3 Review-Package Checkpoint
-
-The implemented local checkpoint can run a fake command through PatchTrace:
+Version `0.1.0` is the completed Phase 4 baseline. The implemented command is:
 
 ```bash
-uv run patchtrace run -- python tests/fixtures/fake_agent.py
+patchtrace run -- <command>
 ```
 
-That command creates a local run folder with the complete Phase 3 review
-package shape:
+It:
 
-```text
-.patchtrace/runs/<run-id>/
-  run.json
-  agent-session.txt
-  git-before.txt
-  git-after.txt
-  patch.diff
-  changed-files.txt
-  SUMMARY.md
-  AGENT_FEEDBACK.md
-  VERIFICATION_BRIEF.md
-```
+- runs the command in an interactive PTY;
+- preserves the terminal transcript;
+- records Git status before and after the command;
+- records the final staged and unstaged diff visible after the command;
+- applies deterministic rules to bounded claims in one identified final answer;
+- writes one local review package under `.patchtrace/runs/<run-id>/`.
 
-The CLI help path is available with:
+`patchtrace analyze` and `patchtrace watch` are placeholders and exit with an
+explicit not-implemented error.
 
-```bash
-uv run patchtrace --help
-```
+## Try it
 
-`patchtrace analyze` and `patchtrace watch` are visible in help but still exit
-with conservative placeholder behavior.
-
-## Primary V0 Workflow
-
-The primary V0 workflow is:
-
-```bash
-patchtrace run -- codex
-```
-
-PatchTrace will wrap Codex CLI through a pseudo-terminal, record the session
-transcript, capture git state before and after the agent run, and write:
-
-```text
-.patchtrace/runs/<run-id>/
-  run.json
-  agent-session.txt
-  git-before.txt
-  git-after.txt
-  patch.diff
-  changed-files.txt
-  SUMMARY.md
-  AGENT_FEEDBACK.md
-  VERIFICATION_BRIEF.md
-```
-
-`patchtrace analyze` remains a manual fallback. `patchtrace watch` is planned as
-a secondary patch-only safety net when no session transcript is available.
-Phase 4 verified this artifact flow through a real local
-`uv run patchtrace run -- codex` dogfood session. One deterministic
-`AnalysisResult` now drives the quick decision, agent feedback, and detailed
-claim/evidence record across the three reports.
-
-## Available Local Loop
-
-These commands are available in the current scaffold:
+PatchTrace requires Python 3.11 or newer and uses
+[uv](https://docs.astral.sh/uv/) for project development.
 
 ```bash
 uv sync
-uv run patchtrace --help
 uv run patchtrace run -- python tests/fixtures/fake_agent.py
+```
+
+To wrap an installed interactive Codex CLI:
+
+```bash
 uv run patchtrace run -- codex
+```
+
+The wrapped command retains its normal terminal interaction. When it exits,
+PatchTrace prints the path to the generated package.
+
+## Run package
+
+The Phase 4 package contains:
+
+```text
+.patchtrace/runs/<run-id>/
+├── run.json
+├── agent-session.txt
+├── git-before.txt
+├── git-after.txt
+├── changed-files.txt
+├── patch.diff
+├── SUMMARY.md
+├── AGENT_FEEDBACK.md
+└── VERIFICATION_BRIEF.md
+```
+
+The reports are deterministic views of one validated analysis result:
+
+- `SUMMARY.md` gives the verdict, most important gap, and next action.
+- `AGENT_FEEDBACK.md` turns evidence gaps into follow-up requests.
+- `VERIFICATION_BRIEF.md` links assessed claims to local evidence for review.
+
+## Current evidence limits
+
+The Phase 4 package is useful, but it is not yet trusted session provenance:
+
+- the final Git diff can include work that existed before the run;
+- untracked content and commits made during the run are not captured completely;
+- a file dirty before and after the run cannot be attributed honestly;
+- the PTY parser requires exactly one supported final-answer marker;
+- a missing or ambiguous marker degrades claim evidence; PatchTrace does not
+  guess from the transcript tail;
+- command and test signals are inferred from terminal text, not structured
+  command events;
+- there is no preserved task contract or requirement-coverage analysis;
+- a passing check is not proven fresh relative to the final repository state.
+
+Treat current verdicts as review guidance within those limits, not as proof of
+correctness or acceptance.
+
+## Product direction
+
+The next phase strengthens capture before broadening analysis:
+
+1. distinguish session-attributed, pre-existing, and indeterminate Git changes;
+2. separate process, analysis, and package outcomes;
+3. preserve a simple Task Contract and bind it to the run;
+4. pass that same preserved task through supported Codex-specific modes;
+5. test whether the official Codex App Server can provide structured evidence
+   for the same interactive session without replacing the current UX.
+
+Interactive PTY remains the primary compatibility workflow. Structured Codex
+execution may be offered as a separate higher-evidence task mode. App Server is
+a candidate subject to a small feasibility prototype, not an accepted target
+architecture.
+
+See:
+
+- [Product specification](docs/SPEC.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Current Phase 5 plan](docs/PLAN.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Domain language](CONTEXT.md)
+
+## Development
+
+```bash
 uv run ruff check .
 uv run ruff format --check .
 uv run mypy src tests
@@ -124,40 +122,5 @@ uv run pytest
 uv build
 ```
 
-## Environment
-
-- Local app URL: N/A; V0 is a CLI.
-- Preview/staging URL: N/A.
-- Production URL: N/A.
-- Database projects are separated by environment: N/A; V0 has no database.
-- Secrets live in: N/A; V0 should not require secrets.
-- Local run artifacts live under `.patchtrace/runs/` once implemented.
-
-Do not put real secrets, customer data, provider tokens, private transcripts, or
-private diffs in README, docs, screenshots, commits, or chat.
-
-## Development Workflow
-
-- Read `AGENTS.md`, `docs/AGENT_WORKFLOW.md`, and `docs/PLAN.md` before work.
-- Work on one task at a time.
-- Use `using-agent-skills` when the right skill path is unclear.
-- Commit after each standard task once verified.
-- Use `pause before commit` for high-risk work.
-- Merge only after review and runtime verification.
-
-## Deployment
-
-- Provider: N/A for V0.
-- Deploy command/process: N/A until package release or hosted surface exists.
-- Rollback process: see `docs/OPERATIONS.md` once launch prep begins.
-- Monitoring: N/A for V0 local CLI.
-
-## Known Limitations
-
-- PatchTrace does not prove code correctness.
-- PatchTrace does not claim a patch is safe or production verified.
-- V0 has no SaaS, auth, teams, GitHub integration, HTML report, or required LLM calls.
-- Full claim-vs-evidence analysis requires session transcript material.
-- Claim extraction requires one uniquely identified `Final answer:` region;
-  ambiguous transcripts remain explicitly unassessed.
-- V0 targets macOS/Linux-style PTY workflows first; Windows support is deferred.
+Verification milestones are recorded in
+[docs/VERIFY_LOG.md](docs/VERIFY_LOG.md).
