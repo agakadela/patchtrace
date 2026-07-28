@@ -1,250 +1,318 @@
-# ARCHITECTURE.md
+# PatchTrace Architecture
 
-System source of truth: stack, package convention, data flow, and trust
-boundaries.
+**Last reviewed:** 2026-07-27
 
-Template rules:
-- Keep this short and current.
-- Do not duplicate product scope from `docs/SPEC.md`.
-- Do not duplicate detailed auth/API/UI/AI/integration contracts; link to
-  risk-triggered docs when they exist.
-- If unknown, write `UNKNOWN`. If not applicable, write `N/A` and why.
+Related decisions:
 
-## Status
+- [ADR-0001: Project Foundation](decisions/ADR-0001-project-foundation.md)
+- [ADR-0002: Trusted Run Evidence, Outcomes, and Human Decision](decisions/ADR-0002-trusted-run-evidence-and-outcomes.md)
+- [ADR-0003: Codex Capture Modes and Trust Ceilings](decisions/ADR-0003-codex-capture-modes.md)
 
-- Last reviewed: 2026-07-12
-- Reviewed by: `$aga-spec` Phase 4 interview and product-architecture review
-- Related ADRs: `docs/decisions/ADR-0001-project-foundation.md`
+This document records current system truth and the accepted next architecture.
+Product scope is owned by [SPEC.md](SPEC.md), and detailed Phase 5 work by
+[PLAN.md](PLAN.md).
 
-## Stack
+## 1. System constraints
 
-| Layer | Decision | Source / ADR | Notes |
-|---|---|---|---|
-| App framework | N/A | `ADR-0001` | V0 is a local CLI, not a web app. |
-| Language | Python >=3.11 | `ADR-0001` | Local CLI with typed models and PTY/session capture. |
-| Project manager | `uv` | `ADR-0001` | Project/dependency/env/lock workflow. |
-| CLI framework | Typer | `ADR-0001` | Subcommands: `run`, `analyze`, `watch`. |
-| Session capture | Pexpect | `ADR-0001` | PTY-based capture for interactive Codex CLI sessions. |
-| PTY platform primitive | Python stdlib `pty` | `ADR-0001` | POSIX/macOS/Linux concept underlying the wrapper. |
-| Structured models | Pydantic v2 | `ADR-0001` | Validate run manifests, evidence, claims, verdicts, reports. |
-| Test runner | pytest | `ADR-0001` | Unit, integration, fixture, and fake-command PTY tests. |
-| Lint/format | Ruff | `ADR-0001` | Fast linter and formatter. |
-| Typecheck | mypy | `ADR-0001` | Static checking without adding a separate runtime dependency. |
-| Database | N/A | `ADR-0001` | V0 stores local files only. |
-| Migrations | N/A | `ADR-0001` | No schema migrations in V0. |
-| Auth | N/A | `ADR-0001` | V0 has no users, sessions, teams, or accounts. |
-| Payments | N/A | `ADR-0001` | V0 has no billing or entitlements. |
-| AI provider | N/A for V0 | `ADR-0001` | Must be useful without LLM calls. Future LLM use is opt-in only. |
-| Hosting/deploy | N/A for V0 | `ADR-0001` | Local CLI only; package publishing is a later decision. |
-| Monitoring | N/A for V0 | `ADR-0001` | Local stdout/stderr, run folders, and tests. |
+PatchTrace is a local Python CLI. It has:
 
-## Package Convention
+- no server, database, queue, accounts, or billing;
+- no required LLM or external service;
+- local run folders as its persistence boundary;
+- deterministic analysis and Markdown reports;
+- a POSIX PTY dependency for the current interactive workflow.
 
-Default principle: organize code by product and system capability ownership, not
-by global technical-layer dumps.
+The established stack remains Python 3.11+, Typer, Pexpect, Pydantic v2,
+pytest, Ruff, mypy, and `uv`.
 
-- Chosen convention: Python `src` layout with an import package under
-  `src/patchtrace/`.
-- Exact root path: `src/patchtrace/`.
-- Reason: PatchTrace is a local CLI package with clear capability boundaries:
-  CLI commands, session capture, Codex adapter, git/VCS collection, analysis,
-  report rendering, models, and run storage.
-- Why not `src/modules`: in Python, "module" usually means a `.py` file, so a
-  `modules/` package is less idiomatic than capability packages.
-- Why not `features`: V0 has no UI screens or user-facing app features.
-- Why not global `utils`: it hides ownership. Shared primitives must remain
-  small and have a clear package owner.
+## 2. CURRENT — Phase 4 implementation
 
-Accepted implementation shape:
+### 2.1 Implemented package ownership
 
 ```text
-src/
-  patchtrace/
-    __init__.py
-    __main__.py
-    cli/
-      app.py
-      commands/
-        run.py
-        analyze.py
-        watch.py
-    session/
-      recorder.py
-      transcript.py
-      terminal.py
-    adapters/
-      codex.py
-    vcs/
-      git.py
-      snapshot.py
-    analysis/
-      analyzer.py
-      claims.py
-      risk.py
-      test_evidence.py
-      verdict.py
-    reports/
-      summary.py
-      feedback.py
-      verification_brief.py
-    models/
-      run.py
-      evidence.py
-      report.py
-    storage/
-      runs.py
-tests/
-  unit/
-  integration/
-  fixtures/
-docs/
+src/patchtrace/
+├── cli/          command entry points and run orchestration
+├── session/      PTY recording and transcript normalization
+├── vcs/          Git command boundary and final-state snapshots
+├── analysis/     deterministic claim and command-signal analysis
+├── models/       validated run and report models
+├── reports/      shallow Markdown report builders and renderers
+└── storage/      run paths and manifest persistence
 ```
 
-## Data Flow
+There is no `adapters` package, command package hierarchy, risk module, verdict
+module, database, or public JSON API in the current implementation.
 
-Primary full flow:
+### 2.2 Implemented run flow
 
 ```text
-developer runs `patchtrace run -- codex`
-  -> CLI creates run folder
-  -> storage records run metadata
-  -> vcs records pre-run git state
-  -> session launches Codex CLI through PTY
-  -> session records transcript locally
-  -> vcs records post-run git state, changed files, and diff
-  -> session normalizes terminal noise and isolates claim-bearing final output
-  -> analysis consumes normalized transcript and local evidence once
-  -> analysis extracts a bounded set of explicit agent claims
-  -> analysis returns one validated AnalysisResult with evidence relationships,
-     gaps, next actions, and a conservative verdict
-  -> reports render SUMMARY.md, AGENT_FEEDBACK.md, and VERIFICATION_BRIEF.md
-     from that shared result
+patchtrace run -- <command>
+  -> validate that cwd is a Git worktree
+  -> capture pre-run porcelain status
+  -> create a local run folder
+  -> run the command through Pexpect and preserve the PTY transcript
+  -> capture post-run status plus final staged and unstaged diff
+  -> identify exactly one marker-bounded final answer, when available
+  -> infer bounded claims and command/test signals from text
+  -> build one validated AnalysisResult
+  -> render SUMMARY, AGENT_FEEDBACK, and VERIFICATION_BRIEF
+  -> write run.json
 ```
 
-Fallback manual flow:
+`analyze` and `watch` are explicit not-implemented placeholders.
+
+### 2.3 Current artifacts
+
+One run currently writes:
 
 ```text
-developer runs `patchtrace analyze`
-  -> CLI reads current git state and optional transcript/run material
-  -> analysis runs with available evidence
-  -> reports clearly mark missing transcript or test evidence
+run.json
+agent-session.txt
+git-before.txt
+git-after.txt
+changed-files.txt
+patch.diff
+SUMMARY.md
+AGENT_FEEDBACK.md
+VERIFICATION_BRIEF.md
 ```
 
-Watch flow:
+The manifest records the wrapped command, timestamps, exit status, a combined
+process outcome, artifact paths, and Git evidence paths. `AnalysisResult` is
+validated in memory and shared by all report builders; it is not persisted as a
+separate artifact.
+
+### 2.4 Confirmed limitations
+
+- `git-before.txt` is recorded but not used to attribute changes.
+- Final status and diff can contain pre-existing work.
+- Untracked content and commits during the run are incomplete.
+- Dirty same-path work cannot be separated.
+- The PTY final answer requires exactly one supported marker.
+- Missing or ambiguous markers degrade claim evidence; there is no transcript
+  tail fallback.
+- Command and test evidence is text inference without structured lifecycle.
+- No task artifact is captured or delivered by PatchTrace.
+- Wrapped-command outcome stands in for multiple lifecycle concerns.
+
+The final Phase 4 dogfood demonstrated the Git false positive: identical
+before/after status material was reported as files changed by the run. Phase 5
+starts with that confirmed defect.
+
+## 3. TARGET — Phase 5 architecture
+
+Phase 5 strengthens capture and provenance. It does not implement requirement
+satisfaction or final-verification freshness.
+
+### 3.1 Target data flow
 
 ```text
-developer runs `patchtrace watch`
-  -> watcher detects working-tree changes and idle state
-  -> analysis creates limited patch-only output if no transcript exists
-  -> reports label trigger source and evidence limits
+optional explicit task input
+  -> preserve raw task artifact and digest
+  -> capture initial Git and lifecycle envelope
+  -> deliver task only through an explicit supported agent mode
+  -> capture session evidence at that mode's observable boundary
+  -> capture final Git and lifecycle envelope
+  -> classify evidence provenance and limitations
+  -> build one validated AnalysisResult
+  -> render verdict, next action, and reports
+  -> human review and decision
 ```
 
-Notes:
+Task parsing or delivery may fail after the run boundary exists. Process,
+analysis, and package outcomes therefore precede and remain independent of
+Codex-specific task delivery.
 
-- The transcript is evidence, not truth.
-- The agent summary is never treated as proof.
-- Missing local/provided material should produce explicit gaps, not confident
-  guesses.
-- Full claim-vs-evidence analysis requires session material.
-- The Phase 4 analysis module has one conceptual interface:
-  `analyze_run(run_evidence) -> AnalysisResult`. Its implementation may use
-  private pure-function seams, but callers and report tests use the single
-  result-producing interface.
-- Report renderers do not parse raw artifacts or independently rerun analysis.
-- `analyze` and `watch` may later supply different evidence inputs to the same
-  analysis interface; Phase 4 does not implement those command flows.
+### 3.2 Capability ownership
 
-## Trust Boundaries
+Existing packages keep their current responsibilities:
 
-| Boundary | Validation | Auth/AuthZ Enforcement | Logging | Failure Behavior |
-|---|---|---|---|---|
-| CLI args -> command handlers | Validate subcommand, wrapped command, paths, and option combinations. | N/A | CLI stderr and run manifest where applicable. | Exit non-zero with actionable message. |
-| PatchTrace -> Codex CLI process | Preserve terminal behavior through PTY; record command and exit status. | N/A | `agent-session.txt`, `run.json`. | Capture exit code; still analyze available material. |
-| PTY transcript -> claims | Extract explicit claims only; strip/normalize control sequences for analysis. | N/A | Include transcript source and offsets where practical. | Mark claim material missing/limited if extraction fails. |
-| Local git repo -> patch evidence | Use local git commands in the target repo only. | N/A | Save before/after status, changed files, diff. | Mark patch material missing or no-change instead of inventing evidence. |
-| Test output -> test evidence | Parse conservatively; distinguish pass/fail from behavior proof. | N/A | Include command/test evidence when present. | Mark test evidence missing, weak, unknown, or contradictory. |
-| Analyzer -> report package | Validate report objects with Pydantic before rendering. | N/A | Write report artifact paths to `run.json`. | Do not silently write misleading partial reports. |
-| CLI -> external services | N/A in V0. | N/A | N/A | No external calls by default. |
+| Package | Phase 5 responsibility |
+|---|---|
+| `cli` | Choose an explicit capture mode, accept task input, orchestrate the run, and map terminal exit behavior without deciding evidence semantics. |
+| `session` | Own generic process/PTY transport, raw transcript capture, and agent-agnostic terminal cleanup. |
+| `vcs` | Capture non-mutating before/after Git facts and produce attribution inputs. |
+| `analysis` | Combine validated task, Git, agent-specific, command, and lifecycle evidence into one result and enforce trust ceilings without interpreting Codex TUI text. |
+| `models` | Validate task, provenance, outcome, delivery, and analysis data. |
+| `reports` | Render only the shared result and evidence references. |
+| `storage` | Preserve raw artifacts, digests, manifests, and package completion facts. |
 
-## Server-Side Enforcement Points
+Task 6 adds one concrete Codex-specific boundary. It owns interactive task
+delivery, Codex TUI rules, marker-based final-output extraction, Codex-specific
+evidence locators, and any later approved structured events or final-message
+selection. It appears with the concrete T6 implementation, not as an empty
+abstraction. It is not a plugin registry or a generic multi-agent framework.
 
-- Auth/session checked at: N/A because V0 has no auth.
-- Authorization checked at: N/A because V0 has no users or accounts.
-- Tenant/workspace isolation checked at: N/A because V0 has no tenant model.
-- DB-level isolation/RLS: N/A because V0 has no database.
-- Entitlements checked at: N/A because V0 has no payments.
+### 3.3 Git capture envelope
 
-## Data Model Overview
+The V1 Git boundary records, without repository mutation:
 
-Do not maintain full schemas here. Keep canonical schema definitions in code
-once implementation exists.
+- `HEAD` before and after;
+- initial and final clean/dirty state;
+- sufficient initial material to recognize pre-existing paths;
+- previously clean tracked files changed during the run;
+- new untracked files;
+- commits created within a straightforward captured history range;
+- explicit limitations for non-linear or inseparable cases.
 
-| Concept | Storage | Owner Package | Notes |
+Analysis assigns:
+
+- `session-attributed`;
+- `pre-existing`;
+- `indeterminate`.
+
+The classification applies to the captured session boundary, not authorship of
+each byte. Dirty same-path changes remain `indeterminate` in V1. No stashing,
+temporary commits, index rewriting, branch changes, or worktree cleanup is
+permitted.
+
+### 3.4 Lifecycle outcomes
+
+The run model separates:
+
+- process outcome;
+- analysis outcome;
+- package outcome.
+
+The three facts must survive independent failure paths. For example, a wrapped
+command may succeed while current transcript analysis is degraded, or a report
+write may fail after analysis completes.
+
+Verdict remains a recommendation about evidence. It is not any lifecycle
+outcome and does not define the CLI exit code by itself.
+
+Task 4 implements only the smallest model and reason mapping needed by current,
+tested capture, analysis, and package-write failures. Tasks 5 and 6 add their
+own parsing and delivery reasons only after those failure paths exist. Phase 5
+does not introduce a workflow state machine or design a speculative error
+catalog.
+
+### 3.5 Task Contract capture
+
+The raw Markdown task is preserved unchanged and digest-bound to the run.
+Parsing validates required and optional sections and produces deterministic
+run-local IDs stable for that preserved artifact only.
+
+The parsed representation is an analysis input. It is not a predicate program.
+Phase 5 records task material and limitations; Phase 6 evaluates requirement
+satisfaction.
+
+A missing task is allowed but caps trust. An invalid provided task produces an
+explicit parsing failure and lifecycle outcomes rather than silently running
+with rewritten content.
+
+### 3.6 Task delivery boundary
+
+For a Codex-specific mode, the preserved raw task artifact is the source of the
+initial prompt. The manifest records:
+
+- delivery mode and supported transport;
+- the artifact digest used as the source;
+- the nearest boundary PatchTrace actually submitted or observed;
+- whether delivery was attempted and what that boundary confirmed;
+- any unobservable receipt limitation.
+
+PatchTrace does not claim byte-for-byte receipt if the official transport does
+not expose it, and never claims model understanding.
+
+For a generic wrapped command, PatchTrace preserves the task for analysis but
+marks delivery as unverified. It does not infer how arbitrary commands consume
+arguments or stdin.
+
+### 3.7 Capture modes and trust ceilings
+
+| Mode | User experience | Evidence boundary | Phase 5 ceiling |
 |---|---|---|---|
-| Run manifest | `.patchtrace/runs/<run-id>/run.json` | `models`, `storage` | Run ID, command, timestamps, exit code, artifact paths, trigger source. |
-| Session transcript | `.patchtrace/runs/<run-id>/agent-session.txt` | `session` | Raw-ish local transcript captured from PTY, normalized for analysis separately. |
-| Git snapshot | `.patchtrace/runs/<run-id>/git-before.txt`, `git-after.txt`, `patch.diff`, `changed-files.txt` | `vcs` | Local patch material before/after wrapped session. |
-| Agent claim | In-memory/report object | `analysis` | Explicit claim extracted from transcript/session material. |
-| Evidence source | In-memory/report object | `models`, `analysis` | Source-backed material: transcript span, diff hunk, file path, test output, command output. |
-| Analysis result | In-memory validated object | `models`, `analysis` | Single source for claim assessments, evidence gaps, next actions, review targets, and conservative verdict consumed by all reports. |
-| Risk area | In-memory/report object | `analysis` | Conservative risk classification tied to evidence. |
-| Verification package | Markdown files plus manifest | `reports`, `storage` | `SUMMARY.md`, `AGENT_FEEDBACK.md`, `VERIFICATION_BRIEF.md`. |
+| Generic PTY transport | Existing wrapped-command terminal session | Raw transcript, agent-agnostic cleanup, exit status, and Git envelope | No agent-specific final-output claim without a concrete boundary. |
+| Interactive Codex compatibility | Existing interactive Codex session over generic PTY transport plus the concrete Codex boundary | Codex TUI interpretation, exact marker when present, transport-bounded task delivery, and Git envelope | Final output remains marker-based; missing or ambiguous marker degrades analysis. |
+| Structured-interactive candidate | Same interactive session, only if officially observable without a replacement client | App Server typed events to be tested | Not accepted; the prototype must return `GO`, `NO-GO`, or `CANNOT VERIFY`. |
 
-## External Systems
+No mode may claim evidence above what its transport observes. A production
+`codex exec --json` task mode, JSONL parser, and real structured-task dogfood are
+not part of T6 or the Phase 5 exit criteria. They remain a separate candidate
+slice requiring human approval or a concrete dogfood trigger, independently of
+the App Server result.
 
-| System | Purpose | Source Doc | Failure Path |
-|---|---|---|---|
-| Codex CLI | First wrapped agent command for dogfooding. | `docs/SPEC.md`; implementation adapter once built. | If unavailable or exits non-zero, record failure and analyze available material. |
+### 3.8 App Server feasibility gate
 
-No external network service is required in V0.
+The time-boxed prototype asks only:
 
-Future optional integrations such as non-Codex adapters, LLM extraction, GitHub
-PR integration, package publishing, or hosted services require explicit approval
-and matching risk-triggered docs.
+1. Do the required typed final-message, command-result, file-change, and
+   lifecycle events exist?
+2. Do they belong to the same interactive session the user is operating?
+3. Can PatchTrace obtain them through an official route without building its
+   own client?
+4. Is the required surface stable rather than private or experimental for the
+   needed fields and transport?
+5. What is the minimum production integration cost?
 
-## Environments
+Needing a custom TUI, a large protocol proxy, or private formats is `NO-GO` for
+Phase 5. The prototype is not a production integration.
 
-| Environment | URL | Database/Provider Project | Notes |
-|---|---|---|---|
-| local | N/A | N/A | V0 runs as a local CLI. |
-| preview/staging | N/A | N/A | N/A until a hosted surface exists. |
-| production | N/A | N/A | N/A until package release or hosted service is planned. |
+If the result is `NO-GO` or `CANNOT VERIFY`, Phase 5 can still close. PTY then
+remains marker-based compatibility mode, with no structured-interactive
+high-trust final output, and all verdicts and reports retain that ceiling.
 
-## Observability
+## 4. Trust boundaries
 
-- Error monitoring: N/A for V0 local CLI.
-- Logs: CLI stdout/stderr and local run folders.
-- Alerts: N/A.
-- Dashboards: N/A.
+| Boundary | Required behavior | Failure behavior |
+|---|---|---|
+| CLI task input -> raw artifact | Preserve source, compute digest, validate separately. | Keep exact failure evidence; do not rewrite into a valid task. |
+| Raw task -> Codex transport | Submit only in an explicit Codex mode and record the observable boundary. | Mark delivery failed or unverified; do not claim receipt. |
+| Wrapped process -> capture | Record process lifecycle and mode-specific evidence. | Preserve process outcome independently of analysis/package outcomes. |
+| Generic PTY text -> Codex boundary | Keep transport and cleanup agent-agnostic; pass preserved text to the concrete boundary. | Generic session code does not select a Codex final answer. |
+| Codex boundary -> final output | Apply supported Codex TUI markers and evidence locators. | Degrade on missing or ambiguous marker; never guess the tail. |
+| Approved structured Codex events -> typed evidence | If a later slice is approved, consume documented event fields inside the Codex boundary. | Degrade or reject unsupported/experimental evidence instead of parsing private formats. |
+| Git repository -> attribution | Observe before/after facts without mutation. | Classify inseparable material as `indeterminate`. |
+| Evidence -> AnalysisResult | Validate provenance and apply the mode ceiling once. | Return degraded/blocked analysis with actionable gaps. |
+| AnalysisResult -> reports | Render the same facts and references everywhere. | Package outcome exposes incomplete writes; renderers do not invent fallback analysis. |
+| CLI -> external services | N/A for accepted scope. | No network or hosted service is required for normal operation. |
 
-## Known Constraints
+## 5. Storage and compatibility
 
-- V0 must be useful without an LLM.
-- Full claim-vs-evidence analysis depends on session transcript material.
-- Phase 4 intentionally recognizes only explicit claims about changed files,
-  completed changes, tests, and verification commands; arbitrary semantic
-  understanding is deferred.
-- `patchtrace watch` is a secondary safety net, not the source of full session
-  truth.
-- Markdown report quality and ready-to-paste agent feedback are the product bar.
-- The report must not claim correctness, safety, guarantees, or production
-  verification without evidence.
-- Fixture expectations should precede analyzer behavior.
-- V0 targets macOS/Linux-style PTY workflows first; Windows support is not a V0
-  acceptance criterion.
+Phase 5 extends the local run package only with artifacts required by accepted
+tasks. Exact filenames and schema fields are chosen in their implementation
+slice and validated with fixtures.
 
-## Source Notes
+Raw evidence and derived data must remain distinguishable. Digests identify
+preserved artifacts; they do not certify truth. Any future post-hoc compatibility
+contract belongs to Phase 8.
 
-- Python `src` layout and `pyproject.toml`: Python Packaging User Guide.
-- `uv` and Ruff: Astral official docs.
-- Typer: Typer official docs.
-- Pexpect: Pexpect official docs.
-- Python `pty`: Python standard library docs.
-- Pydantic, pytest, mypy: official docs.
+## 6. Verification strategy
 
-## Change Log
+Every capability is defined first by fixtures and focused integration tests.
+Phase 5 requires:
 
-| Date | Change | Reason | Commit/PR |
-|---|---|---|---|
-| 2026-07-12 | Added the Phase 4 single-analysis-result seam and bounded deterministic claim flow | Accepted `$aga-spec` Phase 4 architecture review | N/A |
-| 2026-07-02 | Reframed architecture for Python V0 as Codex CLI session recorder and local verification package | New `$aga-spec` direction | N/A |
+- temporary Git repositories covering clean, dirty, untracked, and committed
+  runs;
+- fake interactive commands for process and package failures;
+- Task Contract fixtures preserving exact source and deterministic parsing;
+- interactive Codex boundary fixtures for task delivery, TUI markers, and
+  evidence locators;
+- official App Server schema or event examples only for the Task 7 feasibility
+  result;
+- real dogfood before phase closure.
+
+The full quality gate remains Ruff lint and format check, mypy, pytest, and
+build. App Server feasibility evidence is recorded as research/prototype proof,
+not as passing production capability.
+
+## 7. DEFERRED OR CONDITIONAL
+
+- requirement satisfaction and final verification: Phase 6;
+- evidence quality and review prioritization: Phase 7;
+- post-hoc analyze: Phase 8;
+- OSS hardening and distribution: Phase 9;
+- watch, Windows, second agent integration, GitHub, HTML, LLM, and hosted
+  workflows: conditional.
+
+No event bus, workflow engine, database, queue, dependency-injection framework,
+generic plugin system, or full Git forensics is justified by the local CLI.
+
+## 8. Official interface references
+
+- [Codex non-interactive mode](https://developers.openai.com/codex/noninteractive/)
+- [Codex App Server](https://developers.openai.com/codex/app-server/)
+- [Git status](https://git-scm.com/docs/git-status)
+- [Git diff](https://git-scm.com/docs/git-diff)
+- [Git revisions](https://git-scm.com/docs/revisions)

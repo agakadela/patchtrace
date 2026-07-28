@@ -1,580 +1,283 @@
-# Spec: PatchTrace Python
+# PatchTrace Product Specification
 
-Product source of truth: problem, user, scope, flows, and success criteria.
+**Status:** accepted product re-baseline after Phase 4
 
-Template rules:
-- This file is produced from `$aga-spec` interview, not from silent guessing.
-- Do not duplicate architecture, auth, API contracts, UI system, AI boundaries,
-  or integrations here. Link to their source docs once they exist.
-- If unknown, write `UNKNOWN`. If not applicable, write `N/A` and why.
-- Blocking unknowns must be resolved before planning implementation.
+**Product stage:** local CLI, pre-OSS
 
-## Status
+**Current implementation:** Phase 4 complete
 
-- Product name: PatchTrace
-- Spec status: accepted for Python V0 and Phase 4 planning
-- Owner: project maintainer(s)
-- Last updated: 2026-07-12
-- Current implementation phase: see `docs/PLAN.md`
+**Next phase:** Phase 5 — Trusted Capture and Session Provenance
 
-## Objective
+## 1. Product definition
 
-PatchTrace Python is a local-first devtool for recording an AI coding agent
-session and turning the resulting transcript, git patch, and test/command
-evidence into a review package.
+PatchTrace is a local evidence and verification layer for coding-agent runs.
+Given captured evidence within an explicit task contract, it recommends the next
+developer action.
 
-The Python V0 starts from the strongest dogfood workflow:
+The product helps a developer decide whether to:
 
-```bash
-patchtrace run -- codex
-```
+- accept a run after review;
+- begin manual review at the highest-risk evidence gap;
+- run missing verification;
+- rerun the task;
+- send concrete feedback to the agent.
 
-PatchTrace should be present while Codex CLI works. It records the session,
-captures git state before and after the agent run, extracts explicit agent
-claims from the transcript, compares those claims against local evidence, and
-writes practical next-step artifacts for the human reviewer.
+PatchTrace does not prove semantic correctness. It does not replace code review,
+security review, or developer judgment, and it never makes the final acceptance
+or merge decision.
 
-PatchTrace does not replace human code review and does not claim to prove code
-correctness, safety, or production readiness.
+## 2. Primary user and job
 
-## Problem
+The primary user is a developer working locally with a coding agent in a Git
+repository.
 
-AI coding agents can produce changes faster than a developer can comfortably
-verify them. The hardest moment is immediately after the agent says "done":
-the developer has a changed working tree, terminal output, maybe test output,
-and an agent summary that may sound more certain than the evidence supports.
+The user's job is:
 
-The pain PatchTrace solves is the decision bottleneck between:
+> Determine, quickly and honestly, what happened during this agent run, how the
+> result relates to the requested task, what evidence supports the result, and
+> what to do next.
 
-```text
-Codex CLI says "done"
-```
+The primary experience remains an interactive terminal workflow. Higher-quality
+structured capture may be offered where an official interface supports it, but
+it must not silently replace interactive work with a different task experience.
 
-and:
+## 3. Questions PatchTrace should answer
 
-```text
-Aga decides the next move: accept, review manually, run checks, or send the
-agent back with precise feedback.
-```
+In its intended product state, PatchTrace should make the following questions
+reviewable:
 
-## Target User
+1. What was the agent asked to do?
+2. What did the agent claim it did?
+3. Which final output belongs to this run?
+4. Which Git changes are attributable to the captured session boundary?
+5. Which changes pre-existed the run or remain indeterminate?
+6. Which commands and tests ran, and what results were captured?
+7. Are those results fresh for the final analyzed repository state?
+8. Which requirements and claims have supporting evidence?
+9. What is contradicted, omitted, incomplete, or unverifiable?
+10. Where should human review begin?
+11. What concrete follow-up should be sent to the agent?
 
-The primary V0 user is Aga using Codex CLI in her own agent workflow.
+The roadmap orders these capabilities by evidence dependency. Their presence in
+this list is not a claim that they are implemented today.
 
-Likely later users:
-- developers who run local CLI coding agents;
-- freelancers or maintainers who need a local record of agent work;
-- small teams experimenting with agent-created branches.
+## 4. Product contract
 
-V0 optimizes for dogfooding before broad OSS polish.
+### 4.1 Inputs
 
-## Current Workaround / Status Quo
+A run may include:
 
-Today the reviewer manually reconstructs the session from terminal output,
-agent final messages, git diff, changed files, and test output. This is slow,
-easy to do inconsistently, and especially weak at turning unsupported agent
-claims into a concrete follow-up prompt.
+- an explicit Task Contract;
+- a wrapped agent or local command;
+- the repository state before and after the run;
+- captured session, command, file-change, and lifecycle evidence;
+- optional final verification authorized by the user in a later phase.
 
-## Smallest Adoption Wedge
+A run without a Task Contract remains valid. PatchTrace must state that it
+cannot evaluate task coverage or issue its highest-trust recommendation.
 
-The smallest useful wedge is a local wrapper around Codex CLI that writes a
-review package after the agent exits.
-
-The review package must make the next action obvious without requiring the
-reviewer to read the full diff cold.
-
-## V0 Scope
-
-V0 is the Codex session recorder and local verification package.
-
-V0 will:
-- run as a Python CLI;
-- provide `patchtrace run -- codex` as the primary full workflow;
-- launch Codex CLI through a pseudo-terminal so interactive terminal behavior
-  still works;
-- record a local session transcript from the wrapped Codex run;
-- capture git status, changed files, and diff before and after the run;
-- store run material under `.patchtrace/runs/<run-id>/`;
-- extract explicit agent claims from transcript/session material with
-  deterministic, rules-first logic;
-- classify patch evidence, risk areas, test/command evidence, and missing
-  evidence conservatively;
-- generate `SUMMARY.md`, `AGENT_FEEDBACK.md`, and `VERIFICATION_BRIEF.md`;
-- support `patchtrace analyze` as a manual fallback for an existing working
-  tree, transcript, or saved run material;
-- support a secondary `patchtrace watch` concept as a patch-only safety net,
-  clearly labeled as limited when no session transcript is available;
-- stay useful without any required LLM call or external service.
-
-## Phase 4 Slice: Evidence-Backed Explicit Claim Assessment
-
-### Problem
-
-Phase 3 proved that `patchtrace run -- codex` can capture a real Codex session,
-local git evidence, and the complete review-package shape. The generated
-reports still stop at bounded evidence inventory: they do not yet tell the
-reviewer how explicit agent claims relate to that evidence.
-
-### User And Flow
-
-The primary user remains a developer reviewing a completed Codex session. When
-the wrapped session ends, PatchTrace should:
-
-1. normalize captured terminal text and isolate claim-bearing final output;
-2. extract explicit claims about changed files, completed changes, tests, and
-   verification commands;
-3. compare each extracted claim with available local patch and command/test
-   evidence;
-4. produce one conservative assessment result used by every Markdown report;
-5. present a quick decision and next action before claim-level detail.
-
-PatchTrace must ignore plans, speculative reasoning, and ambiguous conversational
-statements rather than turning them into claims.
-
-### Visible Result
-
-The reviewer should understand the report's recommended next action within
-seconds. `VERIFICATION_BRIEF.md` then provides, for every extracted claim:
-
-- the claim text and category;
-- a plain-language evidence relationship;
-- evidence references with an artifact and the most precise practical
-  locator;
-- missing or conflicting evidence;
-- one concrete next action when the evidence is incomplete.
-
-User-facing relationships are:
-
-- `Evidence supports this claim`;
-- `Evidence partially supports this claim`;
-- `No supporting evidence found`;
-- `Available evidence conflicts with this claim`;
-- `Cannot assess from available material`.
-
-These labels describe the relationship between a claim and available evidence.
-They do not declare the code correct, safe, accepted, or production ready.
-
-### Phase 4 Acceptance Criteria
-
-- One deterministic analysis result drives `SUMMARY.md`, `AGENT_FEEDBACK.md`,
-  and `VERIFICATION_BRIEF.md`; the reports do not independently reinterpret
-  the run.
-- Fixture scenarios cover supported, partially supported, unsupported,
-  contradicted, and cannot-assess outcomes without requiring an LLM.
-- File-change claims link to changed-file or diff evidence when present.
-- Test and verification-command claims distinguish a command mention from
-  result evidence and preserve failure or ambiguity.
-- Generic completion statements such as `fixed`, `done`, or `everything
-  works` are not treated as proof and remain unassessed without specific local
-  evidence.
-- Missing transcript, patch, command output, or test output produces an
-  explicit evidence gap and useful next action.
-- A real `uv run patchtrace run -- codex` dogfood run produces the layered
-  quick-decision and claim-detail report without external calls.
-- Existing lint, format, typecheck, test, and build checks remain green.
-
-### Phase 4 Boundaries
-
-- Always: remain local, deterministic, rules-first, conservative, and
-  evidence-referenced.
-- Ask first: new dependencies, LLM/API use, external data transfer, or changes
-  to the established capability-package convention.
-- Never: infer unstated claims, equate missing evidence with falsehood, or
-  claim correctness, safety, acceptance, or production readiness.
-- Out of scope: `patchtrace analyze`, `patchtrace watch`, broad semantic
-  understanding of arbitrary agent prose, expanded non-Codex adapters,
-  expanded risk classification, public JSON output, and required LLM analysis.
-
-Architecture and module ownership for this slice remain canonical in
-`docs/ARCHITECTURE.md`.
-
-## Required V0 Artifacts
-
-Each full `patchtrace run -- codex` session writes:
-
-```text
-.patchtrace/runs/<run-id>/
-  run.json
-  agent-session.txt
-  git-before.txt
-  git-after.txt
-  patch.diff
-  changed-files.txt
-  SUMMARY.md
-  AGENT_FEEDBACK.md
-  VERIFICATION_BRIEF.md
-```
-
-Artifact roles:
-- `SUMMARY.md`: short human-readable decision summary and next action.
-- `AGENT_FEEDBACK.md`: ready-to-paste feedback for the agent.
-- `VERIFICATION_BRIEF.md`: evidence-backed detail including claims, patch
-  evidence, test evidence, gaps, review-first files, and conservative verdict.
-- `run.json`: structured manifest for the run and generated artifacts.
-- Raw material files: local evidence sources used by the reports.
-
-## Explicitly Out Of Scope
-
-V0 will not build:
-- SaaS;
-- login, auth, teams, workspaces, or cloud sync;
-- billing or paid access;
-- GitHub App, GitHub OAuth, PR comments, or hosted PR integration;
-- local HTML report or dashboard;
-- public proof pages, social posts, PNG cards, or video replay;
-- broad adapters for every coding agent;
-- required LLM analysis;
-- automatic correctness scoring;
-- claims that code is safe, correct, guaranteed, or production verified;
-- sending private code, diffs, transcripts, summaries, or test output to
-  external services by default.
-
-## Tech Stack
-
-See `docs/ARCHITECTURE.md` and
-`docs/decisions/ADR-0001-project-foundation.md` for foundation decisions.
-
-Accepted product-level constraints:
-- Runtime: local CLI.
-- Language: Python >=3.11.
-- Project manager: `uv`.
-- CLI framework: Typer.
-- Session/PTY capture: Pexpect, with Python stdlib `pty` as the underlying
-  platform concept.
-- Data validation: Pydantic v2.
-- Test runner: pytest.
-- Lint/format: Ruff.
-- Typecheck: mypy.
-- Analyzer style: deterministic/rules-first.
-- Package layout: `src/patchtrace/<capability>/...`.
-- Database, auth, hosting, and required AI provider: N/A for V0.
-
-## Commands
-
-These are target commands for the Python foundation. They become executable
-after the scaffold task.
-
-```bash
-# install/sync dependencies
-uv sync
-
-# run the CLI from source
-uv run patchtrace --help
-
-# full Codex session workflow
-uv run patchtrace run -- codex
-
-# manual fallback analysis
-uv run patchtrace analyze
-
-# secondary watch mode, limited without transcript material
-uv run patchtrace watch
-
-# lint and format check
-uv run ruff check .
-uv run ruff format --check .
-
-# typecheck
-uv run mypy src tests
-
-# tests
-uv run pytest
-
-# build package
-uv build
-```
-
-## Project Structure
-
-The product structure belongs in `docs/ARCHITECTURE.md`. The accepted
-foundation direction is:
-
-```text
-src/
-  patchtrace/
-    __init__.py
-    __main__.py
-    cli/
-    session/
-    adapters/
-    vcs/
-    analysis/
-    reports/
-    models/
-    storage/
-tests/
-  unit/
-  integration/
-  fixtures/
-docs/
-```
-
-The implementation should be organized by PatchTrace capabilities and domain
-concepts, not by global technical dumping grounds such as `utils`.
-
-## Code Style
-
-The implementation should favor explicit, typed, evidence-preserving data
-transformations.
-
-Example style target:
-
-```python
-from enum import StrEnum
-from pydantic import BaseModel
-
-
-class ClaimSupport(StrEnum):
-    SUPPORTED = "supported"
-    PARTIALLY_SUPPORTED = "partially_supported"
-    UNSUPPORTED = "unsupported"
-    CONTRADICTED = "contradicted"
-    CANNOT_DETERMINE = "cannot_determine"
-
-
-class AgentClaimAssessment(BaseModel):
-    claim: str
-    support: ClaimSupport
-    assessment: str
-    evidence_sources: list[str]
-    missing_evidence: list[str]
-```
-
-Style rules:
-- Prefer small pure functions for analysis rules.
-- Preserve evidence source references wherever possible.
-- Keep session capture, git collection, analysis, and report rendering separate.
-- Do not hide product judgment inside one prompt or opaque function.
-- Do not infer claims that are not stated.
-- Use conservative language when evidence is incomplete.
-- Validate structured run and report objects with Pydantic models.
-- Keep CLI commands thin; product behavior belongs in package modules.
-
-## Testing Strategy
-
-V0 is fixture-first and session-aware.
-
-Before broad analyzer behavior, create fixtures for:
-- a recorded Codex-like transcript that claims work is done and tests passed;
-- a transcript where tests fail while the agent claims completion;
-- a patch-only run with no transcript, producing limited analysis;
-- high-risk changed paths such as auth, payment/webhook, AI endpoint, or
-  migration-like changes;
-- a minimal successful `patchtrace run -- <fake interactive command>` capture.
-
-Test levels:
-- unit tests for transcript normalization, claim extraction, evidence matching,
-  risk classification, test-evidence assessment, verdict selection, and report
-  rendering;
-- integration tests for run-folder creation and git snapshot/diff collection;
-- PTY capture tests using a local fake command, not real Codex CLI;
-- fixture tests comparing generated Markdown sections against expected output;
-- CLI smoke tests proving `patchtrace run -- <fake command>` and
-  `patchtrace analyze` write expected artifacts.
-
-The tests do not need to prove code correctness. They need to prove PatchTrace
-stays conservative, evidence-backed, local-first, and useful.
-
-## Boundaries
-
-Always:
-- keep V0 local-first;
-- treat the transcript as sensitive local evidence;
-- tie warnings, verdicts, and next steps to provided evidence or missing
+### 4.2 Outputs
+
+PatchTrace produces a local, inspectable package containing preserved evidence,
+a validated analysis result, and shallow human-readable reports.
+
+Every material assessment must distinguish:
+
+- observed evidence;
+- inference from evidence;
+- missing or ambiguous evidence;
+- a recommendation to the developer.
+
+`cannot verify` is a complete and expected result, not an internal error.
+
+### 4.3 Highest verdict boundary
+
+The highest future verdict means:
+
+> Declared evidence gates were satisfied, and captured evidence is sufficient
+> to recommend acceptance within the preserved Task Contract.
+
+It does not mean:
+
+> PatchTrace proved the implementation semantically correct.
+
+The developer owns final review, acceptance, and merge.
+
+## 5. Task Contract V1
+
+Task Contract V1 is plain Markdown, not a DSL.
+
+Required sections:
+
+- `Outcome`
+- `Requirements`
+
+Optional sections, which may be omitted or explicitly marked `N/A`:
+
+- `Acceptance Criteria`
+- `Required Verification`
+- `Out of Scope`
+
+PatchTrace must:
+
+- preserve the raw task artifact without semantic rewriting;
+- bind the artifact to the run with a digest;
+- derive the Codex-specific initial prompt from that same artifact;
+- retain both parsed structure and the raw source;
+- assign simple deterministic run-local IDs by section and order.
+
+Generated IDs are stable for the preserved task artifact. They are not promised
+to remain stable after the task text is edited.
+
+Phase 5 establishes capture, validation, preservation, and binding. It does not
+evaluate full requirement satisfaction; that belongs to Phase 6.
+
+Task Contract V1 must not introduce:
+
+- typed predicate syntax;
+- `all` or `any` expression trees;
+- an acceptance policy engine;
+- automatic claims that a changed file proves a natural-language requirement.
+
+## 6. Evidence and trust
+
+### 6.1 Evidence provenance
+
+Evidence must retain enough provenance to answer where it came from, which run
+it belongs to, how it was captured, and what limitation applies.
+
+All report renderers consume one validated `AnalysisResult`; renderers do not
+recompute evidence semantics independently.
+
+### 6.2 Git attribution
+
+Git evidence uses three honest attribution classes:
+
+- `session-attributed` — the change is attributable to the captured session
+  boundary;
+- `pre-existing` — the material existed before the run;
+- `indeterminate` — available evidence cannot separate the two reliably.
+
+`session-attributed` does not prove that every byte was written exclusively by
+the agent. A dirty same-path change remains `indeterminate` unless a simple,
+reliable mechanism can separate it.
+
+PatchTrace must not mutate the worktree, index, branch, or history to improve
+attribution.
+
+### 6.3 Capture-mode ceilings
+
+Each capture mode has a trust ceiling determined by what its supported
+transport can actually observe.
+
+- Interactive PTY is a marker-based compatibility mode.
+- Codex structured execution may be a separate, higher-evidence task mode.
+- Codex App Server is a candidate for structured-interactive capture, pending a
+  feasibility result.
+
+A missing or ambiguous PTY final-answer marker degrades final-output evidence.
+PatchTrace must not infer the final answer from an arbitrary transcript tail.
+
+Transport evidence may establish how a task was submitted at the nearest
+reliable boundary. It does not establish byte-for-byte receipt when that is not
+observable, and never establishes that a model understood the task.
+
+## 7. Run lifecycle
+
+PatchTrace treats these as separate concerns:
+
+- process outcome — what happened to the wrapped command;
+- analysis outcome — whether evidence analysis completed, degraded, or could
+  not proceed;
+- package outcome — whether required run artifacts and reports were written.
+
+These outcomes exist independently of Task Contract parsing or Codex delivery.
+An evidence verdict is not the CLI exit status and must not obscure failures in
+another lifecycle concern.
+
+The exact V1 model and failure mapping are owned by the architecture and the
+Phase 5 implementation plan rather than duplicated here.
+
+## 8. Current implementation
+
+The Phase 4 CLI currently:
+
+- wraps one command in a PTY;
+- preserves a transcript;
+- captures Git status before and after;
+- captures the final staged and unstaged diff visible after the run;
+- extracts bounded claims from exactly one marker-identified final answer;
+- infers command and test signals from text;
+- builds one deterministic `AnalysisResult`;
+- renders a summary, agent feedback, and verification brief;
+- stores one nine-artifact local package.
+
+Known current gaps:
+
+- final Git state is not session-scoped provenance;
+- pre-existing changes can be reported as run changes;
+- untracked content and in-run commits are incomplete;
+- command results and final messages are not structured in PTY mode;
+- no Task Contract is captured;
+- lifecycle outcomes are conflated;
+- verification freshness and requirement coverage are absent.
+
+These are product gaps, not permission to overstate current evidence.
+
+## 9. Product requirements
+
+### Required direction
+
+PatchTrace must remain:
+
+- local-first and inspectable;
+- deterministic and rules-first by default;
+- usable without an LLM or hosted service;
+- human-in-the-loop;
+- explicit about evidence gaps and trust ceilings;
+- organized around small, testable capability slices;
+- proportional to a local CLI.
+
+### Deferred or conditional
+
+The following require a concrete trigger before entering a committed phase:
+
+- continuous watch mode;
+- Windows support;
+- a second agent integration;
+- GitHub or pull-request integration;
+- an HTML viewer;
+- optional LLM assistance;
+- hosted or team workflows.
+
+### Non-goals
+
+PatchTrace is not:
+
+- a correctness oracle;
+- a general AI code reviewer;
+- a security scanner;
+- an autonomous repair, acceptance, or merge agent;
+- a guarantee against regressions;
+- a generic multi-agent platform;
+- a SaaS product in the current roadmap.
+
+It also does not need a plugin registry, workflow engine, event bus, database,
+queue, dependency-injection framework, or large public API for the accepted
+local CLI scope.
+
+## 10. Success measures
+
+The product is moving in the right direction when:
+
+- a developer can trace each material recommendation to preserved local
   evidence;
-- use conservative verdict language;
-- include cannot-verify items when proof requires unavailable runtime,
-  provider, dashboard, secret, deployed environment, live data, or logs;
-- keep full claim-vs-evidence analysis dependent on available session material;
-- label patch-only analysis as limited when transcript/session evidence is
-  missing;
-- keep the CLI usable without an LLM.
+- pre-existing work is not falsely presented as session-attributed;
+- missing evidence lowers trust instead of being guessed;
+- a preserved task anchors coverage analysis;
+- reports agree because they consume the same analysis result;
+- dogfooding exposes limitations as explicit outcomes;
+- the developer remains the final decision-maker.
 
-Ask first:
-- adding any LLM call or model SDK;
-- adding new runtime dependencies beyond the agreed foundation;
-- adding non-Codex agent adapters;
-- adding GitHub/PR integration;
-- adding an HTML UI or dashboard;
-- publishing a package or release;
-- changing the verdict taxonomy;
-- changing the claim-support taxonomy;
-- changing the package/module convention;
-- adding any external service, network call, telemetry, or daemon install.
-
-Never in V0:
-- SaaS;
-- auth or team accounts;
-- cloud sync;
-- correctness scoring;
-- claims that PatchTrace proves safety or correctness;
-- sending private code, diffs, transcripts, summaries, or test output to
-  external services by default;
-- generic checklist output that is not tied to changed files, evidence, or
-  missing evidence.
-
-## Core Flows
-
-### Flow 1: Record and analyze a Codex CLI session
-
-- Actor: Aga using Codex CLI.
-- Trigger: Aga starts an agent session through PatchTrace.
-- Command:
-
-```bash
-patchtrace run -- codex
-```
-
-- Steps:
-  1. PatchTrace creates a new run ID and run folder.
-  2. PatchTrace records pre-run git status and diff state.
-  3. PatchTrace launches Codex CLI through a pseudo-terminal.
-  4. Aga uses Codex normally.
-  5. PatchTrace records the terminal transcript locally.
-  6. When Codex exits, PatchTrace records post-run git status, changed files,
-     and diff.
-  7. PatchTrace extracts explicit claims and command/test evidence from the
-     transcript.
-  8. PatchTrace analyzes claims against patch evidence and missing evidence.
-  9. PatchTrace writes `SUMMARY.md`, `AGENT_FEEDBACK.md`, and
-     `VERIFICATION_BRIEF.md`.
-- Successful outcome: Aga knows the next action and has a ready feedback
-  message if the agent should continue.
-- Failure/empty states:
-  - no git repo: exit with actionable error;
-  - no patch after session: write a no-change run summary;
-  - transcript capture fails: keep git evidence and mark session evidence
-    unavailable;
-  - command exits non-zero: record exit code and include it in the verdict;
-  - claims cannot be extracted: mark claim material missing or limited.
-- Runtime proof required: fake interactive command fixture produces a run
-  folder with transcript, diff evidence, and all required Markdown artifacts.
-
-### Flow 2: Analyze existing local material manually
-
-- Actor: developer reviewing an existing changed working tree or saved run.
-- Trigger: developer did not start the agent through PatchTrace or wants to
-  re-run analysis.
-- Command:
-
-```bash
-patchtrace analyze
-```
-
-- Successful outcome: PatchTrace produces an evidence brief from available git
-  material and any supplied transcript/test evidence.
-- Failure/empty states:
-  - transcript missing: claim analysis is limited;
-  - no diff: report says no patch material found;
-  - test output missing: test evidence is marked missing, not passed.
-
-### Flow 3: Watch as a secondary safety net
-
-- Actor: Aga running PatchTrace in the background.
-- Trigger: working tree changes become idle after agent-like activity.
-- Command:
-
-```bash
-patchtrace watch
-```
-
-- Successful outcome: PatchTrace writes a limited patch-only package when no
-  transcript is available, or links to session material when available.
-- Failure/empty states:
-  - watch triggers early or more than once: deduplicate by run fingerprint
-    where practical and label trigger source;
-  - no transcript: do not assess agent claims.
-- Runtime proof required: local fixture simulates file changes and idle
-  detection without requiring real Codex CLI.
-
-## Success Criteria
-
-| Criterion | How measured | Target | Owner |
-|---|---|---|---|
-| Codex session captured | PTY fake-command integration test | Transcript saved under `.patchtrace/runs/<run-id>/agent-session.txt` | Maintainer |
-| Patch evidence captured | Git fixture/integration test | Before/after status, changed files, and diff saved | Maintainer |
-| Useful next action | Fixture review | `SUMMARY.md` states accept/review/run-checks/send-back style decision | Maintainer |
-| Agent feedback useful | Fixture review | `AGENT_FEEDBACK.md` is ready to paste back to an agent | Maintainer |
-| Claim skepticism | Unit and fixture tests | Unsupported, contradicted, missing, and cannot-determine claims are labeled conservatively | Maintainer |
-| Test-evidence awareness | Unit and fixture tests | Missing/failing/weak test evidence is visible and actionable | Maintainer |
-| Privacy boundary | Code review and tests | No external calls by default; transcript stays local | Maintainer |
-| No false confidence | Copy review and tests | No "correct", "safe", "guaranteed", or "production verified" claims without evidence | Maintainer |
-
-## Product Constraints
-
-- Legal/compliance constraints: N/A for V0; PatchTrace is a local devtool and
-  does not provide legal, security, or production-safety guarantees.
-- Data/privacy constraints: local-first; no external service calls by default;
-  do not ask for `.env`, secrets, customer data, provider tokens, or private
-  dashboard exports.
-- Platform expectations: V0 targets macOS/Linux-style PTY workflows first.
-  Windows support is not a V0 acceptance criterion.
-- Performance expectations: the report package should be generated quickly
-  enough to use after every agent session.
-- Accessibility expectations: CLI output and Markdown reports should be
-  readable, structured, and usable without a graphical interface.
-- Budget/cost constraints: no required paid API or LLM cost in V0.
-
-## Source-Of-Truth Links
-
-| Area | Source |
-|---|---|
-| Architecture | `docs/ARCHITECTURE.md` |
-| Foundation decisions | `docs/decisions/ADR-0001-project-foundation.md` |
-| Access model | `docs/AUTH_ACCESS_MODEL.md` once triggered |
-| API contracts | `docs/API_CONTRACTS.md` once triggered |
-| UI conventions | `docs/UI_SYSTEM.md` once triggered |
-| AI boundaries | `docs/AI_BOUNDARIES.md` once triggered |
-| Integrations | `docs/INTEGRATIONS.md` once triggered |
-| Operations | `docs/OPERATIONS.md` once launch prep begins |
-
-## ADR Candidates
-
-Decisions that may need ADRs because they are hard to reverse, affect public
-interfaces, or will surprise future maintainers.
-
-- Project foundation: Python >=3.11 CLI, `uv`, Typer, Pydantic v2, Pexpect,
-  pytest, Ruff, mypy.
-- Primary interface: `patchtrace run -- codex` instead of saved-material-only
-  analysis.
-- Package layout: `src/patchtrace/<capability>/...`.
-- Local run-folder format under `.patchtrace/runs/<run-id>/`.
-- Report package: `SUMMARY.md`, `AGENT_FEEDBACK.md`, and
-  `VERIFICATION_BRIEF.md`.
-- Local-first/no-cloud/no-required-LLM boundary.
-- Claim support taxonomy: `supported`, `partially_supported`, `unsupported`,
-  `contradicted`, `cannot_determine`.
-- Single analysis-result seam shared by all report renderers. This needs an ADR
-  only if it becomes a persisted or externally consumed interface.
-- Separation between internal claim-support values and plain-language
-  user-facing labels.
-- Verdict taxonomy: `ready_for_review`, `needs_manual_review`,
-  `run_more_checks`, `send_agent_back`, `insufficient_material`.
-- Fixture-first session-capture and analyzer development.
-
-## Open Questions
-
-### Blocking
-
-- N/A. Blocking product and Phase 4 scope decisions are resolved.
-
-### Non-Blocking
-
-- Exact idle threshold and deduplication strategy for `patchtrace watch`.
-- Whether optional JSON output is exposed publicly or kept as internal run
-  metadata.
-- Whether real Codex CLI transcript formats need a dedicated parser beyond
-  generic transcript rules.
-- How precise evidence locators can be for every supported diff and transcript
-  shape; Phase 4 should preserve the best available artifact/path/span without
-  inventing precision.
-- Whether the analysis result should later be persisted in `run.json` or a
-  separate optional JSON artifact.
-- Package publishing timing and package ownership.
-- Whether later non-Codex adapters belong in this package or separate plugins.
-
-## Review Notes
-
-- Accepted by: project maintainer
-- Date: 2026-07-02 for Python V0; 2026-07-12 for the Phase 4 slice
-- Links to discussion/PR: N/A; accepted in local `$aga-spec` interview.
+Phase-specific exit criteria live in [ROADMAP.md](ROADMAP.md), and detailed work
+for only the active phase lives in [PLAN.md](PLAN.md).
