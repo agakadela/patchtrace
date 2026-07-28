@@ -130,17 +130,18 @@ Existing packages keep their current responsibilities:
 | Package | Phase 5 responsibility |
 |---|---|
 | `cli` | Choose an explicit capture mode, accept task input, orchestrate the run, and map terminal exit behavior without deciding evidence semantics. |
-| `session` | Own generic PTY recording and marker-based transcript interpretation. It does not parse private Codex formats. |
+| `session` | Own generic process/PTY transport, raw transcript capture, and agent-agnostic terminal cleanup. |
 | `vcs` | Capture non-mutating before/after Git facts and produce attribution inputs. |
-| `analysis` | Combine validated task, Git, session, command, and lifecycle evidence into one result and enforce trust ceilings. |
+| `analysis` | Combine validated task, Git, agent-specific, command, and lifecycle evidence into one result and enforce trust ceilings without interpreting Codex TUI text. |
 | `models` | Validate task, provenance, outcome, delivery, and analysis data. |
 | `reports` | Render only the shared result and evidence references. |
 | `storage` | Preserve raw artifacts, digests, manifests, and package completion facts. |
 
-A concrete Codex-specific boundary may be added when Task 6 needs it. It owns
-only supported Codex task delivery and typed-event interpretation. It is not a
-plugin registry and does not justify empty adapter packages or a generic
-multi-agent framework.
+Task 6 adds one concrete Codex-specific boundary. It owns interactive task
+delivery, Codex TUI rules, marker-based final-output extraction, Codex-specific
+evidence locators, and any later approved structured events or final-message
+selection. It appears with the concrete T6 implementation, not as an empty
+abstraction. It is not a plugin registry or a generic multi-agent framework.
 
 ### 3.3 Git capture envelope
 
@@ -174,14 +175,17 @@ The run model separates:
 - package outcome.
 
 The three facts must survive independent failure paths. For example, a wrapped
-command may succeed while analysis is degraded, or analysis may be blocked by
-invalid task material while the failure package is written successfully.
+command may succeed while current transcript analysis is degraded, or a report
+write may fail after analysis completes.
 
 Verdict remains a recommendation about evidence. It is not any lifecycle
 outcome and does not define the CLI exit code by itself.
 
-Phase 5 should implement the smallest explicit mapping needed by tested failure
-cases rather than a workflow state machine.
+Task 4 implements only the smallest model and reason mapping needed by current,
+tested capture, analysis, and package-write failures. Tasks 5 and 6 add their
+own parsing and delivery reasons only after those failure paths exist. Phase 5
+does not introduce a workflow state machine or design a speculative error
+catalog.
 
 ### 3.5 Task Contract capture
 
@@ -219,12 +223,15 @@ arguments or stdin.
 
 | Mode | User experience | Evidence boundary | Phase 5 ceiling |
 |---|---|---|---|
-| Interactive PTY compatibility | Existing interactive terminal session | Transcript text, exit status, Git envelope, exact marker when present | Final output remains marker-based; missing or ambiguous marker degrades analysis. |
-| Codex structured task | Separate non-interactive task workflow | Official `codex exec --json` typed events plus Git envelope | Higher structured command, file-change, lifecycle, and final-message evidence where the transport exposes it. |
+| Generic PTY transport | Existing wrapped-command terminal session | Raw transcript, agent-agnostic cleanup, exit status, and Git envelope | No agent-specific final-output claim without a concrete boundary. |
+| Interactive Codex compatibility | Existing interactive Codex session over generic PTY transport plus the concrete Codex boundary | Codex TUI interpretation, exact marker when present, transport-bounded task delivery, and Git envelope | Final output remains marker-based; missing or ambiguous marker degrades analysis. |
 | Structured-interactive candidate | Same interactive session, only if officially observable without a replacement client | App Server typed events to be tested | Not accepted; the prototype must return `GO`, `NO-GO`, or `CANNOT VERIFY`. |
 
-The structured task mode does not silently replace interactive PTY. No mode may
-claim evidence above what its transport observes.
+No mode may claim evidence above what its transport observes. A production
+`codex exec --json` task mode, JSONL parser, and real structured-task dogfood are
+not part of T6 or the Phase 5 exit criteria. They remain a separate candidate
+slice requiring human approval or a concrete dogfood trigger, independently of
+the App Server result.
 
 ### 3.8 App Server feasibility gate
 
@@ -253,8 +260,9 @@ high-trust final output, and all verdicts and reports retain that ceiling.
 | CLI task input -> raw artifact | Preserve source, compute digest, validate separately. | Keep exact failure evidence; do not rewrite into a valid task. |
 | Raw task -> Codex transport | Submit only in an explicit Codex mode and record the observable boundary. | Mark delivery failed or unverified; do not claim receipt. |
 | Wrapped process -> capture | Record process lifecycle and mode-specific evidence. | Preserve process outcome independently of analysis/package outcomes. |
-| PTY text -> final output | Accept one supported marker-bounded answer. | Degrade on missing or ambiguous marker; never guess the tail. |
-| Structured Codex events -> typed evidence | Consume documented event fields for the detected supported version. | Degrade or reject unsupported/experimental evidence instead of parsing private formats. |
+| Generic PTY text -> Codex boundary | Keep transport and cleanup agent-agnostic; pass preserved text to the concrete boundary. | Generic session code does not select a Codex final answer. |
+| Codex boundary -> final output | Apply supported Codex TUI markers and evidence locators. | Degrade on missing or ambiguous marker; never guess the tail. |
+| Approved structured Codex events -> typed evidence | If a later slice is approved, consume documented event fields inside the Codex boundary. | Degrade or reject unsupported/experimental evidence instead of parsing private formats. |
 | Git repository -> attribution | Observe before/after facts without mutation. | Classify inseparable material as `indeterminate`. |
 | Evidence -> AnalysisResult | Validate provenance and apply the mode ceiling once. | Return degraded/blocked analysis with actionable gaps. |
 | AnalysisResult -> reports | Render the same facts and references everywhere. | Package outcome exposes incomplete writes; renderers do not invent fallback analysis. |
@@ -279,7 +287,10 @@ Phase 5 requires:
   runs;
 - fake interactive commands for process and package failures;
 - Task Contract fixtures preserving exact source and deterministic parsing;
-- supported Codex transport fixtures or recorded official-schema examples;
+- interactive Codex boundary fixtures for task delivery, TUI markers, and
+  evidence locators;
+- official App Server schema or event examples only for the Task 7 feasibility
+  result;
 - real dogfood before phase closure.
 
 The full quality gate remains Ruff lint and format check, mypy, pytest, and

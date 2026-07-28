@@ -30,16 +30,30 @@ terminal experience and has an explicit lower trust ceiling.
 
 Final output is accepted only when exactly one supported marker identifies it.
 A missing or ambiguous marker degrades final-output evidence. PatchTrace never
-guesses that the last transcript lines are the final answer.
+guesses that the last transcript lines are the final answer. These Codex TUI
+rules belong to the concrete Codex boundary, not generic PTY capture or generic
+analysis.
 
-### Add structured execution as a separate task mode
+### Establish one concrete Codex boundary with T6
 
-`codex exec --json` may support an optional Codex structured task mode. It is
-not an automatic replacement for the interactive session.
+Generic `session` code owns process/PTY transport, raw transcript capture, and
+agent-agnostic terminal cleanup. The concrete Codex boundary owns interactive
+task delivery, Codex TUI interpretation, marker-based final-output extraction,
+Codex-specific evidence locators, and any later approved structured events and
+final-message selection.
 
-PatchTrace consumes only documented event types needed for task delivery,
-commands, file changes, lifecycle, and final messages. The Git capture envelope
-remains the local source for repository attribution.
+The boundary is added with the T6 implementation. PatchTrace does not create an
+empty adapter abstraction or plugin registry.
+
+### Keep structured execution as a separately approved candidate
+
+`codex exec --json` remains an accepted candidate for an optional structured
+task slice, but it is not part of T6 or the Phase 5 exit criteria. A production
+mode, JSONL parser, fixtures, and real structured-task dogfood require separate
+human approval or a concrete dogfood trigger.
+
+That candidate does not depend on the App Server feasibility result and does
+not automatically replace the interactive session.
 
 ### Make task delivery claims transport-bounded
 
@@ -80,7 +94,6 @@ Reports and verdicts cannot exceed the evidence exposed by their capture mode.
 If App Server is `NO-GO` or `CANNOT VERIFY`, Phase 5 may close with:
 
 - marker-based PTY compatibility mode;
-- structured `exec --json` task mode;
 - no structured-interactive high-trust final output;
 - explicit degradation for missing or ambiguous PTY markers.
 
@@ -123,7 +136,10 @@ adapter requires a concrete future trigger.
 Positive:
 
 - interactive UX remains intact;
-- structured evidence can improve a separate task workflow;
+- Codex-specific TUI interpretation no longer leaks into generic capture or
+  analysis;
+- structured execution remains available for a later, separately reviewed
+  slice;
 - every mode has honest, testable limitations;
 - feasibility research stays small and decision-oriented;
 - private or disproportionate work has a clear stop condition.
@@ -131,7 +147,7 @@ Positive:
 Costs and limits:
 
 - PTY final-output evidence remains fragile when markers are absent;
-- structured and interactive modes need distinct fixtures and user-facing copy;
+- generic PTY and Codex-specific interpretation need distinct fixtures;
 - a feasibility `GO` does not itself deliver production integration;
 - Phase 5 may close without structured-interactive high-trust output.
 
