@@ -127,7 +127,7 @@ Costs and limits:
 ## References
 
 - [PatchTrace product specification](../SPEC.md)
-- [Phase 5 plan](../PLAN.md)
+- [Deferred Phase 5 plan](../PHASE_5_PLAN.md)
 - [Git status documentation](https://git-scm.com/docs/git-status)
 - [Git diff documentation](https://git-scm.com/docs/git-diff)
 - [Git revision syntax](https://git-scm.com/docs/revisions)
