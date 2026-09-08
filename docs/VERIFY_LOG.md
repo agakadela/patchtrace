@@ -8,6 +8,32 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-09-08 - Phase 4.1 T1: External Run Storage
+
+- Commit: this commit, based on `40f38c5`; T2 and T3 remain unstarted.
+- Contract: accepted Phase 4.1 T1 in `PLAN.md`; only external run storage,
+  repository association, CLI discoverability, and their tests/docs.
+- RED proof: a fresh-repository `git add .` staged all nine session artifacts
+  before the change. The regression now stages only the expected user files,
+  with both absent and existing `.gitignore`; Git config remains unchanged.
+- Checks: Ruff lint and format check, mypy, full pytest (41 passed), and `uv build`
+  passed on macOS with Python 3.11.15. Existing fake-command, nonzero-exit,
+  interactive PTY, Git evidence, and report/fixture assertions remain green.
+- Runtime proof: installed the built wheel into a temporary target and invoked
+  `python -m patchtrace run -- <fake change command>` in a fresh Git repository.
+  Run `20260908T190121760620Z-2fc8b7d8` produced all nine artifacts and a nonempty
+  before/after patch outside the repo, printed its absolute package path, and
+  recorded the correct `repository_root` and `run_id`. Subsequent `git add .`
+  staged only `user.txt`; no `.gitignore` was created or Git config modified.
+- Additional proof: stable grouping from subdirectories and symlink aliases,
+  distinct checkouts, unset/empty/relative XDG fallback, containment rejection
+  (direct and symlink), and storage-creation failure before command execution.
+- Decision: concrete storage location, repository key, move behavior, and legacy
+  package handling are owned by `ARCHITECTURE.md` section 2.5.
+- Cannot verify: Linux execution is left to PR CI; local runtime proof is macOS.
+  No browser, database, provider, or production surface is involved.
+- Verdict: T1 acceptance is locally verified; stop before T2.
+
 ### 2026-07-12 - Phase 4 Close: Explicit Claim Assessment
 
 - Commit: this commit.

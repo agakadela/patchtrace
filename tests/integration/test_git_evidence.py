@@ -15,6 +15,7 @@ runner = CliRunner()
 
 def test_run_inside_git_repo_writes_git_evidence_artifacts(
     tmp_path: Path,
+    run_storage: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _init_git_repo(tmp_path)
@@ -29,7 +30,7 @@ def test_run_inside_git_repo_writes_git_evidence_artifacts(
 
     assert result.exit_code == 0
 
-    run_dir = next((Path(".patchtrace") / "runs").iterdir())
+    run_dir = next(run_storage.rglob("run.json")).parent
     manifest = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
     summary = (run_dir / "SUMMARY.md").read_text(encoding="utf-8")
     feedback = (run_dir / "AGENT_FEEDBACK.md").read_text(encoding="utf-8")
@@ -84,6 +85,7 @@ def test_run_inside_git_repo_writes_git_evidence_artifacts(
 
 def test_run_outside_git_repo_exits_without_writing_run_artifacts(
     tmp_path: Path,
+    run_storage: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.chdir(tmp_path)
@@ -97,6 +99,7 @@ def test_run_outside_git_repo_exits_without_writing_run_artifacts(
     assert "PatchTrace run requires a Git work tree" in result.output
     assert "should not run" not in result.output
     assert not (tmp_path / ".patchtrace").exists()
+    assert not list(run_storage.iterdir())
 
 
 def _init_git_repo(path: Path) -> None:

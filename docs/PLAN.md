@@ -1,12 +1,13 @@
 # Phase 4.1 — Trust Hardening
 
-**Status:** accepted; ready for implementation
+**Status:** in progress; T1 implemented and verified; T2 and T3 not started
 
-**Baseline:** Phase 4 complete; Phase 4.1 tasks are not implemented yet.
+**Baseline:** Phase 4 complete; Phase 4.1 T1 adds external run storage.
 
 **Roadmap:** [ROADMAP.md](ROADMAP.md)
 
-**Next task:** T1 — Keep run artifacts outside the working tree.
+**Next task:** T2 — Enforce the evidence trust ceiling for file/change claims.
+Implementation stops after T1 in this build; T2 requires a separate task.
 
 Work on one task at a time, in order T1 → T2 → T3. Each task ends in a
 verified, user-visible slice and a commit.
@@ -16,6 +17,10 @@ verified, user-visible slice and a commit.
 Phase 4.1 does not expand PatchTrace into semantic correctness or requirement satisfaction. It makes existing evidence labels no stronger than the evidence they represent.
 
 ## T1 — Keep run artifacts outside the working tree
+
+**Status:** implemented and verified.
+Storage decision: [ARCHITECTURE.md](ARCHITECTURE.md#25-run-storage-decision--phase-41-t1).
+Evidence: [VERIFY_LOG.md](VERIFY_LOG.md).
 
 ### Outcome
 
@@ -28,7 +33,7 @@ PatchTrace session material cannot be accidentally staged with the repository be
 * keep the generated run location discoverable from the CLI;
 * do not modify the user's `.gitignore`;
 * record the concrete local storage location and repository association decision
-  during T1; those implementation details are currently UNKNOWN.
+  during T1; the implementation decision is recorded in the linked architecture section.
 
 ### Acceptance
 

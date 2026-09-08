@@ -18,7 +18,7 @@ from patchtrace.reports.verification_brief import (
 )
 from patchtrace.session.recorder import record_command
 from patchtrace.storage.runs import create_run_paths, write_run_manifest
-from patchtrace.vcs.git import GitCommandError, is_inside_work_tree
+from patchtrace.vcs.git import GitCommandError, git_output, is_inside_work_tree
 from patchtrace.vcs.snapshot import capture_git_evidence, capture_git_status
 
 app = typer.Typer(
@@ -55,12 +55,19 @@ def run(ctx: typer.Context) -> None:
                 err=True,
             )
             raise typer.Exit(1)
+        repository_root = Path(
+            git_output(workspace, "rev-parse", "--show-toplevel").strip()
+        ).resolve()
         git_before_status = capture_git_status(workspace)
     except GitCommandError as error:
         typer.echo(f"Unable to inspect Git state: {error}", err=True)
         raise typer.Exit(1) from error
 
-    run_paths = create_run_paths(workspace)
+    try:
+        run_paths = create_run_paths(repository_root)
+    except (OSError, ValueError, RuntimeError) as error:
+        typer.echo(f"Unable to create PatchTrace run storage: {error}", err=True)
+        raise typer.Exit(1) from error
     started_at = datetime.now(UTC)
     run_paths.git_before_path.write_text(git_before_status, encoding="utf-8")
     recorded_session = record_command(
@@ -97,6 +104,7 @@ def run(ctx: typer.Context) -> None:
     )
     manifest = RunManifest(
         run_id=run_paths.run_id,
+        repository_root=str(repository_root),
         command=command,
         trigger_source="manual_cli",
         started_at=started_at,
@@ -146,8 +154,7 @@ def run(ctx: typer.Context) -> None:
     )
     write_run_manifest(run_paths, manifest)
 
-    display_run_dir = run_paths.run_dir.relative_to(workspace).as_posix()
-    typer.echo(f"PatchTrace review package written to {display_run_dir}")
+    typer.echo(f"PatchTrace review package written to {run_paths.run_dir}")
     typer.echo("Review the package before deciding next steps.")
     if recorded_session.exit_status != 0:
         typer.echo(

@@ -26,7 +26,7 @@ PatchTrace is a local Python CLI. It has:
 The established stack remains Python 3.11+, Typer, Pexpect, Pydantic v2,
 pytest, Ruff, mypy, and `uv`.
 
-## 2. CURRENT — Phase 4 implementation
+## 2. CURRENT — Phase 4 plus Phase 4.1 T1
 
 ### 2.1 Implemented package ownership
 
@@ -50,7 +50,7 @@ module, database, or public JSON API in the current implementation.
 patchtrace run -- <command>
   -> validate that cwd is a Git worktree
   -> capture pre-run porcelain status
-  -> create a local run folder
+  -> resolve the canonical Git worktree root and create an external run folder
   -> run the command through Pexpect and preserve the PTY transcript
   -> capture post-run status plus final staged and unstaged diff
   -> identify exactly one marker-bounded final answer, when available
@@ -79,9 +79,11 @@ VERIFICATION_BRIEF.md
 ```
 
 The manifest records the wrapped command, timestamps, exit status, a combined
-process outcome, artifact paths, and Git evidence paths. `AnalysisResult` is
-validated in memory and shared by all report builders; it is not persisted as a
-separate artifact.
+process outcome, artifact paths, Git evidence paths, and `repository_root`.
+New runs always record the canonical absolute Git worktree root; older manifests
+without this field load with `None` (unknown repository association).
+`AnalysisResult` is validated in memory and shared by all report builders; it is
+not persisted as a separate artifact.
 
 ### 2.4 Confirmed limitations
 
@@ -100,16 +102,40 @@ The final Phase 4 dogfood demonstrated the Git false positive: identical
 before/after status material was reported as files changed by the run. Phase 5
 starts with that confirmed defect after Phase 4.1 closes.
 
-## NEXT — Phase 4.1 trust hardening
+### 2.5 Run storage decision — Phase 4.1 T1
 
-Phase 4.1 is accepted and not yet implemented. It keeps the current package
-ownership and shared `AnalysisResult` while correcting storage and assessment
+Run packages live at
+`$XDG_STATE_HOME/patchtrace/repos/<repository-id>/runs/<run-id>/`, falling back to
+`~/.local/state` when `XDG_STATE_HOME` is unset, empty, or relative. This POSIX
+convention is used on both macOS and Linux; no dependency is added.
+
+`repository-id` is the full SHA-256 of the filesystem-encoded, resolved absolute
+Git worktree root (`git rev-parse --show-toplevel`). Runs from subdirectories or
+symlink aliases group together; different checkouts/worktrees remain separate.
+Moving a checkout gives it a new storage key. The old package still identifies
+its original path through `run.json.repository_root` and its run through `run_id`;
+this association is not Git provenance or proof of authorship.
+
+Storage resolves symlinks before checking containment. A destination inside the
+target worktree is rejected before creating artifacts or starting the command,
+with an instruction to set an external absolute `XDG_STATE_HOME`. Storage
+creation errors also stop the run. New runs and their containing `runs` directory
+use mode `0700`. CLI output exposes the absolute package path; artifact references
+inside the package remain relative and portable. No user `.gitignore` or Git
+configuration is changed. Existing `.patchtrace` packages are not moved or
+cleaned up; automatic migration and retention are outside T1.
+
+Sources checked with Python 3.11.15 and Git 2.54.0:
+[XDG state directories](https://specifications.freedesktop.org/basedir/latest/#variables),
+[Python path resolution](https://docs.python.org/3.11/library/pathlib.html#pathlib.Path.resolve),
+[Git worktree root](https://git-scm.com/docs/git-rev-parse#Documentation/git-rev-parse.txt---show-toplevel).
+
+## NEXT — Phase 4.1 T2 and T3 trust hardening
+
+Phase 4.1 T1 is implemented; T2 and T3 are not started. The phase keeps the current
+package ownership and shared `AnalysisResult` while correcting storage and assessment
 boundaries. Detailed tasks and regression cases belong in [PLAN.md](PLAN.md).
 
-- `storage` will place default run packages outside the target working tree;
-  `cli` will expose their location and preserve repository association. The
-  exact local storage path and association scheme are UNKNOWN until the T1
-  implementation decision. No user `.gitignore` or Git configuration is edited.
 - `analysis` will distinguish observed file/change facts from semantic claims,
   consider every referenced target, and respect observable operation types.
 - command evidence will retain attempts in order; analysis will use the latest
@@ -117,8 +143,7 @@ boundaries. Detailed tasks and regression cases belong in [PLAN.md](PLAN.md).
 - reports will consume the same assessment and surface failed verification as
   actionable even when the corresponding agent claim is truthful.
 
-The current Phase 4 storage path and behavior documented above remain unchanged
-until implementation. Phase 4.1 does not establish session attribution,
+Phase 4.1 does not establish session attribution,
 requirement satisfaction, structured execution proof, or final-state freshness.
 
 ## 3. DEFERRED TARGET — Phase 5 architecture

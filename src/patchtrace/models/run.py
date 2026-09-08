@@ -31,3 +31,4 @@ class RunManifest(BaseModel):
     wrapped_command_exit_status: int
     outcome: RunOutcome
     git_evidence: GitEvidenceManifest | None = None
+    repository_root: str | None = None

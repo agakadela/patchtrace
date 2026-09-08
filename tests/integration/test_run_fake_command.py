@@ -29,6 +29,7 @@ REQUIRED_ARTIFACTS = [
 
 def test_fake_run_creates_run_folder_manifest_and_transcript(
     tmp_path: Path,
+    run_storage: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _init_git_repo(tmp_path)
@@ -40,7 +41,7 @@ def test_fake_run_creates_run_folder_manifest_and_transcript(
     assert result.exit_code == 0
     assert analyze_mock.call_count == 1
 
-    run_dirs = list((Path(".patchtrace") / "runs").iterdir())
+    run_dirs = [manifest.parent for manifest in run_storage.rglob("run.json")]
     assert len(run_dirs) == 1
     run_dir = run_dirs[0]
 
@@ -111,6 +112,7 @@ def test_fake_run_creates_run_folder_manifest_and_transcript(
 
 def test_nonzero_fake_run_records_exit_without_claiming_success(
     tmp_path: Path,
+    run_storage: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _init_git_repo(tmp_path)
@@ -123,7 +125,7 @@ def test_nonzero_fake_run_records_exit_without_claiming_success(
 
     assert result.exit_code == 7
 
-    run_dir = next((Path(".patchtrace") / "runs").iterdir())
+    run_dir = next(run_storage.rglob("run.json")).parent
     manifest = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
     transcript = (run_dir / "agent-session.txt").read_text(encoding="utf-8")
     summary = (run_dir / "SUMMARY.md").read_text(encoding="utf-8")

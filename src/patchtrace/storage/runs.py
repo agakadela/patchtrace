@@ -1,13 +1,13 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from hashlib import sha256
 from pathlib import Path
 from secrets import token_hex
 
 from patchtrace.models.run import RunManifest
-
-RUNS_ROOT = Path(".patchtrace") / "runs"
 
 
 @dataclass(frozen=True)
@@ -55,15 +55,28 @@ class RunPaths:
         return artifact_path.relative_to(self.run_dir).as_posix()
 
 
-def create_run_paths(workspace: Path) -> RunPaths:
-    runs_root = workspace / RUNS_ROOT
-    runs_root.mkdir(parents=True, exist_ok=True)
+def create_run_paths(repository_root: Path) -> RunPaths:
+    repository_root = repository_root.resolve()
+    repository_id = sha256(os.fsencode(repository_root)).hexdigest()
+    configured_state = Path(os.environ.get("XDG_STATE_HOME", ""))
+    state_home = (
+        configured_state
+        if configured_state.is_absolute()
+        else Path.home() / ".local" / "state"
+    )
+    runs_root = (state_home / "patchtrace" / "repos" / repository_id / "runs").resolve()
+    if runs_root.is_relative_to(repository_root):
+        raise ValueError(
+            "PatchTrace run storage must be outside the repository; "
+            "set XDG_STATE_HOME to an absolute external directory."
+        )
+    runs_root.mkdir(mode=0o700, parents=True, exist_ok=True)
 
     for _ in range(10):
         run_id = _generate_run_id()
         run_dir = runs_root / run_id
         try:
-            run_dir.mkdir()
+            run_dir.mkdir(mode=0o700)
         except FileExistsError:
             continue
         return RunPaths(run_id=run_id, run_dir=run_dir)

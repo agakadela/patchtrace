@@ -11,6 +11,13 @@ rules belong in `docs/SPEC.md`; implementation details belong in
 One PatchTrace capture boundary around a local command, its evidence, analysis,
 and review package.
 
+### Repository association
+
+A run's original canonical Git worktree path, preserved in its manifest. It
+groups runs from the same local checkout; it does not establish change ownership
+or session attribution. The storage key and move behavior belong in
+[ARCHITECTURE.md](docs/ARCHITECTURE.md#25-run-storage-decision--phase-41-t1).
+
 ### Task Contract
 
 The explicit task material against which a future high-trust recommendation is

@@ -15,6 +15,7 @@ SRC_ROOT = REPO_ROOT / "src"
 
 def test_interactive_run_captures_prompt_response_and_exit_status(
     tmp_path: Path,
+    run_storage: Path,
 ) -> None:
     _init_git_repo(tmp_path)
 
@@ -41,7 +42,7 @@ def test_interactive_run_captures_prompt_response_and_exit_status(
 
     assert child.exitstatus == 0
 
-    run_dir = next((tmp_path / ".patchtrace" / "runs").iterdir())
+    run_dir = next(run_storage.rglob("run.json")).parent
     manifest = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
     transcript = (run_dir / "agent-session.txt").read_text(encoding="utf-8")
 
