@@ -43,6 +43,36 @@ an evidence item.
 An explicit statement attributed to the agent. Claim support is not proof of
 code correctness.
 
+### Observed file fact
+
+A bounded observation about captured file material, such as a path appearing in
+a diff with a modification or deletion. It does not establish semantic behavior
+or that the change occurred during the captured session.
+
+### Claim support
+
+Accepted Phase 4.1 meanings; implementation status belongs in `docs/PLAN.md`:
+
+- `supported`: evidence establishes the complete factual content of a bounded
+  claim within the capture mode's trust ceiling;
+- `partially_supported`: evidence establishes a specific identifiable part of
+  the claim, and the unresolved part remains explicit;
+- `cannot_determine`: available evidence cannot establish the claim, including
+  semantic behavior when only path/change facts are observed.
+
+### Verification state
+
+What captured verification shows, independently of whether an agent describes
+it truthfully. A supported claim that tests failed still describes failed
+verification and must not imply a healthy work result.
+
+### Latest command attempt
+
+The most recent captured invocation of the exact command before identified
+final output, including an attempt with an unknown or incomplete result. Earlier
+attempts remain history, not a fallback result. In PTY mode these are
+transcript-derived observations, not independent execution or freshness proof.
+
 ### Requirement coverage
 
 The relationship between one Task Contract item and available evidence.

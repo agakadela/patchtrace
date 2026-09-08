@@ -6,7 +6,9 @@
 
 **Current implementation:** Phase 4 complete
 
-**Next phase:** Phase 5 — Trusted Capture and Session Provenance
+**Active phase:** Phase 4.1 — Trust Hardening (accepted; not yet implemented)
+
+**Following phase:** Phase 5 — Trusted Capture and Session Provenance
 
 ## 1. Product definition
 
@@ -196,7 +198,7 @@ An evidence verdict is not the CLI exit status and must not obscure failures in
 another lifecycle concern.
 
 The exact V1 model and failure mapping are owned by the architecture and the
-Phase 5 implementation plan rather than duplicated here.
+[deferred Phase 5 plan](PHASE_5_PLAN.md) rather than duplicated here.
 
 ## 8. Current implementation
 
@@ -223,6 +225,24 @@ Known current gaps:
 - verification freshness and requirement coverage are absent.
 
 These are product gaps, not permission to overstate current evidence.
+
+### Accepted Phase 4.1 hardening
+
+Before Phase 5, the active [Phase 4.1 plan](PLAN.md) addresses artifact containment
+and known overconfirmation paths. Its behavior is not implemented yet:
+
+- default run storage moves outside the target working tree without modifying
+  user Git configuration or `.gitignore`;
+- observed path/change facts remain separate from semantic claim support;
+- a whole multi-file claim cannot be supported by evidence for only one target;
+- command claims use the latest captured attempt, including unknown or incomplete
+  results, while retaining prior attempts;
+- claim truth and verification state remain distinct: confirmed failed
+  verification drives the next action even when the agent describes it truthfully.
+
+A fact about captured diff material does not establish session attribution. A
+transcript-derived command result does not establish final-state freshness.
+Phase 5 provenance and Phase 6 coverage/freshness retain their accepted scope.
 
 ## 9. Product requirements
 
@@ -280,4 +300,6 @@ The product is moving in the right direction when:
 - the developer remains the final decision-maker.
 
 Phase-specific exit criteria live in [ROADMAP.md](ROADMAP.md), and detailed work
-for only the active phase lives in [PLAN.md](PLAN.md).
+for only the active phase lives in [PLAN.md](PLAN.md). The previously accepted
+Phase 5 task detail is preserved in [PHASE_5_PLAN.md](PHASE_5_PLAN.md) until
+Phase 4.1 closes.

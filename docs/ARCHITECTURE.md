@@ -1,6 +1,6 @@
 # PatchTrace Architecture
 
-**Last reviewed:** 2026-07-27
+**Last reviewed:** 2026-09-08
 
 Related decisions:
 
@@ -9,8 +9,9 @@ Related decisions:
 - [ADR-0003: Codex Capture Modes and Trust Ceilings](decisions/ADR-0003-codex-capture-modes.md)
 
 This document records current system truth and the accepted next architecture.
-Product scope is owned by [SPEC.md](SPEC.md), and detailed Phase 5 work by
-[PLAN.md](PLAN.md).
+Product scope is owned by [SPEC.md](SPEC.md). [PLAN.md](PLAN.md) owns active
+Phase 4.1 work; [PHASE_5_PLAN.md](PHASE_5_PLAN.md) preserves deferred Phase 5
+tasks.
 
 ## 1. System constraints
 
@@ -97,9 +98,30 @@ separate artifact.
 
 The final Phase 4 dogfood demonstrated the Git false positive: identical
 before/after status material was reported as files changed by the run. Phase 5
-starts with that confirmed defect.
+starts with that confirmed defect after Phase 4.1 closes.
 
-## 3. TARGET — Phase 5 architecture
+## NEXT — Phase 4.1 trust hardening
+
+Phase 4.1 is accepted and not yet implemented. It keeps the current package
+ownership and shared `AnalysisResult` while correcting storage and assessment
+boundaries. Detailed tasks and regression cases belong in [PLAN.md](PLAN.md).
+
+- `storage` will place default run packages outside the target working tree;
+  `cli` will expose their location and preserve repository association. The
+  exact local storage path and association scheme are UNKNOWN until the T1
+  implementation decision. No user `.gitignore` or Git configuration is edited.
+- `analysis` will distinguish observed file/change facts from semantic claims,
+  consider every referenced target, and respect observable operation types.
+- command evidence will retain attempts in order; analysis will use the latest
+  captured attempt without inheriting an earlier pass when its result is unknown.
+- reports will consume the same assessment and surface failed verification as
+  actionable even when the corresponding agent claim is truthful.
+
+The current Phase 4 storage path and behavior documented above remain unchanged
+until implementation. Phase 4.1 does not establish session attribution,
+requirement satisfaction, structured execution proof, or final-state freshness.
+
+## 3. DEFERRED TARGET — Phase 5 architecture
 
 Phase 5 strengthens capture and provenance. It does not implement requirement
 satisfaction or final-verification freshness.

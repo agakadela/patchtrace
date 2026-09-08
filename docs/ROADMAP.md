@@ -2,12 +2,51 @@
 
 **Baseline:** Phase 4 complete
 
-**Active phase:** Phase 5 — Trusted Capture and Session Provenance
+**Active phase:** Phase 4.1 — Trust Hardening
 
-This roadmap orders product capabilities by evidence dependency. Only the
-active phase is decomposed into implementation tasks in [PLAN.md](PLAN.md).
+This roadmap orders product capabilities by evidence dependency. [PLAN.md](PLAN.md)
+owns the active phase and its tasks. The previously accepted Phase 5 tasks are
+preserved in [PHASE_5_PLAN.md](PHASE_5_PLAN.md) while Phase 4.1 is active.
+
+## Phase 4.1 — Trust Hardening
+
+### Problem
+
+The Phase 4 baseline can overconfirm file/change claims, use an earlier command
+result instead of the latest attempt, and expose run artifacts to accidental
+staging in the reviewed repository.
+
+### User value
+
+Existing evidence labels stay within what captured material establishes, and
+local session material stays outside the repository working tree.
+
+### Main capabilities
+
+- default artifact storage outside the working tree with repository association
+  and a discoverable package location;
+- separate observed file facts from semantic claims, including operation types
+  and every target in multi-file claims;
+- latest-command-attempt assessment with prior history, explicit unknown results,
+  correct zero-failure parsing, and failed verification surfaced in next actions.
+
+### Dependencies and exit criteria
+
+Build on the completed Phase 4 baseline. Complete the three tasks and closure
+checks in [PLAN.md](PLAN.md) before resuming Phase 5. No Phase 4.1 behavior is
+implemented by this planning update.
+
+### Out of scope
+
+Semantic correctness, requirement satisfaction, verification freshness,
+structured command events, LLM analysis, and changes to Phase 5 Git-provenance
+scope remain outside this phase.
 
 ## Phase 5 — Trusted Capture and Session Provenance
+
+**Status:** deferred until Phase 4.1 closes.
+
+**Preserved tasks:** [PHASE_5_PLAN.md](PHASE_5_PLAN.md).
 
 ### Problem
 
@@ -36,7 +75,7 @@ not, and what remains uncertain before relying on later analysis.
 ### Dependencies
 
 Phase 4's validated `AnalysisResult`, deterministic report pipeline, local run
-storage, and PTY recorder.
+storage, and PTY recorder, with Phase 4.1 trust hardening completed.
 
 Git provenance and lifecycle outcomes do not depend on Codex research. Task
 capture does not depend on full requirement evaluation.

@@ -90,7 +90,17 @@ correctness or acceptance.
 
 ## Product direction
 
-The next phase strengthens capture before broadening analysis:
+The active phase is **Phase 4.1 — Trust Hardening**, planned but not yet
+implemented. It addresses three known gaps in the Phase 4 baseline:
+
+1. keep run artifacts outside the reviewed working tree so `git add .` cannot
+   accidentally stage them;
+2. prevent a changed file path from confirming a semantic change claim;
+3. assess the latest captured command attempt, parse zero failures correctly,
+   and surface failed verification even when the agent reports it truthfully.
+
+After Phase 4.1, the preserved Phase 5 plan strengthens capture before
+broadening analysis:
 
 1. distinguish session-attributed, pre-existing, and indeterminate Git changes;
 2. separate process, analysis, and package outcomes;
@@ -108,7 +118,8 @@ See:
 
 - [Product specification](docs/SPEC.md)
 - [Roadmap](docs/ROADMAP.md)
-- [Current Phase 5 plan](docs/PLAN.md)
+- [Active Phase 4.1 plan](docs/PLAN.md)
+- [Deferred Phase 5 plan](docs/PHASE_5_PLAN.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Domain language](CONTEXT.md)
 
