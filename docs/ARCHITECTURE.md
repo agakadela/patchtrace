@@ -26,7 +26,7 @@ PatchTrace is a local Python CLI. It has:
 The established stack remains Python 3.11+, Typer, Pexpect, Pydantic v2,
 pytest, Ruff, mypy, and `uv`.
 
-## 2. CURRENT — Phase 4 plus Phase 4.1 T1 and T2
+## 2. CURRENT — Phase 4 plus Phase 4.1 T1–T3
 
 ### 2.1 Implemented package ownership
 
@@ -162,15 +162,30 @@ who made a change or when. Phase 5 still owns session attribution.
 Source checked with installed Git 2.54.0:
 [Git patch format](https://git-scm.com/docs/diff-format#_generating_patch_text_with_p).
 
-## NEXT — Phase 4.1 T3 trust hardening
+### 2.7 Command-attempt semantics — Phase 4.1 T3
 
-T1 and T2 are implemented; T3 is not started. Detailed tasks and regression
-cases belong in [PLAN.md](PLAN.md).
+Command evidence retains all recognized attempts in transcript order before the
+identified final output. Claims use the latest invocation of the exact normalized
+command, including arguments. A later invocation with different arguments cannot
+supply its result. Each attempt ends at the next captured command prompt or final
+output; results from unrelated commands cannot fill a missing result.
 
-- command evidence will retain attempts in order; analysis will use the latest
-  captured attempt without inheriting an earlier pass when its result is unknown.
-- reports will consume the same assessment and surface failed verification as
-  actionable even when the corresponding agent claim is truthful.
+Positive failure/error counts indicate failure; zero counts do not. A positive
+pass count or existing recognized success message can establish a passing result.
+Within an attempt, a failure takes precedence over a passing line; a captured
+interruption leaves the outcome unknown. Result-less or interrupted latest
+attempts support only the invocation, never inherit an earlier pass, and say so
+in the claim gap. Earlier attempts remain in the raw transcript for inspection;
+the brief's assessment references identify the latest invocation/result. The
+bounded command/test signal list is a preview, not a complete execution history.
+
+Quick decisions consider the latest attempt of each exact verification command.
+A failed latest attempt requires action even if its associated claim is truthful
+or absent. Wrapped-process failure retains first priority. All three reports
+consume the shared analysis and explicitly name the transcript/freshness limit.
+
+T1–T3 are implemented; phase closure remains pending. Detailed tasks and closure
+checks belong in [PLAN.md](PLAN.md).
 
 Phase 4.1 does not establish session attribution,
 requirement satisfaction, structured execution proof, or final-state freshness.

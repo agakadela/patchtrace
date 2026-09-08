@@ -4,9 +4,9 @@
 
 **Product stage:** local CLI, pre-OSS
 
-**Current implementation:** Phase 4 complete plus Phase 4.1 T1 and T2
+**Current implementation:** Phase 4 complete plus Phase 4.1 T1–T3
 
-**Active phase:** Phase 4.1 — Trust Hardening (T1 and T2 implemented; T3 not started)
+**Active phase:** Phase 4.1 — Trust Hardening (T1–T3 implemented; closure pending review)
 
 **Following phase:** Phase 5 — Trusted Capture and Session Provenance
 
@@ -230,7 +230,7 @@ These are product gaps, not permission to overstate current evidence.
 
 Before Phase 5, the active [Phase 4.1 plan](PLAN.md) addresses artifact containment
 and known overconfirmation paths. Storage containment (T1) and file/change
-assessment (T2) are implemented. Command-attempt semantics (T3) are not started:
+assessment (T2), and command-attempt semantics (T3) are implemented:
 
 - default run storage moves outside the target working tree without modifying
   user Git configuration or `.gitignore`;

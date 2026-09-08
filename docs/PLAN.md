@@ -1,14 +1,14 @@
 # Phase 4.1 — Trust Hardening
 
-**Status:** in progress; T1 and T2 implemented and verified; T3 not started
+**Status:** T1, T2, and T3 implemented and verified; phase closure pending review
 
 **Baseline:** Phase 4 complete; Phase 4.1 T1 adds external run storage,
-and T2 enforces the file/change evidence trust ceiling.
+T2 enforces the file/change evidence trust ceiling, and T3 uses latest command attempts.
 
 **Roadmap:** [ROADMAP.md](ROADMAP.md)
 
-**Next task:** T3 — Use latest command attempt and preserve command outcome semantics.
-Implementation stops after T2 in this build; T3 requires a separate task.
+**Next checkpoint:** review T3 and complete the Phase 4.1 closure below.
+Implementation stops after T3 in this build; no Phase 5 task is started.
 
 Work on one task at a time, in order T1 → T2 → T3. Each task ends in a
 verified, user-visible slice and a commit.
@@ -121,6 +121,10 @@ If the evidence only shows that `auth.py` changed:
 ---
 
 ## T3 — Use latest command attempt and preserve command outcome semantics
+
+**Status:** implemented and verified.
+Behavior: [ARCHITECTURE.md](ARCHITECTURE.md#27-command-attempt-semantics--phase-41-t3).
+Evidence: [VERIFY_LOG.md](VERIFY_LOG.md).
 
 ### Outcome
 

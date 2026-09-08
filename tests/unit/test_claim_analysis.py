@@ -224,7 +224,9 @@ def test_analyze_run_assesses_test_and_verification_command_results(
         "normalized transcript line 5"
     ]
     assert command_only.evidence_gap == (
-        "The command is captured, but no pass or fail result is available."
+        "The latest command attempt is captured, but its result is unknown "
+        "or incomplete. Only the invocation is supported; earlier results "
+        "do not establish this attempt's outcome."
     )
     assert command_only.next_action == (
         "Capture the result output for `uv run ruff check .`."

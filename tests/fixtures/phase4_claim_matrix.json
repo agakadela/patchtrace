@@ -180,5 +180,83 @@
     "expected_transcript_status": "present",
     "expected_diff_material_status": "present",
     "expected_verdict": "Review required: an assessed claim cannot be resolved from available material."
+  },
+  {
+    "name": "command_pass_fail",
+    "transcript": "$ pytest\n3 passed\n$ pytest\n1 failed\nFinal answer:\nTests passed: `pytest`.\n",
+    "changed_files": "example.py\n",
+    "patch": "diff --git a/example.py b/example.py\n",
+    "patch_material_present": true,
+    "exit_status": 0,
+    "expected_supports": ["contradicted"],
+    "expected_claim_material_status": "identified",
+    "expected_transcript_status": "present",
+    "expected_diff_material_status": "present",
+    "expected_verdict": "Review required: the latest captured verification attempt failed."
+  },
+  {
+    "name": "command_fail_pass",
+    "transcript": "$ pytest\n1 failed\n$ pytest\n3 passed\nFinal answer:\nTests passed: `pytest`.\n",
+    "changed_files": "example.py\n",
+    "patch": "diff --git a/example.py b/example.py\n",
+    "patch_material_present": true,
+    "exit_status": 0,
+    "expected_supports": ["supported"],
+    "expected_claim_material_status": "identified",
+    "expected_transcript_status": "present",
+    "expected_diff_material_status": "present",
+    "expected_verdict": "Available evidence supports the assessed claims; human review is still required."
+  },
+  {
+    "name": "command_pass_unknown",
+    "transcript": "$ pytest\n3 passed\n$ pytest\nFinal answer:\nTests passed: `pytest`.\n",
+    "changed_files": "",
+    "patch": "",
+    "patch_material_present": false,
+    "exit_status": 0,
+    "expected_supports": ["partially_supported"],
+    "expected_claim_material_status": "identified",
+    "expected_transcript_status": "present",
+    "expected_diff_material_status": "empty",
+    "expected_verdict": "Review required: an assessed claim has incomplete supporting evidence."
+  },
+  {
+    "name": "command_pass_interrupted",
+    "transcript": "$ pytest\n3 passed\n$ pytest\nKeyboardInterrupt\nFinal answer:\nTests passed: `pytest`.\n",
+    "changed_files": "",
+    "patch": "",
+    "patch_material_present": false,
+    "exit_status": 0,
+    "expected_supports": ["partially_supported"],
+    "expected_claim_material_status": "identified",
+    "expected_transcript_status": "present",
+    "expected_diff_material_status": "empty",
+    "expected_verdict": "Review required: an assessed claim has incomplete supporting evidence."
+  },
+  {
+    "name": "command_zero_failures",
+    "transcript": "$ pytest\n3 passed, 0 failed\nFinal answer:\nTests passed: `pytest`.\n",
+    "changed_files": "example.py\n",
+    "patch": "diff --git a/example.py b/example.py\n",
+    "patch_material_present": true,
+    "exit_status": 0,
+    "expected_supports": ["supported"],
+    "expected_claim_material_status": "identified",
+    "expected_transcript_status": "present",
+    "expected_diff_material_status": "present",
+    "expected_verdict": "Available evidence supports the assessed claims; human review is still required."
+  },
+  {
+    "name": "command_truthful_failure",
+    "transcript": "$ pytest\n1 failed\nFinal answer:\nTests failed: `pytest`.\n",
+    "changed_files": "",
+    "patch": "",
+    "patch_material_present": false,
+    "exit_status": 0,
+    "expected_supports": ["supported"],
+    "expected_claim_material_status": "identified",
+    "expected_transcript_status": "present",
+    "expected_diff_material_status": "empty",
+    "expected_verdict": "Review required: the latest captured verification attempt failed."
   }
 ]
