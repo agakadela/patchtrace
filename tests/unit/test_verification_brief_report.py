@@ -77,8 +77,11 @@ def test_verification_brief_includes_bounded_evidence_and_review_targets(
         "- Claim: Implemented `src/patchtrace/reports/verification_brief.py`."
         in markdown
     )
-    assert "- Relationship: **Evidence supports this claim**" in markdown
-    assert "`changed-files.txt` (`line 1`)" in markdown
+    file_claim = markdown.split("### Claim 1:")[1].split("### Claim 2:")[0]
+    assert "- Relationship: **Cannot assess from available material**" in file_claim
+    assert "Observed in captured diff:" in file_claim
+    assert "semantic correctness or completion" in file_claim
+    assert "`patch.diff` (`diff header line 1`)" in file_claim
     assert "### Claim 2: Completed change" in markdown
     assert "- Relationship: **Cannot assess from available material**" in markdown
     assert (

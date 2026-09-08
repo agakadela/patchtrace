@@ -45,14 +45,19 @@ def test_analyze_run_assesses_explicit_file_and_completed_change_claims(
         "Implemented `src/patchtrace/analysis/analyzer.py`."
     )
     assert file_assessment.category is ClaimCategory.FILE_CHANGE
-    assert file_assessment.support is ClaimSupport.SUPPORTED
-    assert file_assessment.relationship == "Evidence supports this claim"
+    assert file_assessment.support is ClaimSupport.CANNOT_DETERMINE
+    assert file_assessment.relationship == "Cannot assess from available material"
     assert file_assessment.claim_source.artifact_path == "agent-session.txt"
     assert file_assessment.claim_source.locator == "final response line 1"
-    assert file_assessment.evidence_references[0].artifact_path == "changed-files.txt"
-    assert file_assessment.evidence_references[0].locator == "line 1"
-    assert file_assessment.evidence_gap is None
-    assert file_assessment.next_action is None
+    assert file_assessment.evidence_references[0].artifact_path == "patch.diff"
+    assert file_assessment.evidence_references[0].locator == "diff header line 1"
+    assert (
+        file_assessment.evidence_gap
+        and "semantic correctness" in file_assessment.evidence_gap
+    )
+    assert file_assessment.next_action == (
+        "Review the claimed behavior and provide targeted verification evidence."
+    )
 
     completion_assessment = result.claim_assessments[1]
     assert completion_assessment.claim == "Completed deterministic claim assessment."
@@ -96,7 +101,7 @@ def test_analyze_run_marks_conflicting_no_change_claim(
     assert assessment.relationship == "Available evidence conflicts with this claim"
     assert assessment.evidence_references[0].artifact_path == "changed-files.txt"
     assert assessment.evidence_gap == (
-        "Captured git evidence lists files changed during the run."
+        "Captured git evidence lists changed files; session attribution is unresolved."
     )
     assert assessment.next_action == (
         "Reconcile the final claim with the captured changed-file evidence."

@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 from patchtrace.analysis.test_evidence import (
     CommandEvidence,
@@ -36,7 +37,24 @@ _GENERIC_COMPLETION_RE = re.compile(
     r"^(?:done|fixed|everything works)[.!]?$",
     re.IGNORECASE,
 )
-_DIFF_HEADER_RE = re.compile(r"^diff --git a/(.+) b/(.+)$")
+_DIFF_HEADER_RE = re.compile(r"^diff --git a/(\S+) b/(\S+)$", re.MULTILINE)
+# Only a complete, path-only statement can be established by file evidence.
+_BOUNDED_FILE_CLAIM_RE = re.compile(
+    r"^(changed|updated|modified|added|created|removed|deleted)\s+"
+    r"`[^`\n]+`(?:(?:,\s*(?:and\s+)?|\s+and\s+)`[^`\n]+`)*[.!]?$",
+    re.IGNORECASE,
+)
+FileOperation = Literal["changed", "modified", "added", "deleted"]
+DiffChangeType = Literal["modified", "added", "deleted", "unknown"]
+_FILE_OPERATIONS: dict[str, FileOperation] = {
+    "changed": "changed",
+    "updated": "modified",
+    "modified": "modified",
+    "added": "added",
+    "created": "added",
+    "removed": "deleted",
+    "deleted": "deleted",
+}
 _TEST_CLAIM_RE = re.compile(r"^(?:tests?|test commands?)\b", re.IGNORECASE)
 _VERIFICATION_CLAIM_RE = re.compile(
     r"^(?:verification(?: commands?)?|checks?|ran|executed)\b",
@@ -62,7 +80,9 @@ class _PathEvidence:
     changed_files_available: bool
     changed_files: dict[str, EvidenceReference]
     patch_available: bool
+    patch_has_content: bool
     patch_paths: dict[str, EvidenceReference]
+    patch_types: dict[str, set[DiffChangeType]]
     material_references: tuple[EvidenceReference, ...]
 
 
@@ -176,6 +196,7 @@ def _evidence_gaps(
     gaps = [
         most_important_gap,
         "PatchTrace has not verified correctness, safety, or production readiness.",
+        "File evidence describes captured material, not session attribution.",
     ]
     if transcript_text is None:
         gaps.append("Transcript artifact is missing for this run.")
@@ -263,7 +284,7 @@ def _quick_decision(
         and path_evidence.changed_files_available
         and path_evidence.patch_available
         and not path_evidence.changed_files
-        and not path_evidence.patch_paths
+        and not path_evidence.patch_has_content
     )
     if no_changes:
         return (
@@ -321,10 +342,10 @@ def _assess_final_output(
             )
             continue
 
-        claimed_path = _extract_path(claim)
-        if claimed_path is not None and _CHANGE_VERB_RE.match(claim):
+        claimed_paths = _extract_paths(claim)
+        if claimed_paths and _CHANGE_VERB_RE.match(claim):
             assessments.append(
-                _assess_file_change(claim, claimed_path, source, path_evidence)
+                _assess_file_change(claim, claimed_paths, source, path_evidence)
             )
             continue
 
@@ -436,48 +457,78 @@ def _assess_command_claim(
 
 def _assess_file_change(
     claim: str,
-    claimed_path: str,
+    claimed_paths: list[str],
     source: EvidenceReference,
     path_evidence: _PathEvidence,
 ) -> ClaimAssessment:
-    reference = path_evidence.changed_files.get(claimed_path)
-    if reference is None:
-        reference = path_evidence.patch_paths.get(claimed_path)
+    references = []
+    matched_paths = []
+    for path in claimed_paths:
+        reference = path_evidence.patch_paths.get(path)
+        if reference is None:
+            reference = path_evidence.changed_files.get(path)
+        if reference is not None:
+            references.append(reference)
+            matched_paths.append(path)
 
-    if reference is not None:
-        return _assessment(
-            claim=claim,
-            category=ClaimCategory.FILE_CHANGE,
-            source=source,
-            support=ClaimSupport.SUPPORTED,
-            evidence_references=[reference],
-            evidence_gap=None,
-            next_action=None,
-        )
+    bounded = _BOUNDED_FILE_CLAIM_RE.fullmatch(claim)
+    # Non-path backticks or extra prose cannot be silently discarded.
+    operation = _FILE_OPERATIONS[bounded.group(1).lower()] if bounded else None
+    supported_paths = (
+        [
+            path
+            for path in matched_paths
+            if operation == "changed"
+            or path_evidence.patch_types.get(path) == {operation}
+        ]
+        if operation is not None
+        else []
+    )
+    unresolved_paths = [path for path in claimed_paths if path not in supported_paths]
+    targets = ", ".join(f"`{path}`" for path in unresolved_paths)
 
-    if path_evidence.changed_files_available or path_evidence.patch_available:
-        return _assessment(
-            claim=claim,
-            category=ClaimCategory.FILE_CHANGE,
-            source=source,
-            support=ClaimSupport.UNSUPPORTED,
-            evidence_references=list(path_evidence.material_references),
-            evidence_gap=(
-                f"No captured changed-file or diff reference matches `{claimed_path}`."
-            ),
-            next_action=(
-                f"Confirm whether `{claimed_path}` changed and provide the matching diff."
-            ),
+    if not path_evidence.changed_files_available and not path_evidence.patch_available:
+        support = ClaimSupport.CANNOT_DETERMINE
+        gap = "Changed-file and diff evidence are unavailable."
+        action = "Capture git changed-file or diff evidence and rerun PatchTrace."
+    elif operation is None:
+        support = ClaimSupport.CANNOT_DETERMINE
+        gap = (
+            f"Cannot determine whether the claimed change was achieved: {claim} "
+            "Observed file facts do not establish semantic correctness or completion."
         )
+        action = (
+            "Review the claimed behavior and provide targeted verification evidence."
+        )
+    elif len(supported_paths) == len(claimed_paths):
+        support = ClaimSupport.SUPPORTED
+        gap = None
+        action = None
+    elif supported_paths:
+        support = ClaimSupport.PARTIALLY_SUPPORTED
+        established = ", ".join(f"`{path}`" for path in supported_paths)
+        gap = (
+            f"Captured evidence establishes {operation} for {established} only; "
+            f"it does not establish {operation} for {targets}."
+        )
+        action = f"Provide matching {operation} evidence for {targets}."
+    elif not matched_paths:
+        support = ClaimSupport.UNSUPPORTED
+        gap = f"No captured changed-file or diff reference matches {targets}."
+        action = f"Confirm whether {targets} changed and provide the matching diff."
+    else:
+        support = ClaimSupport.CANNOT_DETERMINE
+        gap = f"Observed file facts do not establish {operation} for {targets}."
+        action = f"Inspect the change type and provide matching {operation} evidence."
 
     return _assessment(
         claim=claim,
         category=ClaimCategory.FILE_CHANGE,
         source=source,
-        support=ClaimSupport.CANNOT_DETERMINE,
-        evidence_references=[],
-        evidence_gap="Changed-file and diff evidence are unavailable.",
-        next_action="Capture git changed-file or diff evidence and rerun PatchTrace.",
+        support=support,
+        evidence_references=references or list(path_evidence.material_references),
+        evidence_gap=gap,
+        next_action=action,
     )
 
 
@@ -497,13 +548,17 @@ def _assess_no_files_changed(
             source=source,
             support=ClaimSupport.CONTRADICTED,
             evidence_references=references[:3],
-            evidence_gap="Captured git evidence lists files changed during the run.",
+            evidence_gap="Captured git evidence lists changed files; session attribution is unresolved.",
             next_action=(
                 "Reconcile the final claim with the captured changed-file evidence."
             ),
         )
 
-    if path_evidence.changed_files_available and path_evidence.patch_available:
+    if (
+        path_evidence.changed_files_available
+        and path_evidence.patch_available
+        and not path_evidence.patch_has_content
+    ):
         return _assessment(
             claim=claim,
             category=ClaimCategory.FILE_CHANGE,
@@ -520,7 +575,9 @@ def _assess_no_files_changed(
         source=source,
         support=ClaimSupport.CANNOT_DETERMINE,
         evidence_references=[],
-        evidence_gap="Changed-file or diff evidence is unavailable.",
+        evidence_gap=(
+            "Changed-file or diff evidence is unavailable or contains unparsed changes."
+        ),
         next_action="Capture complete git evidence and rerun PatchTrace.",
     )
 
@@ -568,7 +625,7 @@ def _assessment(
 
 def _load_path_evidence(manifest: RunManifest, run_dir: Path) -> _PathEvidence:
     if manifest.git_evidence is None:
-        return _PathEvidence(False, {}, False, {}, ())
+        return _PathEvidence(False, {}, False, False, {}, {}, ())
 
     changed_files_text = _read_artifact_text(
         run_dir,
@@ -592,6 +649,9 @@ def _load_path_evidence(manifest: RunManifest, run_dir: Path) -> _PathEvidence:
                 description="Git diff inspected for matching file headers.",
             )
         )
+    patch_paths, patch_types = _patch_references(
+        patch_text, manifest.git_evidence.patch_path
+    )
     return _PathEvidence(
         changed_files_available=changed_files_text is not None,
         changed_files=_changed_file_references(
@@ -599,7 +659,9 @@ def _load_path_evidence(manifest: RunManifest, run_dir: Path) -> _PathEvidence:
             manifest.git_evidence.changed_files_path,
         ),
         patch_available=patch_text is not None,
-        patch_paths=_patch_references(patch_text, manifest.git_evidence.patch_path),
+        patch_has_content=bool(patch_text and patch_text.strip()),
+        patch_paths=patch_paths,
+        patch_types=patch_types,
         material_references=tuple(material_references),
     )
 
@@ -612,13 +674,16 @@ def _changed_file_references(
         return {}
     references: dict[str, EvidenceReference] = {}
     for line_number, raw_path in enumerate(text.splitlines(), start=1):
-        path = _normalize_path(raw_path.strip())
+        path = _normalize_path(raw_path)
         if not path:
             continue
         references[path] = EvidenceReference(
             artifact_path=artifact_path,
             locator=f"line {line_number}",
-            description=f"Captured changed-file entry for `{path}`.",
+            description=(
+                f"Observed in captured changed-file inventory: `{path}` changed; "
+                "change type unknown. This does not establish who made the change or when."
+            ),
         )
     return references
 
@@ -626,31 +691,61 @@ def _changed_file_references(
 def _patch_references(
     text: str | None,
     artifact_path: str,
-) -> dict[str, EvidenceReference]:
-    if text is None:
-        return {}
+) -> tuple[dict[str, EvidenceReference], dict[str, set[DiffChangeType]]]:
     references: dict[str, EvidenceReference] = {}
-    for line_number, line in enumerate(text.splitlines(), start=1):
-        match = _DIFF_HEADER_RE.fullmatch(line)
-        if match is None:
-            continue
-        path = _normalize_path(match.group(2))
-        references[path] = EvidenceReference(
-            artifact_path=artifact_path,
-            locator=f"diff header line {line_number}",
-            description=f"Captured diff entry for `{path}`.",
-        )
-    return references
+    change_types: dict[str, set[DiffChangeType]] = {}
+    if text is None:
+        return references, change_types
+    # Parse each captured entry independently; staged and unstaged entries may
+    # disagree. Never let the last entry erase an earlier change type.
+    headers = list(_DIFF_HEADER_RE.finditer(text))
+    line_number = 1
+    previous_start = 0
+    for index, match in enumerate(headers):
+        line_number += text.count("\n", previous_start, match.start())
+        previous_start = match.start()
+        end = headers[index + 1].start() if index + 1 < len(headers) else len(text)
+        block = text[match.end() : end].splitlines()
+        metadata = []
+        for line in block:
+            if line.startswith(("@@", "GIT binary patch", "diff --")):
+                break
+            metadata.append(line)
+        old_path, new_path = match.groups()
+        change_type: DiffChangeType = "unknown"
+        if old_path == new_path:
+            if any(
+                re.fullmatch(r"deleted file mode [0-7]{6}", line) for line in metadata
+            ):
+                change_type = "deleted"
+            elif any(
+                re.fullmatch(r"new file mode [0-7]{6}", line) for line in metadata
+            ):
+                change_type = "added"
+            elif f"--- a/{old_path}" in metadata and f"+++ b/{new_path}" in metadata:
+                change_type = "modified"
+        for raw_path in dict.fromkeys((old_path, new_path)):
+            path = _normalize_path(raw_path)
+            change_types.setdefault(path, set()).add(change_type)
+            types = ", ".join(sorted(change_types[path]))
+            references[path] = EvidenceReference(
+                artifact_path=artifact_path,
+                locator=f"diff header line {line_number}",
+                description=(
+                    f"Observed in captured diff: `{path}`; change type: {types}. "
+                    "This does not establish who made the change or when."
+                ),
+            )
+    return references, change_types
 
 
-def _extract_path(claim: str) -> str | None:
+def _extract_paths(claim: str) -> list[str]:
+    paths = []
     for candidate in _BACKTICKED_TEXT_RE.findall(claim):
-        if any(character.isspace() for character in candidate):
-            continue
         path = _normalize_path(candidate)
-        if "/" in path or Path(path).suffix:
-            return path
-    return None
+        if _BOUNDED_FILE_CLAIM_RE.fullmatch(claim) or "/" in path or Path(path).suffix:
+            paths.append(path)
+    return list(dict.fromkeys(paths))
 
 
 def _is_specific_completed_change(claim: str) -> bool:
@@ -670,10 +765,7 @@ def _strip_list_marker(line: str) -> str:
 
 
 def _normalize_path(path: str) -> str:
-    normalized = path.strip().removeprefix("./")
-    if normalized.startswith(("a/", "b/")):
-        return normalized[2:]
-    return normalized
+    return path.removeprefix("./")
 
 
 def _find_artifact_path(artifact_paths: list[str], name: str) -> str | None:

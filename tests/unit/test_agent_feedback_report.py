@@ -148,8 +148,7 @@ def test_agent_feedback_uses_shared_analysis_and_cites_unresolved_claim(
     assert report.next_action == analysis_result.next_action
     assert "Implemented `src/patchtrace/reports/missing.py`." in markdown
     assert (
-        "Confirm whether `src/patchtrace/reports/missing.py` changed and provide "
-        "the matching diff."
+        "Review the claimed behavior and provide targeted verification evidence."
     ) in markdown
     assert "Transcript: `present`" in markdown
     assert "Diff material: `present`" in markdown
@@ -159,7 +158,7 @@ def test_agent_feedback_requests_no_work_for_supported_claims(
     tmp_path: Path,
 ) -> None:
     (tmp_path / "agent-session.txt").write_text(
-        "• Final answer:\nImplemented `src/patchtrace/reports/feedback.py`.\n",
+        "• Final answer:\nChanged `src/patchtrace/reports/feedback.py`.\n",
         encoding="utf-8",
     )
     (tmp_path / "changed-files.txt").write_text(

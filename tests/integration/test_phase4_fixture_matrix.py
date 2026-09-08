@@ -8,9 +8,15 @@ from typing import TypedDict, cast
 from patchtrace.analysis.analyzer import analyze_run
 from patchtrace.models.report import ClaimSupport
 from patchtrace.models.run import GitEvidenceManifest, RunManifest
-from patchtrace.reports.feedback import build_agent_feedback_report
-from patchtrace.reports.summary import build_summary_report
-from patchtrace.reports.verification_brief import build_verification_brief_report
+from patchtrace.reports.feedback import (
+    build_agent_feedback_report,
+    render_agent_feedback_markdown,
+)
+from patchtrace.reports.summary import build_summary_report, render_summary_markdown
+from patchtrace.reports.verification_brief import (
+    build_verification_brief_report,
+    render_verification_brief_markdown,
+)
 
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "phase4_claim_matrix.json"
 EXPECTED_SCENARIOS = {
@@ -21,6 +27,13 @@ EXPECTED_SCENARIOS = {
     "cannot_assess",
     "missing_material",
     "non_zero_exit",
+    "semantic_comment_only",
+    "deleted_but_modified",
+    "multi_file_partial",
+    "multi_file_semantic",
+    "bounded_modification",
+    "bounded_deletion",
+    "generic_completion_with_changes",
 }
 
 
@@ -54,6 +67,9 @@ def test_phase4_sanitized_fixture_matrix_drives_one_shared_analysis_result(
         manifest = _manifest(case)
 
         analysis_result = analyze_run(manifest, run_dir=run_dir)
+        # Reports must consume the completed analysis, not reinterpret artifacts.
+        for artifact in ("agent-session.txt", "changed-files.txt", "patch.diff"):
+            (run_dir / artifact).unlink(missing_ok=True)
         summary = build_summary_report(
             manifest,
             analysis_result=analysis_result,
@@ -81,11 +97,38 @@ def test_phase4_sanitized_fixture_matrix_drives_one_shared_analysis_result(
         )
         assert analysis_result.verdict == case["expected_verdict"]
         assert summary.verdict == feedback.verdict == analysis_result.verdict
-        assert summary.most_important_gap == feedback.most_important_gap
-        assert summary.next_action == feedback.next_action
+        assert (
+            summary.most_important_gap
+            == feedback.most_important_gap
+            == analysis_result.most_important_gap
+        )
+        assert (
+            summary.next_action == feedback.next_action == analysis_result.next_action
+        )
         assert verification_brief.claim_assessments == (
             analysis_result.claim_assessments
         )
+        rendered_reports = (
+            render_summary_markdown(summary),
+            render_agent_feedback_markdown(feedback),
+            render_verification_brief_markdown(verification_brief),
+        )
+        for markdown in rendered_reports:
+            assert analysis_result.most_important_gap in markdown
+            assert (
+                "File evidence describes captured material, not session attribution."
+                in markdown
+            )
+        brief_markdown = rendered_reports[2]
+        for assessment in analysis_result.claim_assessments:
+            assert assessment.claim in brief_markdown
+            assert assessment.relationship in brief_markdown
+            for reference in assessment.evidence_references:
+                assert reference.description in brief_markdown
+            if assessment.next_action:
+                assert assessment.next_action in rendered_reports[1]
+            if assessment.evidence_gap:
+                assert assessment.evidence_gap in brief_markdown
 
 
 def _manifest(case: FixtureCase) -> RunManifest:
