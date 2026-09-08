@@ -10,7 +10,8 @@ decision for the developer.
 
 ## Current status
 
-Version `0.1.0` is the completed Phase 4 baseline. The implemented command is:
+Version `0.1.0` includes the Phase 4 baseline and Phase 4.1 T1 storage hardening.
+The implemented command is:
 
 ```bash
 patchtrace run -- <command>
@@ -23,7 +24,8 @@ It:
 - records Git status before and after the command;
 - records the final staged and unstaged diff visible after the command;
 - applies deterministic rules to bounded claims in one identified final answer;
-- writes one local review package under `.patchtrace/runs/<run-id>/`.
+- writes one local review package outside the reviewed working tree (location
+  below).
 
 `patchtrace analyze` and `patchtrace watch` are placeholders and exit with an
 explicit not-implemented error.
@@ -49,10 +51,22 @@ PatchTrace prints the path to the generated package.
 
 ## Run package
 
-The Phase 4 package contains:
+Packages use `$XDG_STATE_HOME/patchtrace/repos/<repository-id>/runs/<run-id>/`;
+when `XDG_STATE_HOME` is unset, empty, or relative, the base is `~/.local/state`.
+The CLI prints the absolute path. `run.json` identifies the run and records
+`repository_root`, the original canonical Git worktree path. Subdirectory runs
+share the same repository key; moving a checkout creates a new key.
+
+Storage inside the reviewed worktree, including through a symlink, is rejected
+before the wrapped command runs. Set `XDG_STATE_HOME` to an absolute external
+directory if that occurs. PatchTrace does not edit `.gitignore` or Git settings.
+Existing packages in `.patchtrace` remain where they are.
+See the [storage decision](docs/ARCHITECTURE.md#25-run-storage-decision--phase-41-t1).
+
+Each package contains:
 
 ```text
-.patchtrace/runs/<run-id>/
+<external-state>/patchtrace/repos/<repository-id>/runs/<run-id>/
 ├── run.json
 ├── agent-session.txt
 ├── git-before.txt
@@ -90,8 +104,8 @@ correctness or acceptance.
 
 ## Product direction
 
-The active phase is **Phase 4.1 — Trust Hardening**, planned but not yet
-implemented. It addresses three known gaps in the Phase 4 baseline:
+The active phase is **Phase 4.1 — Trust Hardening**. T1 is implemented;
+T2 and T3 remain unstarted. The phase addresses three gaps in the Phase 4 baseline:
 
 1. keep run artifacts outside the reviewed working tree so `git add .` cannot
    accidentally stage them;

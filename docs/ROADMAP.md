@@ -33,8 +33,8 @@ local session material stays outside the repository working tree.
 ### Dependencies and exit criteria
 
 Build on the completed Phase 4 baseline. Complete the three tasks and closure
-checks in [PLAN.md](PLAN.md) before resuming Phase 5. No Phase 4.1 behavior is
-implemented by this planning update.
+checks in [PLAN.md](PLAN.md) before resuming Phase 5. T1 storage containment is
+implemented; T2 and T3 are not started.
 
 ### Out of scope
 

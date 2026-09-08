@@ -224,7 +224,7 @@ Before real features:
 - scaffold the Python package and the chosen capability-first module convention
 - expose a local CLI help path
 - prove a fake-command `patchtrace run -- <command>` path
-- create a run folder under `.patchtrace/runs/<run-id>/`
+- create a run folder using the storage location owned by `docs/ARCHITECTURE.md`
 - capture a transcript and git before/after material when git is available
 - generate at least one minimal Markdown artifact
 - typecheck, lint, format check, test runner, and build work locally
