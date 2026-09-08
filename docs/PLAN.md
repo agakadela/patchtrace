@@ -1,13 +1,14 @@
 # Phase 4.1 — Trust Hardening
 
-**Status:** in progress; T1 implemented and verified; T2 and T3 not started
+**Status:** in progress; T1 and T2 implemented and verified; T3 not started
 
-**Baseline:** Phase 4 complete; Phase 4.1 T1 adds external run storage.
+**Baseline:** Phase 4 complete; Phase 4.1 T1 adds external run storage,
+and T2 enforces the file/change evidence trust ceiling.
 
 **Roadmap:** [ROADMAP.md](ROADMAP.md)
 
-**Next task:** T2 — Enforce the evidence trust ceiling for file/change claims.
-Implementation stops after T1 in this build; T2 requires a separate task.
+**Next task:** T3 — Use latest command attempt and preserve command outcome semantics.
+Implementation stops after T2 in this build; T3 requires a separate task.
 
 Work on one task at a time, in order T1 → T2 → T3. Each task ends in a
 verified, user-visible slice and a commit.
@@ -59,6 +60,10 @@ PatchTrace session material cannot be accidentally staged with the repository be
 ---
 
 ## T2 — Enforce the evidence trust ceiling for file/change claims
+
+**Status:** implemented and verified.
+Behavior: [ARCHITECTURE.md](ARCHITECTURE.md#26-filechange-evidence-ceiling--phase-41-t2).
+Evidence: [VERIFY_LOG.md](VERIFY_LOG.md).
 
 ### Outcome
 

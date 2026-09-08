@@ -8,6 +8,39 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-09-08 - Phase 4.1 T2: File/Change Evidence Ceiling
+
+- Candidate: this commit on `agent/phase-4-1-t2-evidence-ceiling`, based on
+  `f86f822`. Contract: the accepted T2 in `PLAN.md`; T3 remains unstarted.
+- RED proof: 11 of 14 initial ceiling cases failed against the baseline, including
+  comment-only semantic fixes, deletion vs modification, and multi-file claims.
+  Existing tests that expected semantic `Implemented` claims to be supported
+  now require an unresolved assessment; no tests or checks were removed.
+  Two further RED cases caught whitespace-normalized path aliases; matching
+  now preserves path whitespace and real `a/` or `b/` directory prefixes.
+  Three parser RED cases also guard ambiguous/unparsed diff headers from
+  fabricating targets, operation types, or proof of no changes.
+- Checks: Ruff lint/format, mypy, full pytest, and `uv build`; command output and
+  snapshot identity are recorded in the task PR. No dependency/config changes.
+- Fixture proof: 14 scenarios exercise the shared analysis. Reports are built
+  after removing source artifacts and checked for the same decisions, gaps,
+  references, relationships, and follow-up actions in rendered Markdown.
+- Runtime proof: the built wheel ran through the actual CLI in five fresh Git
+  repositories. A comment-only authentication fix and false deletion remained
+  unresolved; a two-file claim with one changed file was partially supported;
+  exact modification/deletion claims were supported only as captured facts.
+  Every run exposed its package path, wrote all nine artifacts outside the
+  repository, and staged only `auth.py` after `git add .`.
+- Local proof: the task PR identifies the temporary `proof.json` containing
+  all five run IDs and the tested wheel SHA-256. Synthetic fixtures only.
+- Observability: N/A; pure local assessment change, with evidence references and
+  gaps verified directly in reports; no new external I/O or operational flow.
+- Cannot verify: arbitrary semantic correctness, session attribution, and
+  verification freshness remain outside T2. Unrecognized Git path/type formats
+  degrade conservatively. Local execution is macOS/Python 3.11.15; Linux is CI.
+- Verdict: T2 acceptance locally verified. Separate code review and final check
+  results are recorded in the draft PR. Stop before T3; phase remains open.
+
 ### 2026-09-08 - Phase 4.1 T1: External Run Storage
 
 - Commit: this commit, based on `40f38c5`; T2 and T3 remain unstarted.

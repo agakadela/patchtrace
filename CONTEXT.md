@@ -56,6 +56,11 @@ A bounded observation about captured file material, such as a path appearing in
 a diff with a modification or deletion. It does not establish semantic behavior
 or that the change occurred during the captured session.
 
+A path-only claim names file operations and targets without a semantic result
+(e.g. `Modified auth.py`). Support describes those operations in captured
+material; it never attributes the work to this session. A multi-target partial
+assessment names both the established operation/targets and unresolved targets.
+
 ### Claim support
 
 Accepted Phase 4.1 meanings; implementation status belongs in `docs/PLAN.md`:

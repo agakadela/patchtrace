@@ -10,7 +10,8 @@ decision for the developer.
 
 ## Current status
 
-Version `0.1.0` includes the Phase 4 baseline and Phase 4.1 T1 storage hardening.
+Version `0.1.0` includes the Phase 4 baseline, Phase 4.1 T1 storage hardening,
+and T2 file/change claim assessment.
 The implemented command is:
 
 ```bash
@@ -104,8 +105,8 @@ correctness or acceptance.
 
 ## Product direction
 
-The active phase is **Phase 4.1 — Trust Hardening**. T1 is implemented;
-T2 and T3 remain unstarted. The phase addresses three gaps in the Phase 4 baseline:
+The active phase is **Phase 4.1 — Trust Hardening**. T1 and T2 are implemented;
+T3 remains unstarted. The phase addresses three gaps in the Phase 4 baseline:
 
 1. keep run artifacts outside the reviewed working tree so `git add .` cannot
    accidentally stage them;

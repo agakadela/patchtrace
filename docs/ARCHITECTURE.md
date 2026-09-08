@@ -26,7 +26,7 @@ PatchTrace is a local Python CLI. It has:
 The established stack remains Python 3.11+, Typer, Pexpect, Pydantic v2,
 pytest, Ruff, mypy, and `uv`.
 
-## 2. CURRENT — Phase 4 plus Phase 4.1 T1
+## 2. CURRENT — Phase 4 plus Phase 4.1 T1 and T2
 
 ### 2.1 Implemented package ownership
 
@@ -130,14 +130,43 @@ Sources checked with Python 3.11.15 and Git 2.54.0:
 [Python path resolution](https://docs.python.org/3.11/library/pathlib.html#pathlib.Path.resolve),
 [Git worktree root](https://git-scm.com/docs/git-rev-parse#Documentation/git-rev-parse.txt---show-toplevel).
 
-## NEXT — Phase 4.1 T2 and T3 trust hardening
+### 2.6 File/change evidence ceiling — Phase 4.1 T2
 
-Phase 4.1 T1 is implemented; T2 and T3 are not started. The phase keeps the current
-package ownership and shared `AnalysisResult` while correcting storage and assessment
-boundaries. Detailed tasks and regression cases belong in [PLAN.md](PLAN.md).
+The analyzer separates captured file observations from the whole claim. Semantic
+claims such as “Fixed authentication in `auth.py`” remain `cannot_determine`,
+even when a matching diff exists. Reference descriptions identify the observed
+path/type; the assessment gap identifies what those facts cannot establish.
 
-- `analysis` will distinguish observed file/change facts from semantic claims,
-  consider every referenced target, and respect observable operation types.
+Only complete path-only statements can receive factual support: `Changed`,
+`Updated`/`Modified`, `Added`/`Created`, or `Removed`/`Deleted`, followed by
+backticked paths joined by commas and/or `and`. Extra prose stays unresolved.
+Path matching preserves whitespace and real `a/`/`b/` directory names; only
+a leading `./` is normalized.
+`Changed` can match an inventory or diff entry; the other verbs require the
+matching diff operation. All targets are considered. `partially_supported`
+names a specific established operation and its targets, plus unresolved targets.
+
+Diff operation detection uses unquoted, whitespace-free Git paths: new/deleted file mode or
+matching modification file headers. A bare diff header or inventory entry does
+not establish the operation type. Repeated entries retain all observed types;
+conflicting or unknown types cannot establish a specific operation. Unsupported
+forms, including quoted/whitespace-containing Git paths, rename/copy types,
+and binary modifications,
+remain conservative. Nonempty unparsed diff material cannot establish a
+no-changes claim. No natural-language semantic judge or LLM is involved.
+
+All reports consume the existing shared `AnalysisResult`. Captured material can
+include pre-existing work; even a supported path-only claim does not establish
+who made a change or when. Phase 5 still owns session attribution.
+
+Source checked with installed Git 2.54.0:
+[Git patch format](https://git-scm.com/docs/diff-format#_generating_patch_text_with_p).
+
+## NEXT — Phase 4.1 T3 trust hardening
+
+T1 and T2 are implemented; T3 is not started. Detailed tasks and regression
+cases belong in [PLAN.md](PLAN.md).
+
 - command evidence will retain attempts in order; analysis will use the latest
   captured attempt without inheriting an earlier pass when its result is unknown.
 - reports will consume the same assessment and surface failed verification as

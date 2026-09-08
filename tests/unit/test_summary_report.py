@@ -150,7 +150,7 @@ def test_summary_does_not_turn_supported_evidence_into_acceptance(
 ) -> None:
     _write_run_material(
         tmp_path,
-        transcript=("• Final answer:\nUpdated `src/patchtrace/reports/summary.py`.\n"),
+        transcript=("• Final answer:\nChanged `src/patchtrace/reports/summary.py`.\n"),
         changed_files="src/patchtrace/reports/summary.py\n",
         patch=(
             "diff --git a/src/patchtrace/reports/summary.py "
