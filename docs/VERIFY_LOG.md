@@ -8,6 +8,36 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-09-08 - Phase 4.1 T3: Latest Command Attempts
+
+- Candidate: this commit on `agent/phase-4-1-t3-command-attempts`, based on
+  `842ab6c` (merged T2). Contract: accepted T3 in `PLAN.md`; phase closure and
+  Phase 5 remain separate work.
+- RED proof: 12 of 17 new cases failed against the baseline, exposing first-run
+  selection, zero-failure parsing, interruptions, result leakage from another
+  command, and truthful failure claims producing healthy decisions.
+- Checks: Ruff lint/format, mypy (39 source files), full pytest (93 passed),
+  and `uv build` passed on macOS/Python 3.13.15. Build retains the pre-existing
+  uv 0.12.10/backend-range warning; both wheel and sdist were produced.
+- Fixture proof: 20 scenarios consume one shared analysis after source artifacts
+  are removed. Six new cases cover both result orders, missing/interrupted latest
+  results, zero failures, and truthful failure. All reports agree on decisions,
+  gaps, assessments, and the explicit unresolved freshness limitation.
+- Runtime proof: the built wheel passed all six command scenarios through the
+  real CLI in fresh Git repositories. All nine artifacts were written outside
+  each repository, the package path was printed, and repository/run identity
+  matched. Earlier attempts remained in transcripts; `git add .` staged only
+  `example.py`. Local `proof.json`, run IDs, and wheel SHA-256 are linked in the PR.
+- Separate code review: no remaining BLOCKER/FIX NOW findings on the T3 code and
+  tests. No worthwhile additional abstraction or simplification was identified.
+- Observability: N/A; local analysis of existing artifacts, with report references,
+  failure actions, and evidence gaps checked directly. No new I/O or provider flow.
+- Cannot verify: text inference cannot independently prove command execution,
+  arbitrary tool output semantics, task coverage, or freshness against final code.
+  These remain explicit product limitations, not blockers for the bounded T3 contract.
+- Verdict: T3 acceptance verified; merge remains Aga's decision. Phase remains
+  open for its separate closure checkpoint; no later implementation started.
+
 ### 2026-09-08 - Phase 4.1 T2: File/Change Evidence Ceiling
 
 - Candidate: this commit on `agent/phase-4-1-t2-evidence-ceiling`, based on

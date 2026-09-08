@@ -34,6 +34,12 @@ EXPECTED_SCENARIOS = {
     "bounded_modification",
     "bounded_deletion",
     "generic_completion_with_changes",
+    "command_pass_fail",
+    "command_fail_pass",
+    "command_pass_unknown",
+    "command_pass_interrupted",
+    "command_zero_failures",
+    "command_truthful_failure",
 }
 
 
@@ -115,6 +121,9 @@ def test_phase4_sanitized_fixture_matrix_drives_one_shared_analysis_result(
         )
         for markdown in rendered_reports:
             assert analysis_result.most_important_gap in markdown
+            assert "freshness relative to the final repository state is unresolved" in (
+                markdown
+            )
             assert (
                 "File evidence describes captured material, not session attribution."
                 in markdown

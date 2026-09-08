@@ -105,8 +105,8 @@ correctness or acceptance.
 
 ## Product direction
 
-The active phase is **Phase 4.1 — Trust Hardening**. T1 and T2 are implemented;
-T3 remains unstarted. The phase addresses three gaps in the Phase 4 baseline:
+The active phase is **Phase 4.1 — Trust Hardening**. T1–T3 are implemented;
+phase closure is pending review. The phase addresses three gaps in the Phase 4 baseline:
 
 1. keep run artifacts outside the reviewed working tree so `git add .` cannot
    accidentally stage them;

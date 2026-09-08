@@ -135,13 +135,15 @@ def test_summary_decision_prioritizes_conflicting_evidence_in_mixed_claims(
     report = build_summary_report(manifest, analysis_result=analysis_result)
 
     assert report.verdict == (
-        "Review required: available evidence conflicts with an assessed claim."
+        "Review required: the latest captured verification attempt failed."
     )
     assert report.most_important_gap == (
-        "Captured output reports that the claimed verification command failed."
+        "Latest captured attempt of `uv run mypy src tests` reports failure; "
+        "an accurate claim about that failure does not resolve it."
     )
     assert report.next_action == (
-        "Address the captured failure, rerun the same command, and capture its output."
+        "Address the failure of `uv run mypy src tests`, rerun it, "
+        "and capture its output."
     )
 
 

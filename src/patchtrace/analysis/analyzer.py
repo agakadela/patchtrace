@@ -108,6 +108,7 @@ def analyze_run(manifest: RunManifest, *, run_dir: Path) -> AnalysisResult:
             claim_assessments=[],
             path_evidence=path_evidence,
             transcript_text=None,
+            command_evidence=[],
         )
 
     normalized = normalize_transcript(transcript_text)
@@ -119,6 +120,7 @@ def analyze_run(manifest: RunManifest, *, run_dir: Path) -> AnalysisResult:
             claim_assessments=[],
             path_evidence=path_evidence,
             transcript_text=transcript_text,
+            command_evidence=[],
         )
 
     transcript_artifact = transcript_path or "agent-session.txt"
@@ -138,6 +140,7 @@ def analyze_run(manifest: RunManifest, *, run_dir: Path) -> AnalysisResult:
         claim_assessments=assessments,
         path_evidence=path_evidence,
         transcript_text=transcript_text,
+        command_evidence=command_evidence,
     )
 
 
@@ -148,12 +151,14 @@ def _build_analysis_result(
     claim_assessments: list[ClaimAssessment],
     path_evidence: _PathEvidence,
     transcript_text: str | None,
+    command_evidence: list[CommandEvidence],
 ) -> AnalysisResult:
     verdict, most_important_gap, next_action = _quick_decision(
         manifest,
         claim_material_status=claim_material_status,
         claim_assessments=claim_assessments,
         path_evidence=path_evidence,
+        command_evidence=command_evidence,
     )
     return AnalysisResult(
         run_id=manifest.run_id,
@@ -197,6 +202,8 @@ def _evidence_gaps(
         most_important_gap,
         "PatchTrace has not verified correctness, safety, or production readiness.",
         "File evidence describes captured material, not session attribution.",
+        "Command results are transcript-derived observations, not independent "
+        "execution proof; freshness relative to the final repository state is unresolved.",
     ]
     if transcript_text is None:
         gaps.append("Transcript artifact is missing for this run.")
@@ -220,6 +227,7 @@ def _quick_decision(
     claim_material_status: ClaimMaterialStatus,
     claim_assessments: list[ClaimAssessment],
     path_evidence: _PathEvidence,
+    command_evidence: list[CommandEvidence],
 ) -> tuple[str, str, str]:
     if manifest.wrapped_command_exit_status != 0:
         return (
@@ -236,6 +244,20 @@ def _quick_decision(
                 "Capture the agent transcript and rerun PatchTrace before relying "
                 "on its claims."
             ),
+        )
+
+    latest_attempts = {attempt.command: attempt for attempt in command_evidence}
+    failed_attempt = next(
+        (attempt for attempt in latest_attempts.values() if attempt.result == "failed"),
+        None,
+    )
+    if failed_attempt is not None:
+        return (
+            "Review required: the latest captured verification attempt failed.",
+            f"Latest captured attempt of `{failed_attempt.command}` reports failure; "
+            "an accurate claim about that failure does not resolve it.",
+            f"Address the failure of `{failed_attempt.command}`, rerun it, "
+            "and capture its output.",
         )
 
     priority = (
@@ -389,7 +411,7 @@ def _assess_command_claim(
     evidence = next(
         (
             candidate
-            for candidate in command_evidence
+            for candidate in reversed(command_evidence)
             if candidate.command == command_claim.command
         ),
         None,
@@ -418,7 +440,11 @@ def _assess_command_claim(
             source=source,
             support=ClaimSupport.PARTIALLY_SUPPORTED,
             evidence_references=references,
-            evidence_gap="The command is captured, but no pass or fail result is available.",
+            evidence_gap=(
+                "The latest command attempt is captured, but its result is unknown "
+                "or incomplete. Only the invocation is supported; earlier results "
+                "do not establish this attempt's outcome."
+            ),
             next_action=f"Capture the result output for `{command_claim.command}`.",
         )
 
