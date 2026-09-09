@@ -65,3 +65,21 @@ def test_legacy_combined_outcome_is_not_silently_upgraded() -> None:
     data["outcome"] = "completed"
     with pytest.raises(ValidationError):
         RunManifest.model_validate(data)
+
+
+@pytest.mark.parametrize(
+    "status, artifacts",
+    [
+        ("valid", []),
+        ("invalid", ["task.md", "task.json"]),
+    ],
+)
+def test_complete_package_rejects_missing_task_inventory_or_invalid_task(
+    status: str, artifacts: list[str]
+) -> None:
+    data = manifest_data() | {
+        "artifact_paths": artifacts,
+        "task": {"sha256": "a" * 64, "parse_status": status},
+    }
+    with pytest.raises(ValidationError):
+        RunManifest.model_validate(data)

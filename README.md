@@ -12,7 +12,7 @@ decision for the developer.
 
 Version `0.1.0` includes the Phase 4 baseline, Phase 4.1 T1 storage hardening,
 T2 file/change claim assessment, T3 command-attempt semantics, and Phase 5 T1
-Git session capture, T2 attribution, T3 report provenance, and T4 lifecycle outcomes.
+Git session capture, T2 attribution, T3 report provenance, T4 lifecycle outcomes, and T5 task capture.
 The implemented command is:
 
 ```bash
@@ -52,6 +52,34 @@ uv run patchtrace run -- codex
 
 The wrapped command retains its normal terminal interaction. When it exits,
 PatchTrace prints the path to the generated package.
+
+## Capture a task
+
+```bash
+uv run patchtrace run --task-file tests/fixtures/tasks/valid.md -- python tests/fixtures/fake_agent.py
+```
+
+Supply a UTF-8 Markdown file with this minimal structure:
+
+```markdown
+## Outcome
+Describe the intended result.
+
+## Requirements
+1. Describe one requirement per line.
+```
+
+Optional `## Acceptance Criteria`, `## Required Verification`, and
+`## Out of Scope` sections accept numbered items or `N/A`. Run `patchtrace run
+--help` to discover the option. The exact
+[Task Contract V1 syntax and failure mapping](docs/ARCHITECTURE.md#213-task-contract-v1-capture--phase-5-t5)
+are documented in the architecture.
+
+The package adds the unchanged `task.md`, a parsed `task.json`, and a SHA-256
+binding in `run.json`. Invalid input is preserved with a parsing failure and
+stops before the command starts. Omitting the option permits the generic run
+with a visible trust limitation. Task capture does not send a prompt to the
+wrapped command or evaluate requirement satisfaction.
 
 ## Run package
 

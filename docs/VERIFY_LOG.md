@@ -787,3 +787,63 @@ proof, or explicit cannot-verify decisions.
   - Real Codex CLI capture still cannot be proved until Phase 2 implementation.
 - Verdict: docs/config are aligned to Python V0; no earlier stack references
   found by repo-wide search.
+
+
+## 2026-09-09 — Phase 5 T5: Capture Task Contract V1
+
+- Task authority: T5 in `docs/PLAN.md` at base `770237280239c08ee6ca00d78bdfe10a57a3160d`;
+  user requested T5 before implementation. Branch: `agent/t5-task-contract`.
+- Local evidence is bound to dirty snapshot
+  `a430749ea036be5e2dc1c307676b212758b6a558ca9da19fad017b05a15d33cb`,
+  with tracked/untracked content hashes in `/tmp/patchtrace-t5-evidence/snapshot.json`.
+  Only PLAN status and this milestone entry were added after those checks;
+  executable code, tests, README, architecture and glossary did not change.
+- Checks: `uv run pytest -q` **232 passed**; `uv run mypy src tests` passed for
+  **54 files**; Ruff lint and format check passed; `uv build` produced sdist and
+  wheel. Build emitted the existing uv frontend/build-requirement version warning.
+  All commands exited 0; cache override: `UV_CACHE_DIR=/tmp/patchtrace-uv-cache`.
+- Fixtures: valid, omitted optional sections, explicit `N/A`, invalid, duplicate
+  headings and no-task cases. Tests verify exact BOM/CRLF/Unicode/trailing-space
+  preservation, SHA-256 binding, deterministic IDs, invalid UTF-8 preservation,
+  source mutation during a run, argument separation, regular-file input, model
+  invariants and injected artifact-write failures.
+- Real CLI proof: `.venv/bin/patchtrace run [--task-file PATH] -- <fake command>`
+  in a temporary Git repository produced valid/no-task exits **0/0** and
+  `completed / completed / complete`; invalid input exited **1** with
+  `not_started / failed / partial`, preserved raw/parsed artifacts and diagnostic.
+  Valid bytes and digest were compared directly. Raw output and package paths:
+  `/tmp/patchtrace-t5-evidence/runtime.json`; full pytest output: `pytest.txt`
+  in that directory. Temporary evidence is local, not a portable artifact archive;
+  the committed tests reproduce the assertions.
+- Required `aga-verify-agent` Standard gate: **VERIFIED**, then a separate review
+  of the same candidate found no actionable correctness, architecture, clarity,
+  security or performance issue. Verification report:
+  `/tmp/patchtrace-t5-evidence/verification.md`. This is local self-verification
+  and review, not an independent reviewer or merge approval.
+- Cannot verify: GitHub CI before PR creation. Browser/database/provider proof is
+  N/A for this local CLI. Task delivery, model receipt and requirement satisfaction
+  remain outside T5 and are not claimed. T6 is the next task; Phase 5 stays active.
+
+### T5 CI correction — colored help output
+
+- [CI run 34384560303](https://github.com/agakadela/patchtrace/actions/runs/34384560303)
+  failed on `6beb78df29ff3476f63e121a5fb820a574a415ee`: 231 passed, one failure
+  in help discoverability. The original local result did not cover this terminal
+  behavior. `GITHUB_ACTIONS=true TERM=xterm-256color` reproduces the same failure
+  locally: ANSI SGR codes interrupt the literal option name despite `color=False`.
+- The corrected test runs a fresh CLI subprocess in both `dumb` and
+  `xterm-256color` modes, checks whether ANSI output is present as expected, strips
+  SGR formatting and still requires the complete `--task-file` name. Production
+  behavior and CI settings are unchanged. Import-time terminal selection was
+  checked against the installed and
+  [official Typer 0.26.8 source](https://github.com/fastapi/typer/blob/0.26.8/typer/rich_utils.py).
+- Evidence: base commit above plus `tests/integration/test_task_capture.py`
+  SHA-256 `95947d4ef7d309cd6cc70dbc1be04e14db45e1ec7b82f6936b7765851772ce91`;
+  no pre-existing changes, hash unchanged after checks. Full pytest under the
+  reproducing terminal settings: **233 passed**. Mypy, Ruff lint/format and build
+  passed. Raw pytest output: `/tmp/patchtrace-t5-ci-fix/pytest.txt`.
+- `aga-verify-agent` Standard gate: VERIFIED for the local correction; separate
+  same-snapshot code review found no actionable issue. Local gate report:
+  `/tmp/patchtrace-t5-ci-fix/verification.md`. This log addition is the only
+  post-check change. Corrected remote CI must pass before final resolution is
+  reported; its head-bound result is available on PR #34.

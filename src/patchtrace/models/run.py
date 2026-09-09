@@ -29,6 +29,15 @@ class GitEvidenceManifest(BaseModel):
     session_envelope_path: str | None = None
 
 
+class TaskEvidenceManifest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    raw_path: Literal["task.md"] = "task.md"
+    parsed_path: Literal["task.json"] = "task.json"
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    parse_status: Literal["valid", "invalid"]
+
+
 class RunManifest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -46,9 +55,20 @@ class RunManifest(BaseModel):
     failures: list[RunFailure] = Field(default_factory=list)
     git_evidence: GitEvidenceManifest | None = None
     repository_root: str | None = None
+    task: TaskEvidenceManifest | None = None
 
     @model_validator(mode="after")
     def validate_outcomes(self) -> Self:
+        if self.task is not None:
+            if not {self.task.raw_path, self.task.parsed_path}.issubset(
+                self.artifact_paths
+            ):
+                raise ValueError("Task artifacts must be listed in the run inventory")
+            if (
+                self.task.parse_status == "invalid"
+                and self.package_outcome == "complete"
+            ):
+                raise ValueError("An invalid task cannot produce a complete package")
         code = self.wrapped_command_exit_status
         if self.process_outcome == "completed":
             valid_process = code == 0
