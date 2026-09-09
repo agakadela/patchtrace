@@ -8,6 +8,45 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-09-08 - Phase 4.1 Close: Trust Hardening
+
+- Authority: Aga requested the merged-baseline closure checks and documentation
+  transition only. Phase 5 implementation remains unstarted; T1 is next.
+- Evidence identity: clean `f1e7493` (merged PR #28), on
+  `agent/phase-4-1-close`; no pre-existing changes. The closure diff changes
+  documentation only; source, tests, dependencies, and configuration are unchanged.
+- Checks rerun on macOS/Python 3.11.15: `uv run ruff check .`,
+  `uv run ruff format --check .` (39 files), `uv run mypy src tests`
+  (39 source files), `uv run pytest` (93 passed), and `uv build` all exited 0.
+  `UV_CACHE_DIR` was set to a temporary writable directory. Build produced the
+  wheel and sdist with the existing uv 0.12.10/backend-range warning.
+- Regression proof: file/change ceiling cases cover semantic comment-only claims,
+  modification vs deletion, all multi-file targets, exact bounded facts, and
+  generic completion. Command cases cover pass→fail, fail→pass, unknown and
+  interrupted latest attempts, zero failures, and truthful failure claims.
+  The 20-case fixture matrix checks shared analysis and report consistency.
+- Runtime proof: the built wheel, confirmed as the imported package, ran six
+  command scenarios through the actual CLI in fresh Git repositories. All six
+  printed the external package path, wrote all nine artifacts, preserved matching
+  repository/run identity, and rendered the expected verdict and claim relationship.
+  `git add .` staged only `example.py` in each repository; Git configuration was
+  unchanged and no `.gitignore` was created. Reports retained the unresolved
+  verification-freshness limit. These are synthetic transcript scenarios, not
+  independent proof that the commands named in their text actually ran.
+- Local raw evidence: `/private/tmp/patchtrace-phase41-close-r1f5nbmt/proof.json`
+  records six run IDs, package paths, expected outcomes, and interpreter identity;
+  adjacent CLI output and run artifacts are retained locally. Wheel SHA-256:
+  `70d5450cc5fbf5e9fd3ef991ec710aeb729bf3bc54cdd8861a1d9b8ea3915fa0`.
+- Documentation: restored the accepted Phase 5 tasks to `PLAN.md`, removed the
+  deferred duplicate, and synchronized status and links in README, roadmap,
+  specification, architecture, and decision references. T1–T7 scope is unchanged.
+- Cannot verify: Linux execution is not local evidence; PR CI remains a separate
+  check. Semantic correctness, session attribution, requirement satisfaction,
+  independent command execution, and final-state freshness remain outside the
+  Phase 4.1 contract. No browser, provider, database, or deployed surface applies.
+- Verdict: Phase 4.1 closure criteria locally verified. Phase 5 is active in the
+  plan only; merging this documentation remains Aga's decision.
+
 ### 2026-09-08 - Phase 4.1 T3: Latest Command Attempts
 
 - Candidate: this commit on `agent/phase-4-1-t3-command-attempts`, based on

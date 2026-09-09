@@ -105,8 +105,7 @@ correctness or acceptance.
 
 ## Product direction
 
-The active phase is **Phase 4.1 — Trust Hardening**. T1–T3 are implemented;
-phase closure is pending review. The phase addresses three gaps in the Phase 4 baseline:
+Phase 4.1 — Trust Hardening is closed. It addressed three gaps in the Phase 4 baseline:
 
 1. keep run artifacts outside the reviewed working tree so `git add .` cannot
    accidentally stage them;
@@ -114,8 +113,9 @@ phase closure is pending review. The phase addresses three gaps in the Phase 4 b
 3. assess the latest captured command attempt, parse zero failures correctly,
    and surface failed verification even when the agent reports it truthfully.
 
-After Phase 4.1, the preserved Phase 5 plan strengthens capture before
-broadening analysis:
+The active phase is **Phase 5 — Trusted Capture and Session Provenance**.
+Implementation has not started; T1 captures the Git session envelope. The plan
+strengthens capture before broadening analysis:
 
 1. distinguish session-attributed, pre-existing, and indeterminate Git changes;
 2. separate process, analysis, and package outcomes;
@@ -133,8 +133,7 @@ See:
 
 - [Product specification](docs/SPEC.md)
 - [Roadmap](docs/ROADMAP.md)
-- [Active Phase 4.1 plan](docs/PLAN.md)
-- [Deferred Phase 5 plan](docs/PHASE_5_PLAN.md)
+- [Active Phase 5 plan](docs/PLAN.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Domain language](CONTEXT.md)
 

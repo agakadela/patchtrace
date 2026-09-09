@@ -156,4 +156,4 @@ Costs and limits:
 - [Codex non-interactive mode](https://developers.openai.com/codex/noninteractive/)
 - [Codex App Server](https://developers.openai.com/codex/app-server/)
 - [PatchTrace architecture](../ARCHITECTURE.md)
-- [Deferred Phase 5 plan](../PHASE_5_PLAN.md)
+- [Active Phase 5 plan](../PLAN.md)

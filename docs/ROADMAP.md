@@ -1,12 +1,12 @@
 # PatchTrace Roadmap
 
-**Baseline:** Phase 4 complete
+**Baseline:** Phase 4.1 complete
 
-**Active phase:** Phase 4.1 — Trust Hardening
+**Active phase:** Phase 5 — Trusted Capture and Session Provenance
 
 This roadmap orders product capabilities by evidence dependency. [PLAN.md](PLAN.md)
-owns the active phase and its tasks. The previously accepted Phase 5 tasks are
-preserved in [PHASE_5_PLAN.md](PHASE_5_PLAN.md) while Phase 4.1 is active.
+owns the active phase and its tasks. Phase 4.1 closure evidence is recorded in
+[VERIFY_LOG.md](VERIFY_LOG.md#2026-09-08---phase-41-close-trust-hardening).
 
 ## Phase 4.1 — Trust Hardening
 
@@ -32,10 +32,9 @@ local session material stays outside the repository working tree.
 
 ### Dependencies and exit criteria
 
-Build on the completed Phase 4 baseline. Complete the three tasks and closure
-checks in [PLAN.md](PLAN.md) before resuming Phase 5. T1 storage containment,
-T2 file/change assessment, and T3 command-attempt semantics are implemented;
-phase closure is pending review.
+Closed on 2026-09-08: T1 storage containment, T2 file/change assessment, and
+T3 command-attempt semantics passed the merged-baseline closure checks.
+Evidence and remaining trust limits are recorded in [VERIFY_LOG.md](VERIFY_LOG.md).
 
 ### Out of scope
 
@@ -45,9 +44,9 @@ scope remain outside this phase.
 
 ## Phase 5 — Trusted Capture and Session Provenance
 
-**Status:** deferred until Phase 4.1 closes.
+**Status:** active; implementation not started. Next task: T1 — Capture the Git session envelope.
 
-**Preserved tasks:** [PHASE_5_PLAN.md](PHASE_5_PLAN.md).
+**Active tasks:** [PLAN.md](PLAN.md).
 
 ### Problem
 
