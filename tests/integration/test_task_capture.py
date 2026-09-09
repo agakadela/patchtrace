@@ -1,3 +1,4 @@
+import re
 import subprocess
 import sys
 from hashlib import sha256
@@ -75,10 +76,24 @@ def test_task_capture_binds_original_bytes_and_lifecycle(
                 assert "Task delivery is unverified" in text
 
 
-def test_task_file_help_is_discoverable() -> None:
-    result = CliRunner().invoke(app, ["run", "--help"], color=False)
-    assert result.exit_code == 0
-    assert "--task-file" in result.output
+@pytest.mark.parametrize("terminal", ["dumb", "xterm-256color"])
+def test_task_file_help_is_discoverable(
+    monkeypatch: pytest.MonkeyPatch, terminal: str
+) -> None:
+    # Typer reads GITHUB_ACTIONS at import time, so use a fresh CLI process.
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setenv("TERM", terminal)
+    monkeypatch.delenv("_TYPER_FORCE_DISABLE_TERMINAL", raising=False)
+    result = subprocess.run(
+        [sys.executable, "-m", "patchtrace", "run", "--help"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert result.returncode == 0, result.stderr
+    assert ("\x1b[" in result.stdout) == (terminal == "xterm-256color")
+    visible_help = re.sub(r"\x1b\[[0-9;]*m", "", result.stdout)
+    assert "--task-file" in visible_help
 
 
 def test_missing_task_file_preserves_read_failure(
