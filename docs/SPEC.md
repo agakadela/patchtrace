@@ -4,11 +4,11 @@
 
 **Product stage:** local CLI, pre-OSS
 
-**Current implementation:** Phase 4 complete plus Phase 4.1 T1–T3
+**Current implementation:** Phase 4.1 complete
 
-**Active phase:** Phase 4.1 — Trust Hardening (T1–T3 implemented; closure pending review)
+**Active phase:** Phase 5 — Trusted Capture and Session Provenance (implementation not started)
 
-**Following phase:** Phase 5 — Trusted Capture and Session Provenance
+**Following phase:** Phase 6 — Task Coverage and Final Verification
 
 ## 1. Product definition
 
@@ -198,7 +198,7 @@ An evidence verdict is not the CLI exit status and must not obscure failures in
 another lifecycle concern.
 
 The exact V1 model and failure mapping are owned by the architecture and the
-[deferred Phase 5 plan](PHASE_5_PLAN.md) rather than duplicated here.
+[active Phase 5 plan](PLAN.md) rather than duplicated here.
 
 ## 8. Current implementation
 
@@ -226,11 +226,12 @@ Known current gaps:
 
 These are product gaps, not permission to overstate current evidence.
 
-### Accepted Phase 4.1 hardening
+### Completed Phase 4.1 hardening
 
-Before Phase 5, the active [Phase 4.1 plan](PLAN.md) addresses artifact containment
-and known overconfirmation paths. Storage containment (T1) and file/change
-assessment (T2), and command-attempt semantics (T3) are implemented:
+Phase 4.1 addressed artifact containment and known overconfirmation paths.
+Storage containment (T1), file/change assessment (T2), and command-attempt
+semantics (T3) are implemented and verified; closure evidence is recorded in
+[VERIFY_LOG.md](VERIFY_LOG.md):
 
 - default run storage moves outside the target working tree without modifying
   user Git configuration or `.gitignore`;
@@ -301,6 +302,5 @@ The product is moving in the right direction when:
 - the developer remains the final decision-maker.
 
 Phase-specific exit criteria live in [ROADMAP.md](ROADMAP.md), and detailed work
-for only the active phase lives in [PLAN.md](PLAN.md). The previously accepted
-Phase 5 task detail is preserved in [PHASE_5_PLAN.md](PHASE_5_PLAN.md) until
-Phase 4.1 closes.
+for only the active phase lives in [PLAN.md](PLAN.md). Phase 5 is active with
+its previously accepted task scope unchanged.

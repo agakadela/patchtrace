@@ -10,8 +10,8 @@ Related decisions:
 
 This document records current system truth and the accepted next architecture.
 Product scope is owned by [SPEC.md](SPEC.md). [PLAN.md](PLAN.md) owns active
-Phase 4.1 work; [PHASE_5_PLAN.md](PHASE_5_PLAN.md) preserves deferred Phase 5
-tasks.
+Phase 5 tasks; implementation has not started. Phase 4.1 closure evidence lives
+in [VERIFY_LOG.md](VERIFY_LOG.md).
 
 ## 1. System constraints
 
@@ -100,7 +100,7 @@ not persisted as a separate artifact.
 
 The final Phase 4 dogfood demonstrated the Git false positive: identical
 before/after status material was reported as files changed by the run. Phase 5
-starts with that confirmed defect after Phase 4.1 closes.
+starts with that confirmed defect; Phase 4.1 is now closed.
 
 ### 2.5 Run storage decision — Phase 4.1 T1
 
@@ -184,13 +184,14 @@ A failed latest attempt requires action even if its associated claim is truthful
 or absent. Wrapped-process failure retains first priority. All three reports
 consume the shared analysis and explicitly name the transcript/freshness limit.
 
-T1–T3 are implemented; phase closure remains pending. Detailed tasks and closure
-checks belong in [PLAN.md](PLAN.md).
+Phase 4.1 T1–T3 are implemented and the phase is closed. Closure evidence is
+recorded in [VERIFY_LOG.md](VERIFY_LOG.md); active Phase 5 tasks belong in
+[PLAN.md](PLAN.md).
 
 Phase 4.1 does not establish session attribution,
 requirement satisfaction, structured execution proof, or final-state freshness.
 
-## 3. DEFERRED TARGET — Phase 5 architecture
+## 3. ACCEPTED TARGET — Phase 5 architecture (not implemented)
 
 Phase 5 strengthens capture and provenance. It does not implement requirement
 satisfaction or final-verification freshness.
