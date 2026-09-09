@@ -823,3 +823,27 @@ proof, or explicit cannot-verify decisions.
 - Cannot verify: GitHub CI before PR creation. Browser/database/provider proof is
   N/A for this local CLI. Task delivery, model receipt and requirement satisfaction
   remain outside T5 and are not claimed. T6 is the next task; Phase 5 stays active.
+
+### T5 CI correction — colored help output
+
+- [CI run 34384560303](https://github.com/agakadela/patchtrace/actions/runs/34384560303)
+  failed on `6beb78df29ff3476f63e121a5fb820a574a415ee`: 231 passed, one failure
+  in help discoverability. The original local result did not cover this terminal
+  behavior. `GITHUB_ACTIONS=true TERM=xterm-256color` reproduces the same failure
+  locally: ANSI SGR codes interrupt the literal option name despite `color=False`.
+- The corrected test runs a fresh CLI subprocess in both `dumb` and
+  `xterm-256color` modes, checks whether ANSI output is present as expected, strips
+  SGR formatting and still requires the complete `--task-file` name. Production
+  behavior and CI settings are unchanged. Import-time terminal selection was
+  checked against the installed and
+  [official Typer 0.26.8 source](https://github.com/fastapi/typer/blob/0.26.8/typer/rich_utils.py).
+- Evidence: base commit above plus `tests/integration/test_task_capture.py`
+  SHA-256 `95947d4ef7d309cd6cc70dbc1be04e14db45e1ec7b82f6936b7765851772ce91`;
+  no pre-existing changes, hash unchanged after checks. Full pytest under the
+  reproducing terminal settings: **233 passed**. Mypy, Ruff lint/format and build
+  passed. Raw pytest output: `/tmp/patchtrace-t5-ci-fix/pytest.txt`.
+- `aga-verify-agent` Standard gate: VERIFIED for the local correction; separate
+  same-snapshot code review found no actionable issue. Local gate report:
+  `/tmp/patchtrace-t5-ci-fix/verification.md`. This log addition is the only
+  post-check change. Corrected remote CI must pass before final resolution is
+  reported; its head-bound result is available on PR #34.
