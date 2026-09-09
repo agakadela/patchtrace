@@ -106,7 +106,7 @@ class SummaryReport(BaseModel):
     outcome: RunOutcome
     artifact_paths: list[str]
     transcript_status: TranscriptStatus
-    changed_files: list[str]
+    git_attribution: GitAttribution
     diff_material_status: DiffMaterialStatus
     command_test_signals: list[str]
     evidence_gaps: list[str]
@@ -124,7 +124,7 @@ class AgentFeedbackReport(BaseModel):
     outcome: RunOutcome
     artifact_paths: list[str]
     transcript_status: TranscriptStatus
-    changed_files: list[str]
+    git_attribution: GitAttribution
     diff_material_status: DiffMaterialStatus
     command_test_signals: list[str]
     evidence_gaps: list[str]
@@ -146,7 +146,7 @@ class VerificationBriefReport(BaseModel):
     outcome: RunOutcome
     artifact_paths: list[str]
     transcript_status: TranscriptStatus
-    changed_files: list[str]
+    git_attribution: GitAttribution
     diff_material_status: DiffMaterialStatus
     command_test_signals: list[str]
     evidence_gaps: list[str]

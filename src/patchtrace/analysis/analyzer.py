@@ -21,6 +21,7 @@ from patchtrace.models.report import (
     ClaimSupport,
     DiffMaterialStatus,
     EvidenceReference,
+    GitAttribution,
 )
 from patchtrace.models.run import RunManifest
 from patchtrace.session.transcript import normalize_transcript
@@ -96,12 +97,13 @@ class _CommandClaim:
 
 def analyze_run(manifest: RunManifest, *, run_dir: Path) -> AnalysisResult:
     """Assess bounded explicit final claims against local run evidence."""
-    result = _analyze_claims(manifest, run_dir=run_dir)
-    result.git_attribution = load_git_attribution(manifest, run_dir)
-    return result
+    attribution = load_git_attribution(manifest, run_dir)
+    return _analyze_claims(manifest, run_dir=run_dir, git_attribution=attribution)
 
 
-def _analyze_claims(manifest: RunManifest, *, run_dir: Path) -> AnalysisResult:
+def _analyze_claims(
+    manifest: RunManifest, *, run_dir: Path, git_attribution: GitAttribution
+) -> AnalysisResult:
     path_evidence = _load_path_evidence(manifest, run_dir)
     transcript_path = _find_artifact_path(
         manifest.artifact_paths,
@@ -111,6 +113,7 @@ def _analyze_claims(manifest: RunManifest, *, run_dir: Path) -> AnalysisResult:
     if transcript_text is None:
         return _build_analysis_result(
             manifest,
+            git_attribution=git_attribution,
             claim_material_status="missing",
             claim_assessments=[],
             path_evidence=path_evidence,
@@ -123,6 +126,7 @@ def _analyze_claims(manifest: RunManifest, *, run_dir: Path) -> AnalysisResult:
     if normalized.final_output is None:
         return _build_analysis_result(
             manifest,
+            git_attribution=git_attribution,
             claim_material_status=status,
             claim_assessments=[],
             path_evidence=path_evidence,
@@ -143,6 +147,7 @@ def _analyze_claims(manifest: RunManifest, *, run_dir: Path) -> AnalysisResult:
     )
     return _build_analysis_result(
         manifest,
+        git_attribution=git_attribution,
         claim_material_status=status,
         claim_assessments=assessments,
         path_evidence=path_evidence,
@@ -154,6 +159,7 @@ def _analyze_claims(manifest: RunManifest, *, run_dir: Path) -> AnalysisResult:
 def _build_analysis_result(
     manifest: RunManifest,
     *,
+    git_attribution: GitAttribution,
     claim_material_status: ClaimMaterialStatus,
     claim_assessments: list[ClaimAssessment],
     path_evidence: _PathEvidence,
@@ -162,6 +168,7 @@ def _build_analysis_result(
 ) -> AnalysisResult:
     verdict, most_important_gap, next_action = _quick_decision(
         manifest,
+        git_attribution=git_attribution,
         claim_material_status=claim_material_status,
         claim_assessments=claim_assessments,
         path_evidence=path_evidence,
@@ -169,6 +176,7 @@ def _build_analysis_result(
     )
     return AnalysisResult(
         run_id=manifest.run_id,
+        git_attribution=git_attribution,
         claim_material_status=claim_material_status,
         claim_assessments=claim_assessments,
         verdict=verdict,
@@ -208,7 +216,8 @@ def _evidence_gaps(
     gaps = [
         most_important_gap,
         "PatchTrace has not verified correctness, safety, or production readiness.",
-        "File evidence describes captured material, not session attribution.",
+        "File claim evidence describes snapshot material; Git session attribution "
+        "is listed separately.",
         "Command results are transcript-derived observations, not independent "
         "execution proof; freshness relative to the final repository state is unresolved.",
     ]
@@ -217,10 +226,10 @@ def _evidence_gaps(
     if manifest.git_evidence is None:
         gaps.append("Git evidence was not captured for this run.")
     elif not path_evidence.changed_files:
-        gaps.append("No changed files were captured for this run.")
+        gaps.append("The final Git snapshot contains no listed changed files.")
     diff_status = _diff_material_status(manifest, path_evidence)
     if diff_status == "empty":
-        gaps.append("No git patch material was captured for this run.")
+        gaps.append("The final Git snapshot contains no patch material.")
     elif diff_status == "missing":
         gaps.append("Git patch material is missing for this run.")
     if not transcript_text or not extract_command_test_signals(transcript_text):
@@ -231,6 +240,7 @@ def _evidence_gaps(
 def _quick_decision(
     manifest: RunManifest,
     *,
+    git_attribution: GitAttribution,
     claim_material_status: ClaimMaterialStatus,
     claim_assessments: list[ClaimAssessment],
     path_evidence: _PathEvidence,
@@ -314,6 +324,11 @@ def _quick_decision(
         and path_evidence.patch_available
         and not path_evidence.changed_files
         and not path_evidence.patch_has_content
+        and not any(
+            item.attribution == "indeterminate"
+            or (item.attribution == "session-attributed" and item.path is not None)
+            for item in git_attribution.items
+        )
     )
     if no_changes:
         return (

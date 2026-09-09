@@ -53,7 +53,8 @@ def test_agent_feedback_references_local_evidence_and_followups(
     assert "Paste this back to the agent:" in markdown
     assert "- Exit status: `7`" in markdown
     assert "- Outcome: `wrapped_command_failed`" in markdown
-    assert "- `src/patchtrace/reports/feedback.py`" in markdown
+    assert "[session-attributed]" not in markdown
+    assert "No T1 Git session envelope is linked" in markdown
     assert "- Diff material: `present`" in markdown
     assert "- `uv run pytest tests/unit/test_agent_feedback_report.py`" in markdown
     assert "Wrapped command exited with status 7." in markdown
@@ -96,7 +97,7 @@ def test_agent_feedback_asks_for_missing_test_and_patch_evidence(
     )
     markdown = render_agent_feedback_markdown(report)
 
-    assert "- None captured." in markdown
+    assert "No attributed observations available" in markdown
     assert "- Diff material: `empty`" in markdown
     assert "No obvious command or test signals were detected." in markdown
     assert "Confirm that no change was intended" in markdown

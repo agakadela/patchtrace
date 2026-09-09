@@ -10,7 +10,7 @@ Related decisions:
 
 This document records current system truth and the accepted next architecture.
 Product scope is owned by [SPEC.md](SPEC.md). [PLAN.md](PLAN.md) owns active
-Phase 5 tasks; T1 Git capture and T2 attribution are implemented; report propagation is T3. Phase 4.1 closure evidence lives
+Phase 5 tasks; T1 Git capture, T2 attribution, and T3 report propagation are implemented. Phase 4.1 closure evidence lives
 in [VERIFY_LOG.md](VERIFY_LOG.md).
 
 ## 1. System constraints
@@ -91,8 +91,9 @@ not persisted as a separate artifact.
 
 - `git-before.txt` is recorded but not used to attribute changes.
 - Final status and diff can contain pre-existing work.
-- The envelope captures bounded untracked bytes and linear commits; analysis
-  and reports still consume only the legacy final-state artifacts.
+- Git attribution and report provenance consume the envelope, including bounded
+  untracked bytes and linear commits. File claim assessment still describes
+  observed snapshot material and does not establish session attribution.
 - Dirty same-path work cannot be separated.
 - The PTY final answer requires exactly one supported marker.
 - Missing or ambiguous markers degrade claim evidence; there is no transcript
@@ -240,8 +241,8 @@ An unwritable storage directory can prevent persistence; stderr reports that
 secondary failure. General package/process outcome separation remains T4.
 
 New manifests link `session_envelope_path`; older manifests load it as null.
-Legacy reports continue consuming their existing final-state artifacts until
-T3. They must not be treated as having session attribution yet.
+T3 reports consume shared attribution. Older packages without an envelope cannot
+establish session attribution from their final-state artifacts.
 
 Sources checked with Git 2.54.0: [status](https://git-scm.com/docs/git-status),
 [diff](https://git-scm.com/docs/git-diff),
@@ -299,15 +300,42 @@ and sequential-boundary limitations still apply. No class proves byte-level
 or agent authorship, correctness, or acceptance.
 
 T2 exposes attribution through the analysis API; it does not persist a second
-analysis artifact. Legacy `changed_files`, claim assessment, report rendering
-and review-first migration belong to T3. Until then their snapshot-based views
-must not be read as session attribution. Consumers must distinguish material
-entries from unique-path counts.
+analysis artifact. T3 propagates this result into reports as described below.
+Consumers must distinguish material entries from unique-path counts.
 
 Sources checked with Git 2.54.0 and Pydantic 2.13.4:
 [patch format](https://git-scm.com/docs/diff-format#_generating_patch_text_with_p),
 [default-prefix override](https://git-scm.com/docs/git-diff#Documentation/git-diff.txt---default-prefix),
 [dataclass validation via TypeAdapter](https://pydantic.dev/docs/validation/latest/concepts/type_adapter/).
+
+### 2.11 Report provenance — Phase 5 T3
+
+All three report models carry the same `GitAttribution` from `AnalysisResult`.
+`reports/provenance.py` renders one shared view: counts by attribution class,
+ordered observations with material/path/commit identity, every source reference,
+and both item and global limitations. Counts describe observations, not unique
+files; initial and final material on the same path remain distinct. Pathless
+history and empty-commit observations never become file counts.
+
+Report builders require the shared analysis result. The summary's optional
+raw-artifact fallback and all report-model `changed_files` fields are removed;
+renderers neither open Git artifacts nor derive attribution. Legacy manifests
+or results retain the existing unavailable/unassessed attribution limitation,
+without inventing paths from the final snapshot. These are in-memory report
+models; stored run/envelope formats are unchanged.
+
+The common view gives an action for each present class. Verification brief
+review targets use the same observations in their existing order: review
+session-attributed material, keep pre-existing work separate, and resolve
+indeterminate material against its sources. This adds no risk ranking.
+
+The analysis's no-file-changes decision also checks shared attribution, so a
+clean final snapshot cannot hide captured commit paths or unresolved history.
+Empty final-snapshot notices are explicitly scoped to that snapshot. Legacy
+`AnalysisResult.changed_files` remains an observed snapshot inventory for
+existing claim assessment, not report provenance. Claim support, verdict
+priority, and the semantic/PTY trust ceilings remain unchanged; report Git
+attribution does not promote a claim to session authorship or correctness.
 
 ## 3. ACCEPTED TARGET — Remaining Phase 5 architecture
 

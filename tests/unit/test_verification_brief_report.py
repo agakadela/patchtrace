@@ -66,11 +66,11 @@ def test_verification_brief_includes_bounded_evidence_and_review_targets(
     assert "- `SUMMARY.md`" in markdown
     assert "- `AGENT_FEEDBACK.md`" in markdown
     assert "- `VERIFICATION_BRIEF.md`" in markdown
-    assert "- `src/patchtrace/reports/verification_brief.py`" in markdown
-    assert "- `tests/unit/test_verification_brief_report.py`" in markdown
+    assert "No T1 Git session envelope is linked" in markdown
+    assert "[session-attributed]" not in markdown
     assert "- `uv run pytest tests/unit/test_verification_brief_report.py`" in markdown
     assert "## Review First" in markdown
-    assert "Review `src/patchtrace/reports/verification_brief.py` first." in markdown
+    assert "Inspect Git attribution limitations and source artifacts" in markdown
     assert "## Claim Assessments" in markdown
     assert "### Claim 1: File change" in markdown
     assert (
@@ -138,10 +138,10 @@ def test_verification_brief_labels_missing_and_failed_evidence_conservatively(
     assert "- Wrapped command: `non-zero exit 7`" in markdown
     assert "Transcript artifact is missing for this run." in markdown
     assert "No obvious command or test signals were detected." in markdown
-    assert "No git patch material was captured for this run." in markdown
+    assert "The final Git snapshot contains no patch material." in markdown
     assert "Wrapped command exited with status 7." in markdown
     assert (
-        "No changed files were captured; inspect git evidence artifacts first."
+        "Inspect Git attribution limitations and source artifacts before choosing review targets."
         in markdown
     )
     assert "No bounded explicit final claims were extracted." in markdown
@@ -190,7 +190,9 @@ def test_verification_brief_uses_shared_analysis_for_all_evidence(
 
     assert report.transcript_status == "present"
     assert report.diff_material_status == "present"
-    assert report.changed_files == ["src/patchtrace/reports/verification_brief.py"]
+    assert report.git_attribution == analysis_result.git_attribution
+    assert report.git_attribution.items == []
+    assert report.git_attribution.limitations
     assert report.claim_assessments == analysis_result.claim_assessments
 
 

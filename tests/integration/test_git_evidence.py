@@ -81,13 +81,16 @@ def test_run_inside_git_repo_writes_git_evidence_artifacts(
 
     assert "## Local Evidence" in summary
     assert "- Diff material: `present`" in summary
-    assert "- `tracked.txt`" in summary
+    assert "- [session-attributed] final: `tracked.txt`" in summary
     assert "# PatchTrace Agent Feedback" in feedback
     assert "- Diff material: `present`" in feedback
-    assert "- `tracked.txt`" in feedback
+    assert "- [session-attributed] final: `tracked.txt`" in feedback
     assert "# PatchTrace Verification Brief" in verification_brief
     assert "- Diff material: `present`" in verification_brief
-    assert "Review `tracked.txt` first." in verification_brief
+    assert (
+        "Review session-attributed material: `tracked.txt` (final)."
+        in verification_brief
+    )
 
 
 def test_run_outside_git_repo_exits_without_writing_run_artifacts(

@@ -125,8 +125,8 @@ def test_phase4_sanitized_fixture_matrix_drives_one_shared_analysis_result(
                 markdown
             )
             assert (
-                "File evidence describes captured material, not session attribution."
-                in markdown
+                "File claim evidence describes snapshot material; Git session attribution "
+                "is listed separately." in markdown
             )
         brief_markdown = rendered_reports[2]
         for assessment in analysis_result.claim_assessments:

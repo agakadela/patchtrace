@@ -8,6 +8,37 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-09-08 - Phase 5 T3: Shared report provenance
+
+- Authority: Aga requested Phase 5 T3. Candidate: this task commit on
+  `agent/phase5-t3-report-provenance`; checkout clean at task start.
+- Result: all three reports present shared Git attribution counts, observation
+  identities, source references, limitations, and class-specific actions.
+  Summary no longer reads raw artifacts; review targets consume provenance.
+  Captured commits and unresolved history prevent a clean final snapshot from
+  producing a misleading no-file-changes decision.
+  Contract: [ARCHITECTURE.md](ARCHITECTURE.md#211-report-provenance--phase-5-t3).
+- Checks: Ruff lint/format, mypy (47 files), full pytest (151 passed), and
+  wheel/sdist build passed. Temporary uv cache used; existing uv 0.12.10 versus
+  build-backend-range warning retained without dependency changes.
+- Regression proof: report-model tests failed before propagation. CLI fixtures
+  exposed false no-change decisions after commits, reverts, and rewrites;
+  shared provenance now prevents them. Eight Git scenarios assert identical
+  report sections, counts, paths, commits, sources, and limits. Removing all raw
+  artifacts after analysis still reproduces all three complete reports exactly.
+- Local dogfood: final built-wheel CLI wrapped `git diff --check` on this
+  repository's dirty starting worktree. All 17 paths remained pre-existing
+  (34 initial/final observations); session-attributed and indeterminate counts
+  were zero in all reports. Git status, index bytes, and refs were unchanged.
+  Evidence: `/private/tmp/patchtrace-t3-final-proof-rnmnlr3z/verification.json`,
+  `cli-output.txt`, and sibling `state/` run package.
+- Review: self-review covered correctness, report ownership, readability,
+  security, and performance. No unresolved actionable finding; no new
+  dependencies or capture/schema changes.
+- Limits: file claims still assess observed snapshot material without session
+  authorship or semantic proof. PTY evidence and T1/T2 capture ceilings remain.
+  No independent verifier, merge, or deployment is claimed. T4 remains next.
+
 ### 2026-09-08 - Phase 5 T2: Honest Git attribution
 
 - Authority: Aga requested Phase 5 T2. Candidate: this task commit on
