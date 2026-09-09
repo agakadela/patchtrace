@@ -52,7 +52,7 @@ def test_git_add_does_not_stage_any_run_artifact(
     manifest = json.loads((run_dir / "run.json").read_text())
     assert manifest["repository_root"] == str(tmp_path.resolve())
     assert manifest["run_id"] == run_dir.name
-    assert len(manifest["artifact_paths"]) == 9
+    assert len(manifest["artifact_paths"]) == 10
     assert all((run_dir / name).is_file() for name in manifest["artifact_paths"])
     assert (tmp_path / ".git/config").read_bytes() == original_config
     if existing_ignore:

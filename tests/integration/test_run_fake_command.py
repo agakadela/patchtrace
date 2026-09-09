@@ -21,6 +21,7 @@ REQUIRED_ARTIFACTS = [
     "git-after.txt",
     "changed-files.txt",
     "patch.diff",
+    "git-session.json",
     "SUMMARY.md",
     "AGENT_FEEDBACK.md",
     "VERIFICATION_BRIEF.md",

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from patchtrace.vcs.envelope import EVIDENCE_PATHS, capture_patch
 from patchtrace.vcs.git import git_output
 
 
@@ -15,7 +16,9 @@ class GitEvidenceSnapshot:
 
 
 def capture_git_status(cwd: Path) -> str:
-    status = git_output(cwd, "status", "--porcelain=v1")
+    status = git_output(
+        cwd, "status", "--porcelain=v1", "--untracked-files=all", "--", *EVIDENCE_PATHS
+    )
     return _without_internal_artifacts(status)
 
 
@@ -31,8 +34,8 @@ def capture_git_evidence(cwd: Path) -> GitEvidenceSnapshot:
 
 
 def _combined_patch(cwd: Path) -> str:
-    unstaged = git_output(cwd, "diff", "--binary")
-    staged = git_output(cwd, "diff", "--cached", "--binary")
+    unstaged = capture_patch(cwd)
+    staged = capture_patch(cwd, "--cached")
     return "\n".join(part.rstrip("\n") for part in (staged, unstaged) if part)
 
 

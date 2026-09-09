@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import NoReturn
 
 import typer
 
@@ -17,7 +18,17 @@ from patchtrace.reports.verification_brief import (
     render_verification_brief_markdown,
 )
 from patchtrace.session.recorder import record_command
-from patchtrace.storage.runs import create_run_paths, write_run_manifest
+from patchtrace.storage.runs import (
+    RunPaths,
+    create_run_paths,
+    write_git_session,
+    write_run_manifest,
+)
+from patchtrace.vcs.envelope import (
+    GitSessionEnvelope,
+    capture_boundary,
+    capture_history,
+)
 from patchtrace.vcs.git import GitCommandError, git_output, is_inside_work_tree
 from patchtrace.vcs.snapshot import capture_git_evidence, capture_git_status
 
@@ -58,7 +69,6 @@ def run(ctx: typer.Context) -> None:
         repository_root = Path(
             git_output(workspace, "rev-parse", "--show-toplevel").strip()
         ).resolve()
-        git_before_status = capture_git_status(workspace)
     except GitCommandError as error:
         typer.echo(f"Unable to inspect Git state: {error}", err=True)
         raise typer.Exit(1) from error
@@ -69,18 +79,36 @@ def run(ctx: typer.Context) -> None:
         typer.echo(f"Unable to create PatchTrace run storage: {error}", err=True)
         raise typer.Exit(1) from error
     started_at = datetime.now(UTC)
-    run_paths.git_before_path.write_text(git_before_status, encoding="utf-8")
+    envelope = GitSessionEnvelope(repository_root=str(repository_root))
+    try:
+        envelope.before = capture_boundary(repository_root)
+        write_git_session(run_paths, envelope)
+        run_paths.git_before_path.write_text(
+            capture_git_status(repository_root), encoding="utf-8"
+        )
+    except (GitCommandError, OSError) as error:
+        _exit_capture_failure(run_paths, envelope, "before", error)
     recorded_session = record_command(
         command=command,
         transcript_path=run_paths.transcript_path,
         cwd=workspace,
     )
     ended_at = datetime.now(UTC)
+    stage = "after"
     try:
-        git_evidence = capture_git_evidence(workspace)
-    except GitCommandError as error:
-        typer.echo(f"Unable to capture Git evidence: {error}", err=True)
-        raise typer.Exit(1) from error
+        envelope.after = capture_boundary(repository_root)
+        write_git_session(run_paths, envelope)
+        stage = "history"
+        assert envelope.before is not None
+        envelope.history = capture_history(
+            repository_root, envelope.before, envelope.after
+        )
+        stage = "final_snapshot"
+        git_evidence = capture_git_evidence(repository_root)
+        envelope.capture_status = "complete"
+        write_git_session(run_paths, envelope)
+    except (GitCommandError, OSError) as error:
+        _exit_capture_failure(run_paths, envelope, stage, error)
 
     run_paths.git_after_path.write_text(git_evidence.after_status, encoding="utf-8")
     changed_files = "\n".join(git_evidence.changed_files)
@@ -116,6 +144,7 @@ def run(ctx: typer.Context) -> None:
             git_after_path,
             changed_files_path,
             patch_path,
+            run_paths.relative_artifact_path(run_paths.git_session_path),
             summary_path,
             feedback_path,
             verification_brief_path,
@@ -128,6 +157,9 @@ def run(ctx: typer.Context) -> None:
             changed_files_path=changed_files_path,
             patch_path=patch_path,
             patch_material_present=git_evidence.patch_material_present,
+            session_envelope_path=run_paths.relative_artifact_path(
+                run_paths.git_session_path
+            ),
         ),
     )
     analysis_result = analyze_run(manifest, run_dir=run_paths.run_dir)
@@ -163,6 +195,32 @@ def run(ctx: typer.Context) -> None:
             err=True,
         )
         raise typer.Exit(recorded_session.exit_status)
+
+
+def _exit_capture_failure(
+    paths: RunPaths,
+    envelope: GitSessionEnvelope,
+    stage: str,
+    error: GitCommandError | OSError,
+) -> NoReturn:
+    envelope.capture_status = "failed"
+    envelope.failed_stage = stage
+    envelope.error = str(error)
+    envelope.recovery = (
+        "Inspect the preserved Git envelope and transcript if present. Check Git "
+        "availability, repository readability and run-storage permissions, then "
+        "rerun capture; this package is incomplete."
+    )
+    try:
+        write_git_session(paths, envelope)
+    except OSError as write_error:
+        typer.echo(f"Unable to preserve capture failure: {write_error}", err=True)
+    typer.echo(
+        f"Unable to capture Git evidence ({stage}): {error}\n"
+        f"Partial run material: {paths.run_dir}\n{envelope.recovery}",
+        err=True,
+    )
+    raise typer.Exit(1) from error
 
 
 @app.command()

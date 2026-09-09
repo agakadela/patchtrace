@@ -17,7 +17,7 @@ class GitCommandError(RuntimeError):
 
 
 def is_inside_work_tree(cwd: Path) -> bool:
-    command = ["git", "rev-parse", "--is-inside-work-tree"]
+    command = ["git", "--no-optional-locks", "rev-parse", "--is-inside-work-tree"]
     try:
         result = subprocess.run(
             command,
@@ -32,20 +32,31 @@ def is_inside_work_tree(cwd: Path) -> bool:
     return result.returncode == 0 and result.stdout.strip() == "true"
 
 
-def git_output(cwd: Path, *args: str) -> str:
-    command = ["git", *args]
+def git_output(cwd: Path, *args: str, input_text: str | None = None) -> str:
+    command = [
+        "git",
+        "--no-optional-locks",
+        "--no-lazy-fetch",
+        "--no-replace-objects",
+        "-c",
+        "core.fsmonitor=false",
+        *args,
+    ]
     try:
         result = subprocess.run(
             command,
             cwd=cwd,
             check=False,
             capture_output=True,
-            text=True,
+            input=input_text.encode("utf-8") if input_text is not None else None,
+            timeout=30,
         )
-    except FileNotFoundError as error:
-        raise GitCommandError(command, "git executable was not found") from error
+        stdout = result.stdout.decode("utf-8")
+        stderr = result.stderr.decode("utf-8", errors="replace")
+    except (OSError, UnicodeError, subprocess.TimeoutExpired) as error:
+        raise GitCommandError(command, str(error)) from error
 
     if result.returncode != 0:
-        raise GitCommandError(command, result.stderr)
+        raise GitCommandError(command, stderr)
 
-    return result.stdout
+    return stdout

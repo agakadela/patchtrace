@@ -8,6 +8,41 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-09-08 - Phase 5 T1: Git session envelope
+
+- Authority: Aga requested Phase 5 T1 from the accepted plan at `1c556d1`.
+  Scope is raw Git capture only; T2 attribution and T3 report propagation remain
+  unstarted. Candidate: this task commit on `agent/phase-5-t1-git-envelope`;
+  no pre-existing changes in the Python repository.
+- Result: `git-session.json` preserves before/after HEAD and dirty-path facts,
+  staged/unstaged patches, bounded exact untracked bytes, direct linear commit
+  patches, and unsupported-case limitations. New manifests link the artifact;
+  old manifests remain loadable. Details and primary sources are in
+  [ARCHITECTURE.md](ARCHITECTURE.md#29-git-session-envelope--phase-5-t1).
+- Checks: Ruff lint and format check, mypy (42 files), full pytest (111 passed),
+  and wheel/sdist build pass on macOS, Python 3.11.15, Git 2.54.0. `UV_CACHE_DIR`
+  uses temporary writable storage. The existing uv 0.12.10/backend-range warning
+  remains; dependency and tooling configuration are unchanged.
+- Runtime proof: the built wheel ran four actual CLI scenarios in temporary
+  repositories: clean→modified plus binary untracked bytes; identical dirty
+  before/after; in-run commit with a clean final tree; corrupted index after
+  the command (exit 1, preserved initial boundary/transcript and actionable
+  failure). `git add .` staged only intended repository files.
+- Regression proof: temporary-repository fixtures also cover staged plus
+  unstaged initial changes, unusual UTF-8 paths, canceling commits, merges,
+  rewrites, unborn HEAD, subdirectory invocation, tracked/untracked internal
+  artifacts, symlink/size omissions, and injected before/after/history failures.
+  Capture leaves index bytes, HEAD, refs and worktree contents unchanged.
+  External diff/textconv/fsmonitor helpers do not run; active content filters
+  fail before execution. Color configuration cannot contaminate patches.
+- Review: correctness, ownership, simplicity, I/O effects and existing report
+  compatibility inspected; no unresolved actionable issue. No new dependencies,
+  attribution labels, report analysis, or Phase 6 behavior were added.
+- Cannot verify: concurrent edits and unsupported Git layouts/history cannot
+  establish attribution; they are explicit capture limits, not T1 blockers.
+  Browser/provider/AI execution is N/A for this local Git slice.
+- Verdict: T1 implemented and locally verified. Next task: T2; phase remains open.
+
 ### 2026-09-08 - Phase 4.1 Close: Trust Hardening
 
 - Authority: Aga requested the merged-baseline closure checks and documentation
