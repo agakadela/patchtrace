@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from patchtrace.analysis.analyzer import analyze_run
-from patchtrace.models.run import GitEvidenceManifest, RunManifest, RunOutcome
+from patchtrace.models.run import GitEvidenceManifest, ProcessOutcome, RunManifest
 from patchtrace.reports.summary import build_summary_report, render_summary_markdown
 
 
@@ -192,7 +192,7 @@ def _manifest(
     exit_status: int = 0,
     patch_material_present: bool = True,
 ) -> RunManifest:
-    outcome: RunOutcome = "completed" if exit_status == 0 else "wrapped_command_failed"
+    outcome: ProcessOutcome = "completed" if exit_status == 0 else "failed"
     return RunManifest(
         run_id="run-123",
         command=["codex"],
@@ -207,7 +207,9 @@ def _manifest(
             "SUMMARY.md",
         ],
         wrapped_command_exit_status=exit_status,
-        outcome=outcome,
+        process_outcome=outcome,
+        analysis_outcome="not_run",
+        package_outcome="partial",
         git_evidence=GitEvidenceManifest(
             git_before_path="git-before.txt",
             git_after_path="git-after.txt",

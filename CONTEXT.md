@@ -115,16 +115,24 @@ PatchTrace never owns it.
 
 ### Process outcome
 
-What happened to the wrapped command.
+What happened to the wrapped command: `not_started`, `completed` (observed exit
+0), `failed` (observed non-zero exit), or `unknown` (no reliable exit result).
+Cleanup termination after a capture failure is not the command's own result.
 
 ### Analysis outcome
 
-Whether PatchTrace analysis completed, was degraded by limited evidence, or
-could not proceed.
+Whether PatchTrace analysis produced a usable result: `completed`, `degraded`
+(missing or ambiguous final output, or unavailable snapshot inputs), `not_run`,
+or `failed` (analysis execution raised an error). Completed analysis does not
+mean a positive evidence verdict or removal of the PTY/attribution trust limits.
 
 ### Package outcome
 
-Whether the required run artifacts and reports were written successfully.
+Whether required run artifacts and reports were written: `partial` (not all
+steps finished or required material is missing), `failed` (a package write or
+report generation failed), or `complete` (all required files were checked and
+the final manifest saved). `artifact_paths` lists required artifacts, not a
+promise that every listed file exists. `run.json` owns the final package status.
 
 These outcomes are independent. None is a synonym for verdict.
 

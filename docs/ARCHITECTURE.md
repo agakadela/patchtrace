@@ -1,6 +1,6 @@
 # PatchTrace Architecture
 
-**Last reviewed:** 2026-09-08
+**Last reviewed:** 2026-09-09
 
 Related decisions:
 
@@ -10,7 +10,8 @@ Related decisions:
 
 This document records current system truth and the accepted next architecture.
 Product scope is owned by [SPEC.md](SPEC.md). [PLAN.md](PLAN.md) owns active
-Phase 5 tasks; T1 Git capture, T2 attribution, and T3 report propagation are implemented. Phase 4.1 closure evidence lives
+Phase 5 tasks; T1–T4 Git provenance and lifecycle outcomes are implemented.
+Phase 4.1 closure evidence lives
 in [VERIFY_LOG.md](VERIFY_LOG.md).
 
 ## 1. System constraints
@@ -26,7 +27,7 @@ PatchTrace is a local Python CLI. It has:
 The established stack remains Python 3.11+, Typer, Pexpect, Pydantic v2,
 pytest, Ruff, mypy, and `uv`.
 
-## 2. CURRENT — Phase 4, Phase 4.1, and Phase 5 T1–T2
+## 2. CURRENT — Phase 4, Phase 4.1, and Phase 5 T1–T4
 
 ### 2.1 Implemented package ownership
 
@@ -50,6 +51,7 @@ module, database, or public JSON API in the current implementation.
 patchtrace run -- <command>
   -> validate that cwd is a Git worktree
   -> resolve the canonical Git worktree root and create an external run folder
+  -> write an initial partial manifest and checkpoint lifecycle facts
   -> preserve pre-run HEAD, status, staged/unstaged patch and untracked evidence
   -> run the command through Pexpect and preserve the PTY transcript
   -> preserve post-run Git boundary and straightforward commit-range patches
@@ -58,7 +60,7 @@ patchtrace run -- <command>
   -> infer bounded claims and command/test signals from text
   -> build one validated AnalysisResult
   -> render SUMMARY, AGENT_FEEDBACK, and VERIFICATION_BRIEF
-  -> write run.json
+  -> check required artifacts and atomically replace run.json as complete
 ```
 
 `analyze` and `watch` are explicit not-implemented placeholders.
@@ -80,10 +82,12 @@ AGENT_FEEDBACK.md
 VERIFICATION_BRIEF.md
 ```
 
-The manifest records the wrapped command, timestamps, exit status, a combined
-process outcome, artifact paths, Git evidence paths, and `repository_root`.
-New runs always record the canonical absolute Git worktree root; older manifests
-without this field load with `None` (unknown repository association).
+The version-2 manifest records the wrapped command, timestamps, observed exit
+status, separate process/analysis/package outcomes, failure stage/messages,
+required artifact paths, Git evidence paths, and `repository_root`.
+New runs record the canonical absolute Git worktree root; the model allows
+`None` for fixture material without repository association. Legacy combined
+outcomes are no longer accepted; see the compatibility decision in section 2.12.
 `AnalysisResult` is validated in memory and shared by all report builders; it is
 not persisted as a separate artifact.
 
@@ -100,11 +104,10 @@ not persisted as a separate artifact.
   tail fallback.
 - Command and test evidence is text inference without structured lifecycle.
 - No task artifact is captured or delivered by PatchTrace.
-- Wrapped-command outcome stands in for multiple lifecycle concerns.
 
 The final Phase 4 dogfood demonstrated the Git false positive: identical
 before/after status material was reported as files changed by the run. Phase 5
-starts with that confirmed defect; Phase 4.1 is now closed.
+T1–T3 address that confirmed defect; Phase 4.1 is closed.
 
 ### 2.5 Run storage decision — Phase 4.1 T1
 
@@ -238,11 +241,13 @@ validation preserves completed boundaries plus `failed_stage`, `error`, and
 `recovery`, prints the partial package path and exits 1. The transcript remains
 when the command ran. No complete `run.json` or reports are claimed on that path.
 An unwritable storage directory can prevent persistence; stderr reports that
-secondary failure. General package/process outcome separation remains T4.
+secondary failure. T4 also preserves independent lifecycle facts and records
+package-write failures, as described in section 2.12.
 
-New manifests link `session_envelope_path`; older manifests load it as null.
-T3 reports consume shared attribution. Older packages without an envelope cannot
-establish session attribution from their final-state artifacts.
+New manifests link `session_envelope_path`; this field remains optional for
+version-2 fixture material without an envelope. T4's legacy-manifest policy is
+recorded in section 2.12. T3 reports consume shared attribution; material without
+an envelope cannot establish session attribution from final-state artifacts.
 
 Sources checked with Git 2.54.0: [status](https://git-scm.com/docs/git-status),
 [diff](https://git-scm.com/docs/git-diff),
@@ -319,10 +324,10 @@ history and empty-commit observations never become file counts.
 
 Report builders require the shared analysis result. The summary's optional
 raw-artifact fallback and all report-model `changed_files` fields are removed;
-renderers neither open Git artifacts nor derive attribution. Legacy manifests
-or results retain the existing unavailable/unassessed attribution limitation,
-without inventing paths from the final snapshot. These are in-memory report
-models; stored run/envelope formats are unchanged.
+renderers neither open Git artifacts nor derive attribution. Results for
+material without an envelope retain the unavailable/unassessed attribution
+limitation, without inventing paths from the final snapshot. T3 changed only
+in-memory report models; T4 changes the stored run format as described below.
 
 The common view gives an action for each present class. Verification brief
 review targets use the same observations in their existing order: review
@@ -336,6 +341,81 @@ Empty final-snapshot notices are explicitly scoped to that snapshot. Legacy
 existing claim assessment, not report provenance. Claim support, verdict
 priority, and the semantic/PTY trust ceilings remain unchanged; report Git
 attribution does not promote a claim to session authorship or correctness.
+
+### 2.12 Lifecycle outcomes — Phase 5 T4
+
+`models/run.py` owns `RunManifest` schema version 2. It replaces the combined
+`outcome` with three independent facts. `AnalysisResult.analysis_outcome` owns
+the usable analysis status; CLI copies that result to the manifest and all
+report builders consume the same result. Evidence verdict and claim support
+remain separate and keep their existing semantics.
+
+| Field | Values and meaning |
+| --- | --- |
+| `process_outcome` | `not_started`; `completed` with observed exit 0; `failed` with observed exit 1–255; `unknown` with no reliable exit result |
+| `analysis_outcome` | `not_run`; `completed` with identified final output and readable changed-file/patch inputs; `degraded` when those inputs are missing or final output is ambiguous; `failed` when analysis raises |
+| `package_outcome` | `partial` before completion or when capture/analysis/material validation fails; `failed` for package writes or report generation errors; `complete` after all required artifacts and final manifest are written |
+
+`completed` analysis does not guarantee supported claims, determinate Git
+attribution, structured evidence, semantic correctness, or a favorable verdict.
+A limited but readable Git envelope keeps its existing provenance limitations.
+No verdict controls the package status or CLI exit code.
+
+The model rejects a process status inconsistent with its nullable observed exit
+code, and rejects a complete package without finished capture, usable analysis,
+`ended_at`, or with recorded failures. `ended_at` records command completion when
+observed; otherwise it records when PatchTrace stopped on a handled failure.
+It remains null in an unfinished checkpoint. Signals normalize to 128 + signal.
+Absent Pexpect exit/signal status stays unknown, never a guessed exit 1.
+
+Persistence is a sequence of ordinary checkpoints, not a workflow state machine.
+CLI writes `partial` before capture, `unknown` before attempting launch, observed
+process facts after recording, and the usable analysis result before reports.
+`artifact_paths` is the required inventory. Before declaring completion, CLI
+checks that each required artifact can be opened as a file and read. Storage
+revalidates the manifest, writes a sibling temporary file, and replaces
+`run.json`. Reports refer to `run.json` for package outcome, so a surviving report
+cannot falsely announce completion if a later report or manifest write fails.
+
+Current failure mapping (`failures` contains a stage and error message):
+
+| Failure stage | Process / analysis | Package / CLI |
+| --- | --- | --- |
+| Git validation or storage creation before a run folder | No manifest guaranteed; process not started | Exit 1 with diagnostic |
+| `capture_before` | Not started / not run | Partial, exit 1; preserve envelope failure |
+| `process_start` | Not started / not run | Partial, exit 1 |
+| `session_capture` | Unknown unless an exit was observed / not run | Partial, exit 1; close the child PTY |
+| `capture_after`, `capture_history`, `capture_final_snapshot` | Preserve observed process / not run | Partial, exit 1; preserve envelope failure |
+| `analysis` | Preserve observed process / failed | Partial, exit 1 |
+| `package_validation` (required file missing or unreadable) | Preserve process and usable analysis | Partial, exit 1 |
+| `transcript_write`, `git_artifact_write`, `report_write`, `manifest_write` | Preserve all facts observed before failure | Failed, exit 1; attempt to preserve failure manifest |
+
+A write failure may leave some files present; `failed` does not mean an empty
+directory. If the failure manifest also cannot be saved, CLI prints that secondary
+failure and the partial path. The last checkpoint survives an unsuccessful
+manifest replacement; an initial write failure may leave no manifest. Forced
+termination, machine loss, and subsequent external deletion are not crash-durability
+or tamper-detection guarantees. No retry, queue, resume API, task-parsing reason
+catalog, or task-delivery catalog is introduced.
+
+When package completion succeeds, CLI returns the wrapped command's status,
+including non-zero exits and degraded analysis. A PatchTrace failure takes
+precedence with exit 1 while any observed child status remains in the manifest.
+Missing command arguments return 2. `analyze` and `watch` still return 1 as
+not-implemented placeholders.
+
+**Phase 4 compatibility decision:** old unversioned manifests with `outcome`
+are rejected by the new strict model, not silently promoted to complete packages.
+They do not contain independent analysis/write facts. Existing packages stay
+untouched; post-hoc loading/migration is outside this task (`analyze` remains a
+placeholder). Phase 4 raw fixtures and their evidence assertions remain intact;
+test builders explicitly construct version-2 partial/not-run manifests. The
+Git envelope stays at schema version 1. No dependency or package version changes.
+
+Implementation references: [Pydantic model validators](https://docs.pydantic.dev/latest/concepts/validators/#model-validators),
+[Pexpect close and exit status](https://pexpect.readthedocs.io/en/stable/api/pexpect.html#pexpect.spawn.close),
+and [Path.replace](https://docs.python.org/3.11/library/pathlib.html#pathlib.Path.replace).
+Locked versions: Pydantic 2.13.4, Pexpect 4.9.0, Typer 0.26.8; Python 3.11+.
 
 ## 3. ACCEPTED TARGET — Remaining Phase 5 architecture
 
@@ -406,24 +486,9 @@ permitted.
 
 ### 3.4 Lifecycle outcomes
 
-The run model separates:
-
-- process outcome;
-- analysis outcome;
-- package outcome.
-
-The three facts must survive independent failure paths. For example, a wrapped
-command may succeed while current transcript analysis is degraded, or a report
-write may fail after analysis completes.
-
-Verdict remains a recommendation about evidence. It is not any lifecycle
-outcome and does not define the CLI exit code by itself.
-
-Task 4 implements only the smallest model and reason mapping needed by current,
-tested capture, analysis, and package-write failures. Tasks 5 and 6 add their
-own parsing and delivery reasons only after those failure paths exist. Phase 5
-does not introduce a workflow state machine or design a speculative error
-catalog.
+Implemented in T4; section 2.12 owns the current contract. Task capture and
+interactive delivery extend those facts only when their concrete failure paths
+exist. They must preserve process, analysis, package, and verdict independence.
 
 ### 3.5 Task Contract capture
 

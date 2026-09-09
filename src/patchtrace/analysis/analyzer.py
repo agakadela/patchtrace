@@ -176,6 +176,13 @@ def _build_analysis_result(
     )
     return AnalysisResult(
         run_id=manifest.run_id,
+        analysis_outcome=(
+            "completed"
+            if claim_material_status == "identified"
+            and path_evidence.changed_files_available
+            and path_evidence.patch_available
+            else "degraded"
+        ),
         git_attribution=git_attribution,
         claim_material_status=claim_material_status,
         claim_assessments=claim_assessments,

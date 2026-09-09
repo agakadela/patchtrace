@@ -6,7 +6,7 @@
 
 **Current implementation:** Phase 4.1 complete
 
-**Active phase:** Phase 5 — Trusted Capture and Session Provenance (T1–T3 implemented; T4 lifecycle outcomes next)
+**Active phase:** Phase 5 — Trusted Capture and Session Provenance (T1–T4 implemented; T5 Task Contract capture next)
 
 **Following phase:** Phase 6 — Task Coverage and Final Verification
 
@@ -215,7 +215,8 @@ The CLI currently:
 - builds one deterministic `AnalysisResult`;
 - renders a summary, agent feedback, and verification brief with shared Git
   attribution, source references, limitations, and provenance-aware review targets;
-- stores one ten-artifact local package.
+- records independent process, analysis, and package outcomes, with failure details;
+- marks a ten-artifact local package complete only after all required writes.
 
 Known current gaps:
 
@@ -224,7 +225,6 @@ Known current gaps:
 - attribution describes session boundaries, not agent or byte-level authorship;
 - command results and final messages are not structured in PTY mode;
 - no Task Contract is captured;
-- lifecycle outcomes are conflated;
 - verification freshness and requirement coverage are absent.
 
 These are product gaps, not permission to overstate current evidence.

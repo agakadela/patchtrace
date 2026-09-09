@@ -26,7 +26,8 @@ def build_verification_brief_report(
         started_at=manifest.started_at,
         ended_at=manifest.ended_at,
         wrapped_command_exit_status=summary.wrapped_command_exit_status,
-        outcome=summary.outcome,
+        process_outcome=summary.process_outcome,
+        analysis_outcome=summary.analysis_outcome,
         artifact_paths=summary.artifact_paths,
         transcript_status=summary.transcript_status,
         git_attribution=summary.git_attribution,
@@ -50,7 +51,9 @@ def render_verification_brief_markdown(report: VerificationBriefReport) -> str:
         f"- Started at: `{_format_datetime(report.started_at)}`",
         f"- Ended at: `{_format_datetime(report.ended_at)}`",
         f"- Exit status: `{report.wrapped_command_exit_status}`",
-        f"- Outcome: `{report.outcome}`",
+        f"- Process outcome: `{report.process_outcome}`",
+        f"- Analysis outcome: `{report.analysis_outcome}`",
+        "- Package outcome: see `run.json` (authoritative after all writes).",
         "",
         "## Local Evidence",
         f"- Transcript: `{report.transcript_status}`",
@@ -77,7 +80,7 @@ def render_verification_brief_markdown(report: VerificationBriefReport) -> str:
         "## Claim Assessments",
         *_render_claim_assessments(report),
         "",
-        "## Artifacts Written",
+        "## Required Artifacts",
         *[f"- `{artifact_path}`" for artifact_path in report.artifact_paths],
         "",
         "## Evidence Gaps",
@@ -147,5 +150,5 @@ def _wrapped_command_status(report: VerificationBriefReport) -> str:
     return f"non-zero exit {report.wrapped_command_exit_status}"
 
 
-def _format_datetime(value: datetime) -> str:
-    return value.isoformat()
+def _format_datetime(value: datetime | None) -> str:
+    return value.isoformat() if value is not None else "unknown"

@@ -99,5 +99,7 @@ def _manifest() -> RunManifest:
         ended_at=datetime(2026, 9, 8, tzinfo=UTC),
         artifact_paths=["agent-session.txt"],
         wrapped_command_exit_status=0,
-        outcome="completed",
+        process_outcome="completed",
+        analysis_outcome="not_run",
+        package_outcome="partial",
     )

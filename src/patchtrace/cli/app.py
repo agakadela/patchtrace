@@ -7,7 +7,7 @@ from typing import NoReturn
 import typer
 
 from patchtrace.analysis.analyzer import analyze_run
-from patchtrace.models.run import GitEvidenceManifest, RunManifest, RunOutcome
+from patchtrace.models.run import GitEvidenceManifest, RunFailure, RunManifest
 from patchtrace.reports.feedback import (
     build_agent_feedback_report,
     render_agent_feedback_markdown,
@@ -17,7 +17,7 @@ from patchtrace.reports.verification_brief import (
     build_verification_brief_report,
     render_verification_brief_markdown,
 )
-from patchtrace.session.recorder import record_command
+from patchtrace.session.recorder import RecordingError, record_command
 from patchtrace.storage.runs import (
     RunPaths,
     create_run_paths,
@@ -78,115 +78,106 @@ def run(ctx: typer.Context) -> None:
     except (OSError, ValueError, RuntimeError) as error:
         typer.echo(f"Unable to create PatchTrace run storage: {error}", err=True)
         raise typer.Exit(1) from error
-    started_at = datetime.now(UTC)
+    manifest = _new_manifest(run_paths, command, repository_root)
     envelope = GitSessionEnvelope(
         repository_root=str(repository_root), patch_prefixes="a/b"
     )
+    stage = "manifest_write"
     try:
+        write_run_manifest(run_paths, manifest)
+        stage = "capture_before"
         envelope.before = capture_boundary(repository_root)
+        before_status = capture_git_status(repository_root)
+        stage = "git_artifact_write"
         write_git_session(run_paths, envelope)
-        run_paths.git_before_path.write_text(
-            capture_git_status(repository_root), encoding="utf-8"
+        run_paths.git_before_path.write_text(before_status, encoding="utf-8")
+        # A checkpoint before launch cannot promise the command never started
+        # if PatchTrace is interrupted before the next checkpoint.
+        manifest.process_outcome = "unknown"
+        stage = "manifest_write"
+        try:
+            write_run_manifest(run_paths, manifest)
+        except (Exception, KeyboardInterrupt):
+            manifest.process_outcome = "not_started"
+            raise
+        stage = "session_capture"
+        recorded_session = record_command(
+            command=command,
+            transcript_path=run_paths.transcript_path,
+            cwd=workspace,
         )
-    except (GitCommandError, OSError) as error:
-        _exit_capture_failure(run_paths, envelope, "before", error)
-    recorded_session = record_command(
-        command=command,
-        transcript_path=run_paths.transcript_path,
-        cwd=workspace,
-    )
-    ended_at = datetime.now(UTC)
-    stage = "after"
-    try:
+        manifest.wrapped_command_exit_status = recorded_session.exit_status
+        manifest.process_outcome = (
+            "completed" if recorded_session.exit_status == 0 else "failed"
+        )
+        manifest.ended_at = datetime.now(UTC)
+        stage = "manifest_write"
+        write_run_manifest(run_paths, manifest)
+        stage = "capture_after"
         envelope.after = capture_boundary(repository_root)
+        stage = "git_artifact_write"
         write_git_session(run_paths, envelope)
-        stage = "history"
-        assert envelope.before is not None
+        stage = "capture_history"
         envelope.history = capture_history(
             repository_root, envelope.before, envelope.after
         )
-        stage = "final_snapshot"
+        stage = "capture_final_snapshot"
         git_evidence = capture_git_evidence(repository_root)
         envelope.capture_status = "complete"
+        stage = "git_artifact_write"
         write_git_session(run_paths, envelope)
-    except (GitCommandError, OSError) as error:
-        _exit_capture_failure(run_paths, envelope, stage, error)
+        run_paths.git_after_path.write_text(git_evidence.after_status, encoding="utf-8")
+        changed_files = "\n".join(git_evidence.changed_files)
+        run_paths.changed_files_path.write_text(
+            changed_files + ("\n" if changed_files else ""), encoding="utf-8"
+        )
+        run_paths.patch_path.write_text(git_evidence.patch, encoding="utf-8")
+        assert manifest.git_evidence is not None
+        manifest.git_evidence.patch_material_present = (
+            git_evidence.patch_material_present
+        )
 
-    run_paths.git_after_path.write_text(git_evidence.after_status, encoding="utf-8")
-    changed_files = "\n".join(git_evidence.changed_files)
-    run_paths.changed_files_path.write_text(
-        changed_files + ("\n" if changed_files else ""),
-        encoding="utf-8",
-    )
-    run_paths.patch_path.write_text(git_evidence.patch, encoding="utf-8")
-
-    outcome: RunOutcome = (
-        "completed" if recorded_session.exit_status == 0 else "wrapped_command_failed"
-    )
-    git_before_path = run_paths.relative_artifact_path(run_paths.git_before_path)
-    git_after_path = run_paths.relative_artifact_path(run_paths.git_after_path)
-    changed_files_path = run_paths.relative_artifact_path(run_paths.changed_files_path)
-    patch_path = run_paths.relative_artifact_path(run_paths.patch_path)
-    summary_path = run_paths.relative_artifact_path(run_paths.summary_path)
-    feedback_path = run_paths.relative_artifact_path(run_paths.feedback_path)
-    verification_brief_path = run_paths.relative_artifact_path(
-        run_paths.verification_brief_path
-    )
-    manifest = RunManifest(
-        run_id=run_paths.run_id,
-        repository_root=str(repository_root),
-        command=command,
-        trigger_source="manual_cli",
-        started_at=started_at,
-        ended_at=ended_at,
-        artifact_paths=[
-            run_paths.relative_artifact_path(run_paths.manifest_path),
-            run_paths.relative_artifact_path(run_paths.transcript_path),
-            git_before_path,
-            git_after_path,
-            changed_files_path,
-            patch_path,
-            run_paths.relative_artifact_path(run_paths.git_session_path),
-            summary_path,
-            feedback_path,
-            verification_brief_path,
-        ],
-        wrapped_command_exit_status=recorded_session.exit_status,
-        outcome=outcome,
-        git_evidence=GitEvidenceManifest(
-            git_before_path=git_before_path,
-            git_after_path=git_after_path,
-            changed_files_path=changed_files_path,
-            patch_path=patch_path,
-            patch_material_present=git_evidence.patch_material_present,
-            session_envelope_path=run_paths.relative_artifact_path(
-                run_paths.git_session_path
-            ),
-        ),
-    )
-    analysis_result = analyze_run(manifest, run_dir=run_paths.run_dir)
-    summary = build_summary_report(manifest, analysis_result=analysis_result)
-    run_paths.summary_path.write_text(
-        render_summary_markdown(summary),
-        encoding="utf-8",
-    )
-    feedback = build_agent_feedback_report(
-        manifest,
-        analysis_result=analysis_result,
-    )
-    run_paths.feedback_path.write_text(
-        render_agent_feedback_markdown(feedback),
-        encoding="utf-8",
-    )
-    verification_brief = build_verification_brief_report(
-        manifest,
-        analysis_result=analysis_result,
-    )
-    run_paths.verification_brief_path.write_text(
-        render_verification_brief_markdown(verification_brief),
-        encoding="utf-8",
-    )
-    write_run_manifest(run_paths, manifest)
+        stage = "analysis"
+        analysis_result = analyze_run(manifest, run_dir=run_paths.run_dir)
+        manifest.analysis_outcome = analysis_result.analysis_outcome
+        stage = "manifest_write"
+        write_run_manifest(run_paths, manifest)
+        stage = "report_write"
+        summary = build_summary_report(manifest, analysis_result=analysis_result)
+        run_paths.summary_path.write_text(
+            render_summary_markdown(summary), encoding="utf-8"
+        )
+        feedback = build_agent_feedback_report(
+            manifest, analysis_result=analysis_result
+        )
+        run_paths.feedback_path.write_text(
+            render_agent_feedback_markdown(feedback), encoding="utf-8"
+        )
+        verification_brief = build_verification_brief_report(
+            manifest, analysis_result=analysis_result
+        )
+        run_paths.verification_brief_path.write_text(
+            render_verification_brief_markdown(verification_brief), encoding="utf-8"
+        )
+        stage = "package_validation"
+        for artifact in manifest.artifact_paths:
+            with (run_paths.run_dir / artifact).open("rb") as material:
+                material.read(1)
+        manifest.package_outcome = "complete"
+        stage = "manifest_write"
+        write_run_manifest(run_paths, manifest)
+    except RecordingError as error:
+        manifest.process_outcome = error.process_outcome
+        manifest.wrapped_command_exit_status = error.exit_status
+        _exit_run_failure(run_paths, manifest, error.stage, error)
+    except (Exception, KeyboardInterrupt) as error:
+        if stage.startswith("capture_") or isinstance(error, GitCommandError):
+            _preserve_capture_failure(
+                run_paths, envelope, stage.removeprefix("capture_"), error
+            )
+        if stage == "analysis":
+            manifest.analysis_outcome = "failed"
+        _exit_run_failure(run_paths, manifest, stage, error)
 
     typer.echo(f"PatchTrace review package written to {run_paths.run_dir}")
     typer.echo("Review the package before deciding next steps.")
@@ -199,12 +190,73 @@ def run(ctx: typer.Context) -> None:
         raise typer.Exit(recorded_session.exit_status)
 
 
-def _exit_capture_failure(
+def _new_manifest(paths: RunPaths, command: list[str], root: Path) -> RunManifest:
+    artifacts = [
+        paths.manifest_path,
+        paths.transcript_path,
+        paths.git_before_path,
+        paths.git_after_path,
+        paths.changed_files_path,
+        paths.patch_path,
+        paths.git_session_path,
+        paths.summary_path,
+        paths.feedback_path,
+        paths.verification_brief_path,
+    ]
+    return RunManifest(
+        run_id=paths.run_id,
+        repository_root=str(root),
+        command=command,
+        trigger_source="manual_cli",
+        started_at=datetime.now(UTC),
+        ended_at=None,
+        artifact_paths=[paths.relative_artifact_path(path) for path in artifacts],
+        wrapped_command_exit_status=None,
+        process_outcome="not_started",
+        analysis_outcome="not_run",
+        package_outcome="partial",
+        git_evidence=GitEvidenceManifest(
+            git_before_path=paths.relative_artifact_path(paths.git_before_path),
+            git_after_path=paths.relative_artifact_path(paths.git_after_path),
+            changed_files_path=paths.relative_artifact_path(paths.changed_files_path),
+            patch_path=paths.relative_artifact_path(paths.patch_path),
+            patch_material_present=False,
+            session_envelope_path=paths.relative_artifact_path(paths.git_session_path),
+        ),
+    )
+
+
+def _exit_run_failure(
+    paths: RunPaths,
+    manifest: RunManifest,
+    stage: str,
+    error: BaseException,
+) -> NoReturn:
+    manifest.package_outcome = "failed" if stage.endswith("_write") else "partial"
+    manifest.ended_at = manifest.ended_at or datetime.now(UTC)
+    manifest.failures.append(
+        RunFailure(stage=stage, message=str(error) or type(error).__name__)
+    )
+    try:
+        write_run_manifest(paths, manifest)
+    except (OSError, ValueError) as write_error:
+        typer.echo(f"Unable to preserve run manifest: {write_error}", err=True)
+    typer.echo(
+        f"Unable to finish PatchTrace run ({stage}): {error}\n"
+        f"Partial run material: {paths.run_dir}\n"
+        "Inspect run.json and preserved artifacts; check the reported error and "
+        "run-storage permissions, then rerun. This package is incomplete.",
+        err=True,
+    )
+    raise typer.Exit(1) from error
+
+
+def _preserve_capture_failure(
     paths: RunPaths,
     envelope: GitSessionEnvelope,
     stage: str,
-    error: GitCommandError | OSError,
-) -> NoReturn:
+    error: BaseException,
+) -> None:
     envelope.capture_status = "failed"
     envelope.failed_stage = stage
     envelope.error = str(error)
@@ -217,12 +269,6 @@ def _exit_capture_failure(
         write_git_session(paths, envelope)
     except OSError as write_error:
         typer.echo(f"Unable to preserve capture failure: {write_error}", err=True)
-    typer.echo(
-        f"Unable to capture Git evidence ({stage}): {error}\n"
-        f"Partial run material: {paths.run_dir}\n{envelope.recovery}",
-        err=True,
-    )
-    raise typer.Exit(1) from error
 
 
 @app.command()

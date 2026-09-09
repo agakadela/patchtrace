@@ -44,15 +44,16 @@ scope remain outside this phase.
 
 ## Phase 5 — Trusted Capture and Session Provenance
 
-**Status:** active; T1 capture implemented. Next task: T2 — Apply honest Git attribution.
+**Status:** active; T1–T4 implemented. Next task: T5 — Capture Task Contract V1.
 
 **Active tasks:** [PLAN.md](PLAN.md).
 
 ### Problem
 
-The current package can mistake pre-existing work for run changes, conflates
-lifecycle outcomes, has no preserved task, and obtains final-output and command
-evidence from a marker-based PTY transcript.
+The phase began with packages mistaking pre-existing work for run changes and
+conflating lifecycle outcomes. T1–T4 address those gaps. The remaining work has
+no preserved task yet and obtains final-output and command evidence from a
+marker-based PTY transcript.
 
 ### User value
 

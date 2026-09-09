@@ -81,6 +81,7 @@ def test_reports_preserve_shared_provenance_without_snapshot_fallback(
     )
     result = AnalysisResult(
         run_id="provenance",
+        analysis_outcome="completed",
         claim_material_status="identified",
         claim_assessments=[],
         verdict="Review required.",
@@ -101,7 +102,9 @@ def test_reports_preserve_shared_provenance_without_snapshot_fallback(
         started_at=now,
         ended_at=now,
         wrapped_command_exit_status=0,
-        outcome="completed",
+        process_outcome="completed",
+        analysis_outcome="not_run",
+        package_outcome="partial",
         artifact_paths=["git-session.json"],
     )
     summary = build_summary_report(manifest, analysis_result=result)

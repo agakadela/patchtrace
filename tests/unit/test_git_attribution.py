@@ -44,7 +44,9 @@ def analyze(tmp_path: Path, envelope: GitSessionEnvelope | None) -> AnalysisResu
         started_at=now,
         ended_at=now,
         wrapped_command_exit_status=0,
-        outcome="completed",
+        process_outcome="completed",
+        analysis_outcome="not_run",
+        package_outcome="partial",
         artifact_paths=[],
         git_evidence=GitEvidenceManifest(
             git_before_path="git-before.txt",
