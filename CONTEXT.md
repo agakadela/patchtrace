@@ -145,6 +145,16 @@ Material that available evidence cannot reliably divide between pre-existing
 and in-session work. Dirty same-path changes are indeterminate in V1 unless a
 simple, reliable separator is found.
 
+### Attributed Git material
+
+A classification applies to an observation: initial material, final material,
+a commit's path material, or an unresolved history range. The same path may
+have pre-existing initial material and indeterminate later material. These
+entries are not unique-file counts. A commit with no captured patch has no
+path and establishes only its presence in the session range.
+The validated shape belongs to
+[ARCHITECTURE.md](docs/ARCHITECTURE.md#210-git-attribution--phase-5-t2).
+
 ## Capture terms
 
 ### Interactive PTY mode

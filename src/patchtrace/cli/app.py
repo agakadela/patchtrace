@@ -79,7 +79,9 @@ def run(ctx: typer.Context) -> None:
         typer.echo(f"Unable to create PatchTrace run storage: {error}", err=True)
         raise typer.Exit(1) from error
     started_at = datetime.now(UTC)
-    envelope = GitSessionEnvelope(repository_root=str(repository_root))
+    envelope = GitSessionEnvelope(
+        repository_root=str(repository_root), patch_prefixes="a/b"
+    )
     try:
         envelope.before = capture_boundary(repository_root)
         write_git_session(run_paths, envelope)

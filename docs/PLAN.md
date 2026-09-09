@@ -1,11 +1,11 @@
 # Phase 5 — Trusted Capture and Session Provenance
 
-**Status:** active; T1 implemented and locally verified; T2 not started
+**Status:** active; T1–T2 implemented and locally verified; T3 not started
 
 **Baseline:** Phase 4.1 — Trust Hardening closed on 2026-09-08.
 Closure evidence: [VERIFY_LOG.md](VERIFY_LOG.md#2026-09-08---phase-41-close-trust-hardening).
 
-**Next task:** T2 — Apply honest Git attribution.
+**Next task:** T3 — Propagate provenance across reports.
 
 **Roadmap:** [ROADMAP.md](ROADMAP.md)
 
@@ -66,6 +66,10 @@ Attribution labels, report rendering, dirty same-path byte separation, partial
 commit reconstruction, sparse checkout, submodules, and nested repositories.
 
 ## T2 — Apply honest Git attribution
+
+**Status:** implemented and locally verified. Result contract and limits:
+[ARCHITECTURE.md](ARCHITECTURE.md#210-git-attribution--phase-5-t2).
+Evidence: [VERIFY_LOG.md](VERIFY_LOG.md).
 
 ### Outcome
 

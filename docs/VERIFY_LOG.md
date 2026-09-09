@@ -8,6 +8,36 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-09-08 - Phase 5 T2: Honest Git attribution
+
+- Authority: Aga requested Phase 5 T2. Candidate: this task commit on
+  `agent/phase5-t2-git-attribution`; the checkout was clean at task start.
+- Result: the existing `AnalysisResult` now includes T1-derived Git attribution,
+  source references, and limitations. The unchanged five-dirty-file regression
+  yields only pre-existing material. Same-path dirty edits and inseparable
+  commits remain indeterminate; no label establishes authorship.
+  Contract: [ARCHITECTURE.md](ARCHITECTURE.md#210-git-attribution--phase-5-t2).
+- Checks: Ruff lint/format, mypy (45 files), full pytest (149 passed), and
+  wheel/sdist build passed. Temporary `UV_CACHE_DIR` used; the existing uv
+  0.12.10/backend-range warning remains without dependency changes.
+- Runtime: 15 real CLI integration cases cover clean, unchanged dirty,
+  dirty same-path, new untracked, committed, partially committed, reverted and
+  rewritten history, unusual UTF-8/binary paths, prefix settings, type changes,
+  and empty commits. Source JSON Pointers resolve in captured envelopes.
+- Built-wheel proof: one real CLI run produced all three classes, including
+  a committed clean path, unchanged initial work, dirty same-path work and new
+  binary bytes. Re-analysis preserved Git index bytes and refs. Local artifacts:
+  `/private/tmp/patchtrace-t2-proof-0ypymzg8/analysis.json` and its sibling `state/`.
+- Independent review found prefix, type-change and empty-commit gaps; each was
+  reproduced with a failing test and corrected. Equal custom prefixes required
+  capture to force/record standard prefixes; old T1 captures without the
+  additive field degrade explicitly, retaining known unchanged initial material.
+  Final independent review found no remaining actionable issue. Aga declined
+  an additional cross-model review.
+- Limits: attribution is exposed through the analysis API. Cross-report
+  propagation, legacy claim/snapshot migration and report dogfood remain T3;
+  this milestone does not claim those are fixed. No merge or deployment.
+
 ### 2026-09-08 - Phase 5 T1: Git session envelope
 
 - Authority: Aga requested Phase 5 T1 from the accepted plan at `1c556d1`.

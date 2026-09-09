@@ -10,7 +10,7 @@ Related decisions:
 
 This document records current system truth and the accepted next architecture.
 Product scope is owned by [SPEC.md](SPEC.md). [PLAN.md](PLAN.md) owns active
-Phase 5 tasks; T1 Git capture is implemented, while T2 attribution is next. Phase 4.1 closure evidence lives
+Phase 5 tasks; T1 Git capture and T2 attribution are implemented; report propagation is T3. Phase 4.1 closure evidence lives
 in [VERIFY_LOG.md](VERIFY_LOG.md).
 
 ## 1. System constraints
@@ -26,7 +26,7 @@ PatchTrace is a local Python CLI. It has:
 The established stack remains Python 3.11+, Typer, Pexpect, Pydantic v2,
 pytest, Ruff, mypy, and `uv`.
 
-## 2. CURRENT — Phase 4, Phase 4.1, and Phase 5 T1
+## 2. CURRENT — Phase 4, Phase 4.1, and Phase 5 T1–T2
 
 ### 2.1 Implemented package ownership
 
@@ -241,7 +241,7 @@ secondary failure. General package/process outcome separation remains T4.
 
 New manifests link `session_envelope_path`; older manifests load it as null.
 Legacy reports continue consuming their existing final-state artifacts until
-T2–T3. They must not be treated as having session attribution yet.
+T3. They must not be treated as having session attribution yet.
 
 Sources checked with Git 2.54.0: [status](https://git-scm.com/docs/git-status),
 [diff](https://git-scm.com/docs/git-diff),
@@ -249,6 +249,65 @@ Sources checked with Git 2.54.0: [status](https://git-scm.com/docs/git-status),
 [global options](https://git-scm.com/docs/git),
 [content filters](https://git-scm.com/docs/gitattributes), and
 [fsmonitor configuration](https://git-scm.com/docs/git-config#Documentation/git-config.txt-corefsmonitor).
+
+### 2.10 Git attribution — Phase 5 T2
+
+`analysis/git_attribution.py` derives `AnalysisResult.git_attribution` solely from
+the linked T1 envelope, validated through the existing capture dataclasses.
+It never consults live Git, the transcript, or legacy final-status artifacts
+for attribution. The existing `analyze_run()` entry point still returns one
+validated result, including when final-output evidence is missing.
+
+The additive result contains `items` and global `limitations`. Each item has
+`material` (`initial`, `final`, `commit`, or `history`), a repository-relative
+`path` (null for a range or a commit without captured path changes), optional
+`commit_head`, one attribution label, item limitations, and nonempty evidence
+references. Locators are JSON Pointers into `git-session.json`.
+
+- Initial path material is `pre-existing`, including content-omission limits.
+- Final paths absent from the initial dirty inventory are `session-attributed`
+  when capture/history are supported. New untracked paths retain any content
+  omission; path appearance does not establish the omitted bytes.
+- An initial dirty path remains `pre-existing` only when its status and both
+  per-path staged/unstaged patches match, or its complete untracked evidence
+  matches, and no captured commit touches it. Status equality alone is insufficient.
+- Changed/staged/committed initial dirty paths are `indeterminate`; no hunks or
+  partial commits are reconstructed. Initial evidence remains separately visible.
+- Each linear commit's path material is `session-attributed` unless the path
+  was initially dirty. Reverted commits remain visible. Empty or excluded-only
+  commits get a pathless item that explicitly establishes no file changes.
+- Unsupported or inconsistent history and incomplete capture yield an
+  `indeterminate` history item, indeterminate final material, and limitations.
+  Missing, malformed, or unknown-version envelopes yield no invented path items
+  and an actionable limitation. Legacy results default to explicitly unassessed
+  attribution; legacy manifests never gain attribution from final snapshots.
+
+T2 tightens one capture guarantee without changing the version-1 envelope's
+existing fields: new CLI captures use `git diff --default-prefix` and record
+`patch_prefixes: "a/b"`. This overrides mnemonic, omitted and custom prefixes
+for that invocation, without changing Git configuration. Missing metadata in
+older T1 captures loads as null: those patches cannot establish session paths.
+Exact unchanged boundary material can still be classified pre-existing without
+interpreting a prefix; other later material is indeterminate with a recapture
+limitation. Header equality alone cannot distinguish an omitted prefix from
+identical custom prefixes, which could otherwise invent a new path.
+
+The patch reader preserves ordered blocks for tracked type changes, quoted
+UTF-8 names and binary patches. Unknown patch formats degrade attribution with
+a limitation. T1's capture scope
+and sequential-boundary limitations still apply. No class proves byte-level
+or agent authorship, correctness, or acceptance.
+
+T2 exposes attribution through the analysis API; it does not persist a second
+analysis artifact. Legacy `changed_files`, claim assessment, report rendering
+and review-first migration belong to T3. Until then their snapshot-based views
+must not be read as session attribution. Consumers must distinguish material
+entries from unique-path counts.
+
+Sources checked with Git 2.54.0 and Pydantic 2.13.4:
+[patch format](https://git-scm.com/docs/diff-format#_generating_patch_text_with_p),
+[default-prefix override](https://git-scm.com/docs/git-diff#Documentation/git-diff.txt---default-prefix),
+[dataclass validation via TypeAdapter](https://pydantic.dev/docs/validation/latest/concepts/type_adapter/).
 
 ## 3. ACCEPTED TARGET — Remaining Phase 5 architecture
 
