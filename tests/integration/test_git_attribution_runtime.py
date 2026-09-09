@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,15 @@ from patchtrace.analysis.analyzer import analyze_run
 from patchtrace.cli.app import app
 from patchtrace.models.report import AnalysisResult
 from patchtrace.models.run import RunManifest
+from patchtrace.reports.feedback import (
+    build_agent_feedback_report,
+    render_agent_feedback_markdown,
+)
+from patchtrace.reports.summary import build_summary_report, render_summary_markdown
+from patchtrace.reports.verification_brief import (
+    build_verification_brief_report,
+    render_verification_brief_markdown,
+)
 
 
 def git(repo: Path, *args: str) -> None:
@@ -116,6 +126,58 @@ def test_cli_git_attribution_matrix(
                 value = (
                     value[int(segment)] if isinstance(value, list) else value[segment]
                 )
+
+    reports = [
+        (manifest_path.parent / name).read_text()
+        for name in ("SUMMARY.md", "AGENT_FEEDBACK.md", "VERIFICATION_BRIEF.md")
+    ]
+    # Completed analysis is sufficient even when the source artifacts disappear.
+    for name in (
+        "agent-session.txt",
+        "git-session.json",
+        "changed-files.txt",
+        "git-before.txt",
+        "git-after.txt",
+        "patch.diff",
+    ):
+        (manifest_path.parent / name).unlink()
+    assert reports == [
+        render_summary_markdown(build_summary_report(manifest, analysis_result=result)),
+        render_agent_feedback_markdown(
+            build_agent_feedback_report(manifest, analysis_result=result)
+        ),
+        render_verification_brief_markdown(
+            build_verification_brief_report(manifest, analysis_result=result)
+        ),
+    ]
+    sections = [
+        report.split("Git attribution:\n", 1)[1].split("\n\n", 1)[0]
+        for report in reports
+    ]
+    assert sections[0] == sections[1] == sections[2]
+    counts = Counter(item.attribution for item in result.git_attribution.items)
+    for label in ("session-attributed", "pre-existing", "indeterminate"):
+        assert f"{label}: {counts[label]} observation(s)." in sections[0]
+    for item in result.git_attribution.items:
+        assert f"[{item.attribution}] {item.material}:" in sections[0]
+        if item.path is not None:
+            assert f"`{item.path}`" in sections[0]
+        if item.commit_head is not None:
+            assert f"commit `{item.commit_head}`" in sections[0]
+        for ref in item.evidence_references:
+            assert f"`{ref.artifact_path}` (`{ref.locator}`)" in sections[0]
+        for limitation in item.limitations:
+            assert limitation in sections[0]
+    for limitation in result.git_attribution.limitations:
+        assert limitation in sections[0]
+    for report in reports:
+        assert "Changed Files" not in report
+        assert "Changed files:" not in report
+        if scenario in {"committed", "commit-revert", "rewrite"}:
+            assert "No captured file changes require review." not in report
+    if scenario == "unchanged-dirty":
+        assert "[session-attributed]" not in sections[0]
+        assert "Keep pre-existing material separate from session changes" in reports[2]
 
 
 @pytest.mark.parametrize("quote_path", ["true", "false"])

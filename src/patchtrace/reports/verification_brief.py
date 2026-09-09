@@ -6,10 +6,10 @@ from datetime import datetime
 from patchtrace.models.report import (
     AnalysisResult,
     ClaimAssessment,
-    SummaryReport,
     VerificationBriefReport,
 )
 from patchtrace.models.run import RunManifest
+from patchtrace.reports.provenance import git_review_targets, render_git_attribution
 from patchtrace.reports.summary import build_summary_report
 
 
@@ -29,11 +29,11 @@ def build_verification_brief_report(
         outcome=summary.outcome,
         artifact_paths=summary.artifact_paths,
         transcript_status=summary.transcript_status,
-        changed_files=summary.changed_files,
+        git_attribution=summary.git_attribution,
         diff_material_status=summary.diff_material_status,
         command_test_signals=summary.command_test_signals,
         evidence_gaps=summary.evidence_gaps,
-        review_first_targets=_review_first_targets(summary),
+        review_first_targets=git_review_targets(analysis_result.git_attribution),
         claim_material_status=analysis_result.claim_material_status,
         claim_assessments=analysis_result.claim_assessments,
     )
@@ -55,12 +55,9 @@ def render_verification_brief_markdown(report: VerificationBriefReport) -> str:
         "## Local Evidence",
         f"- Transcript: `{report.transcript_status}`",
         f"- Diff material: `{report.diff_material_status}`",
-        "- Changed files:",
-        *(
-            [f"  - `{changed_file}`" for changed_file in report.changed_files]
-            if report.changed_files
-            else ["  - None captured."]
-        ),
+        "",
+        *render_git_attribution(report.git_attribution),
+        "",
         "- Command/test signals:",
         *(
             [f"  - `{signal}`" for signal in report.command_test_signals]
@@ -138,17 +135,6 @@ def _render_claim_assessment(
     if assessment.next_action is not None:
         lines.append(f"- Next action: {assessment.next_action}")
     return lines
-
-
-def _review_first_targets(report: SummaryReport) -> list[str]:
-    if not report.changed_files:
-        return ["No changed files were captured; inspect git evidence artifacts first."]
-
-    targets = [f"Review `{report.changed_files[0]}` first."]
-    targets.extend(
-        f"Then review `{changed_file}`." for changed_file in report.changed_files[1:]
-    )
-    return targets
 
 
 def _signals_status(report: VerificationBriefReport) -> str:

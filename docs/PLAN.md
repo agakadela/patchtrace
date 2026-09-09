@@ -1,11 +1,11 @@
 # Phase 5 — Trusted Capture and Session Provenance
 
-**Status:** active; T1–T2 implemented and locally verified; T3 not started
+**Status:** active; T1–T3 implemented and locally verified; T4 not started
 
 **Baseline:** Phase 4.1 — Trust Hardening closed on 2026-09-08.
 Closure evidence: [VERIFY_LOG.md](VERIFY_LOG.md#2026-09-08---phase-41-close-trust-hardening).
 
-**Next task:** T3 — Propagate provenance across reports.
+**Next task:** T4 — Separate process, analysis, and package outcomes.
 
 **Roadmap:** [ROADMAP.md](ROADMAP.md)
 
@@ -106,6 +106,10 @@ Hunk authorship, stashing, temporary commits, reflog forensics, and advanced
 reconstruction.
 
 ## T3 — Propagate provenance across reports
+
+**Status:** implemented and locally verified. Report contract and limits:
+[ARCHITECTURE.md](ARCHITECTURE.md#211-report-provenance--phase-5-t3).
+Evidence: [VERIFY_LOG.md](VERIFY_LOG.md).
 
 ### Outcome
 

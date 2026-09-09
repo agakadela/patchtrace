@@ -6,7 +6,7 @@
 
 **Current implementation:** Phase 4.1 complete
 
-**Active phase:** Phase 5 — Trusted Capture and Session Provenance (T1 capture implemented; T2 attribution next)
+**Active phase:** Phase 5 — Trusted Capture and Session Provenance (T1–T3 implemented; T4 lifecycle outcomes next)
 
 **Following phase:** Phase 6 — Task Coverage and Final Verification
 
@@ -213,15 +213,15 @@ The CLI currently:
 - extracts bounded claims from exactly one marker-identified final answer;
 - infers command and test signals from text;
 - builds one deterministic `AnalysisResult`;
-- renders a summary, agent feedback, and verification brief;
+- renders a summary, agent feedback, and verification brief with shared Git
+  attribution, source references, limitations, and provenance-aware review targets;
 - stores one ten-artifact local package.
 
 Known current gaps:
 
 - final Git state is not session-scoped provenance;
-- pre-existing changes can be reported as run changes;
-- bounded untracked content and linear commit facts are captured, but are not
-  yet consumed for attribution or reporting;
+- dirty same-path work and unsupported history remain indeterminate;
+- attribution describes session boundaries, not agent or byte-level authorship;
 - command results and final messages are not structured in PTY mode;
 - no Task Contract is captured;
 - lifecycle outcomes are conflated;

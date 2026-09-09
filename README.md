@@ -12,7 +12,7 @@ decision for the developer.
 
 Version `0.1.0` includes the Phase 4 baseline, Phase 4.1 T1 storage hardening,
 T2 file/change claim assessment, T3 command-attempt semantics, and Phase 5 T1
-Git session capture.
+Git session capture, T2 attribution, and T3 report provenance.
 The implemented command is:
 
 ```bash
@@ -98,15 +98,19 @@ The reports are deterministic views of one validated analysis result:
 
 ## Current evidence limits
 
-The package now preserves Git boundary facts, but analysis and reports do not
-yet consume them for session attribution:
+All three reports show the same Git attribution, source references, and
+limitations from one analysis result. Attribution counts describe material
+observations, not unique files. See the
+[report contract](docs/ARCHITECTURE.md#211-report-provenance--phase-5-t3).
+Current limits:
 
 - the final Git diff can include work that existed before the run;
 - untracked bytes are limited to 1 MiB per file / 8 MiB per boundary; symlink
   content is omitted;
 - commit evidence supports at most 100 commits in a direct single-parent range;
   merges, rewrites and unborn HEAD ranges carry explicit limitations;
-- a file dirty before and after the run cannot be attributed honestly;
+- unchanged initial dirty material is pre-existing; later work on the same dirty
+  path remains indeterminate because its bytes cannot be separated;
 - the PTY parser requires exactly one supported final-answer marker;
 - a missing or ambiguous marker degrades claim evidence; PatchTrace does not
   guess from the transcript tail;
