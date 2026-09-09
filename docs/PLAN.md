@@ -1,11 +1,11 @@
 # Phase 5 — Trusted Capture and Session Provenance
 
-**Status:** active; T1–T4 implemented and locally verified; T5 not started
+**Status:** active; T1–T5 implemented and locally verified; T6 not started
 
 **Baseline:** Phase 4.1 — Trust Hardening closed on 2026-09-08.
 Closure evidence: [VERIFY_LOG.md](VERIFY_LOG.md#2026-09-08---phase-41-close-trust-hardening).
 
-**Next task:** T5 — Capture Task Contract V1.
+**Next task:** T6 — Establish the interactive Codex boundary and deliver the same task.
 
 **Roadmap:** [ROADMAP.md](ROADMAP.md)
 
@@ -184,6 +184,10 @@ analysis was usable, and whether the package was written.
 Retries, queues, resumable workflows, or orchestration state machines.
 
 ## T5 — Capture Task Contract V1
+
+**Status:** implemented and locally verified. Syntax, artifacts, and failure mapping:
+[ARCHITECTURE.md](ARCHITECTURE.md#213-task-contract-v1-capture--phase-5-t5).
+Evidence: [VERIFY_LOG.md](VERIFY_LOG.md).
 
 ### Outcome
 

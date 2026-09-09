@@ -2,12 +2,17 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import NoReturn
+from typing import Annotated, NoReturn
 
 import typer
 
 from patchtrace.analysis.analyzer import analyze_run
-from patchtrace.models.run import GitEvidenceManifest, RunFailure, RunManifest
+from patchtrace.models.run import (
+    GitEvidenceManifest,
+    RunFailure,
+    RunManifest,
+    TaskEvidenceManifest,
+)
 from patchtrace.reports.feedback import (
     build_agent_feedback_report,
     render_agent_feedback_markdown,
@@ -24,6 +29,7 @@ from patchtrace.storage.runs import (
     write_git_session,
     write_run_manifest,
 )
+from patchtrace.task.contract import parse_task
 from patchtrace.vcs.envelope import (
     GitSessionEnvelope,
     capture_boundary,
@@ -50,11 +56,20 @@ def _exit_not_implemented(command_name: str) -> None:
 @app.command(
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
 )
-def run(ctx: typer.Context) -> None:
+def run(
+    ctx: typer.Context,
+    task_file: Annotated[
+        Path | None,
+        typer.Option(
+            "--task-file",
+            help="Preserve a Task Contract V1 Markdown file with this run.",
+        ),
+    ] = None,
+) -> None:
     """Wrap an agent command and record local run material."""
     command = list(ctx.args)
     if not command:
-        typer.echo("Usage: patchtrace run -- <command>", err=True)
+        typer.echo("Usage: patchtrace run [--task-file PATH] -- <command>", err=True)
         raise typer.Exit(2)
 
     workspace = Path.cwd()
@@ -85,6 +100,34 @@ def run(ctx: typer.Context) -> None:
     stage = "manifest_write"
     try:
         write_run_manifest(run_paths, manifest)
+        if task_file is not None:
+            stage = "task_read"
+            if not task_file.is_file():
+                raise ValueError(
+                    f"Task file must be a readable regular file: {task_file}"
+                )
+            raw_task = task_file.read_bytes()
+            stage = "task_parse"
+            parsed_task = parse_task(raw_task, run_id=manifest.run_id)
+            manifest.task = TaskEvidenceManifest(
+                sha256=parsed_task.sha256, parse_status=parsed_task.status
+            )
+            manifest.artifact_paths.extend(
+                [manifest.task.raw_path, manifest.task.parsed_path]
+            )
+            stage = "manifest_write"
+            write_run_manifest(run_paths, manifest)
+            stage = "task_artifact_write"
+            (run_paths.run_dir / manifest.task.raw_path).write_bytes(raw_task)
+            (run_paths.run_dir / manifest.task.parsed_path).write_text(
+                parsed_task.model_dump_json(indent=2) + "\n", encoding="utf-8"
+            )
+            stage = "task_parse"
+            if parsed_task.status == "invalid":
+                raise ValueError(
+                    "; ".join(parsed_task.errors)
+                    + ". Correct the supplied task file and rerun; see task.md and task.json."
+                )
         stage = "capture_before"
         envelope.before = capture_boundary(repository_root)
         before_status = capture_git_status(repository_root)
@@ -175,7 +218,7 @@ def run(ctx: typer.Context) -> None:
             _preserve_capture_failure(
                 run_paths, envelope, stage.removeprefix("capture_"), error
             )
-        if stage == "analysis":
+        if stage in ("analysis", "task_parse"):
             manifest.analysis_outcome = "failed"
         _exit_run_failure(run_paths, manifest, stage, error)
 

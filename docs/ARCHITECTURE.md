@@ -10,7 +10,7 @@ Related decisions:
 
 This document records current system truth and the accepted next architecture.
 Product scope is owned by [SPEC.md](SPEC.md). [PLAN.md](PLAN.md) owns active
-Phase 5 tasks; T1–T4 Git provenance and lifecycle outcomes are implemented.
+Phase 5 tasks; T1–T5 Git provenance, lifecycle outcomes, and task capture are implemented.
 Phase 4.1 closure evidence lives
 in [VERIFY_LOG.md](VERIFY_LOG.md).
 
@@ -27,13 +27,14 @@ PatchTrace is a local Python CLI. It has:
 The established stack remains Python 3.11+, Typer, Pexpect, Pydantic v2,
 pytest, Ruff, mypy, and `uv`.
 
-## 2. CURRENT — Phase 4, Phase 4.1, and Phase 5 T1–T4
+## 2. CURRENT — Phase 4, Phase 4.1, and Phase 5 T1–T5
 
 ### 2.1 Implemented package ownership
 
 ```text
 src/patchtrace/
 ├── cli/          command entry points and run orchestration
+├── task/         Task Contract V1 parser and validated task models
 ├── session/      PTY recording and transcript normalization
 ├── vcs/          Git command boundary, session envelope and final-state snapshots
 ├── analysis/     deterministic claim and command-signal analysis
@@ -48,10 +49,11 @@ module, database, or public JSON API in the current implementation.
 ### 2.2 Implemented run flow
 
 ```text
-patchtrace run -- <command>
+patchtrace run [--task-file PATH] -- <command>
   -> validate that cwd is a Git worktree
   -> resolve the canonical Git worktree root and create an external run folder
   -> write an initial partial manifest and checkpoint lifecycle facts
+  -> optionally preserve and parse a task; stop before launch on invalid input
   -> preserve pre-run HEAD, status, staged/unstaged patch and untracked evidence
   -> run the command through Pexpect and preserve the PTY transcript
   -> preserve post-run Git boundary and straightforward commit-range patches
@@ -103,7 +105,8 @@ not persisted as a separate artifact.
 - Missing or ambiguous markers degrade claim evidence; there is no transcript
   tail fallback.
 - Command and test evidence is text inference without structured lifecycle.
-- No task artifact is captured or delivered by PatchTrace.
+- Task capture preserves raw and parsed material; delivery and requirement
+  satisfaction are not implemented.
 
 The final Phase 4 dogfood demonstrated the Git false positive: identical
 before/after status material was reported as files changed by the run. Phase 5
@@ -395,8 +398,8 @@ directory. If the failure manifest also cannot be saved, CLI prints that seconda
 failure and the partial path. The last checkpoint survives an unsuccessful
 manifest replacement; an initial write failure may leave no manifest. Forced
 termination, machine loss, and subsequent external deletion are not crash-durability
-or tamper-detection guarantees. No retry, queue, resume API, task-parsing reason
-catalog, or task-delivery catalog is introduced.
+or tamper-detection guarantees. No retry, queue, resume API, or task-delivery
+catalog is introduced. Section 2.13 extends the failure mapping for task capture.
 
 When package completion succeeds, CLI returns the wrapped command's status,
 including non-zero exits and degraded analysis. A PatchTrace failure takes
@@ -416,6 +419,68 @@ Implementation references: [Pydantic model validators](https://docs.pydantic.dev
 [Pexpect close and exit status](https://pexpect.readthedocs.io/en/stable/api/pexpect.html#pexpect.spawn.close),
 and [Path.replace](https://docs.python.org/3.11/library/pathlib.html#pathlib.Path.replace).
 Locked versions: Pydantic 2.13.4, Pexpect 4.9.0, Typer 0.26.8; Python 3.11+.
+
+### 2.13 Task Contract V1 capture — Phase 5 T5
+
+`patchtrace run --task-file PATH -- <command>` reads a regular file once before
+starting capture or the child. Relative paths use the invocation directory.
+A symlink to a regular file is allowed; directories and special files are rejected.
+Typer receives a `Path` without eager existence validation so a read failure can
+be preserved in the run's lifecycle manifest. The option follows the documented
+[Typer Path pattern](https://typer.tiangolo.com/tutorial/parameter-types/path/)
+(locked Typer 0.26.8). Model invariants use
+[Pydantic after validators](https://docs.pydantic.dev/latest/concepts/validators/)
+(locked Pydantic 2.13.4).
+
+`task/contract.py` owns parsing and the validated V1 task models. No new Markdown
+parser dependency or general Markdown interpretation is introduced. Supported
+syntax is deliberately small:
+
+- UTF-8, optionally with a BOM; LF and CRLF are accepted.
+- An optional single `# Title` before the sections is decorative.
+- Exact, case-sensitive `## Outcome` and `## Requirements` headings are required;
+  section order is free. `Outcome` contains non-empty text other than `N/A`.
+- `Requirements` contains one or more unindented, single-line numbered items
+  (`1. text` or `1) text`). Number values do not assign IDs; source order does.
+- `Acceptance Criteria`, `Required Verification`, and `Out of Scope` are optional
+  `##` sections. When present they contain ordered items or the sole text `N/A`.
+  Omission is `null`; explicit `N/A` is an empty list. Empty sections are invalid.
+- Duplicate or unknown headings, nested lists, list continuation lines, fences,
+  and content before the sections other than the title are rejected. This is a
+  Task Contract subset, not a general Markdown parser. Parsed outer whitespace
+  and blank lines are normalized; the raw artifact is never normalized.
+
+When source bytes can be read, `task.md` preserves them exactly, including BOM,
+line endings, trailing spaces, and invalid UTF-8. SHA-256 is computed over those
+same bytes. `task.json` schema version 1 contains `run_id`, `sha256`, `status`
+(`valid` or `invalid`), `contract`, and `errors`. Valid parses have a contract and
+no errors; invalid parses have diagnostics and no partial contract. Item IDs use
+`REQ-001`, `AC-001`, `VER-001`, and `OOS-001`, counting positions within each
+section. IDs are stable for that artifact only; they are not identities across
+edits. Cross-run references require run ID and digest as well as item ID.
+
+The version-2 run manifest adds nullable `task`: `raw_path`, `parsed_path`,
+`sha256`, and `parse_status`. Both task paths belong to `artifact_paths` when
+captured. Existing version-2 manifests without `task` remain readable as runs
+without captured task material. No legacy package is rewritten. A checkpoint
+may list task artifacts whose writes have not completed; package outcome retains
+T4's meaning. Digests bind captured bytes, not authorship, tamper resistance, or
+agent receipt. The source is not re-read after the wrapped command runs.
+
+| New failure stage | Process / analysis | Package / CLI |
+| --- | --- | --- |
+| `task_read` (missing, unreadable, or non-regular source) | Not started / not run | Partial, exit 1; source diagnostic in `failures`; no bytes/digest claimed |
+| `task_parse` (invalid UTF-8 or contract syntax) | Not started / failed | Partial, exit 1; raw bytes and invalid parse preserved, with correction guidance |
+| `task_artifact_write` | Not started / not run | Failed, exit 1; preserve manifest and any written material |
+
+The first parsing diagnostic is retained; input is never repaired into a valid
+contract. Invalid supplied tasks prevent launch. No-task runs retain generic
+claim analysis and its previous lifecycle behavior. One shared `AnalysisResult`
+adds the explicit missing-task trust limitation to all reports. Captured tasks
+add raw/parsed paths, digest, parse status, and limitations to that same result:
+requirement satisfaction is not evaluated, and task delivery is unverified.
+No parsed requirement changes claim support or the evidence verdict. T6 owns
+actual task delivery; Phase 6 owns requirement satisfaction.
 
 ## 3. ACCEPTED TARGET — Remaining Phase 5 architecture
 

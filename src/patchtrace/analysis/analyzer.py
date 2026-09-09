@@ -228,6 +228,18 @@ def _evidence_gaps(
         "Command results are transcript-derived observations, not independent "
         "execution proof; freshness relative to the final repository state is unresolved.",
     ]
+    if manifest.task is None:
+        gaps.append(
+            "No task was supplied or captured; this generic run is not bound to "
+            "a developer Task Contract. Requirement satisfaction is not evaluated."
+        )
+    else:
+        gaps.append(
+            f"Task capture: `{manifest.task.raw_path}` and `{manifest.task.parsed_path}`; "
+            f"SHA-256 `{manifest.task.sha256}`; parse status `{manifest.task.parse_status}`. "
+            "Requirement satisfaction is not evaluated. Task delivery is unverified; "
+            "PatchTrace has not submitted this artifact to the wrapped command."
+        )
     if transcript_text is None:
         gaps.append("Transcript artifact is missing for this run.")
     if manifest.git_evidence is None:

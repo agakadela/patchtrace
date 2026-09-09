@@ -28,7 +28,8 @@ sections and optional `Acceptance Criteria`, `Required Verification`, and
 ### Raw task artifact
 
 The preserved task source before parsing or semantic normalization. It is bound
-to the run by a digest and is the source of a Codex-specific initial prompt.
+to the run by a digest. T5 captures it; T6 will use it as the source of a
+Codex-specific initial prompt.
 
 ### Deterministic run-local ID
 
@@ -123,7 +124,8 @@ Cleanup termination after a capture failure is not the command's own result.
 
 Whether PatchTrace analysis produced a usable result: `completed`, `degraded`
 (missing or ambiguous final output, or unavailable snapshot inputs), `not_run`,
-or `failed` (analysis execution raised an error). Completed analysis does not
+or `failed` (analysis execution raised an error or a provided task could not
+be parsed). Completed analysis does not
 mean a positive evidence verdict or removal of the PTY/attribution trust limits.
 
 ### Package outcome
