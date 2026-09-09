@@ -11,7 +11,8 @@ decision for the developer.
 ## Current status
 
 Version `0.1.0` includes the Phase 4 baseline, Phase 4.1 T1 storage hardening,
-and T2 file/change claim assessment.
+T2 file/change claim assessment, T3 command-attempt semantics, and Phase 5 T1
+Git session capture.
 The implemented command is:
 
 ```bash
@@ -24,6 +25,8 @@ It:
 - preserves the terminal transcript;
 - records Git status before and after the command;
 - records the final staged and unstaged diff visible after the command;
+- preserves before/after HEAD, dirty paths, bounded untracked file bytes, and
+  patches for a straightforward commit range in `git-session.json`;
 - applies deterministic rules to bounded claims in one identified final answer;
 - writes one local review package outside the reviewed working tree (location
   below).
@@ -74,10 +77,18 @@ Each package contains:
 ├── git-after.txt
 ├── changed-files.txt
 ├── patch.diff
+├── git-session.json
 ├── SUMMARY.md
 ├── AGENT_FEEDBACK.md
 └── VERIFICATION_BRIEF.md
 ```
+
+`run.json` links the envelope through `git_evidence.session_envelope_path`.
+Capture uses non-mutating Git commands. Active external content filters are
+unsupported and fail capture without execution. If capture fails after repository
+validation, the CLI exits 1 and prints the partial run path; `git-session.json`
+preserves the failing stage, error, recovery guidance, and completed boundaries.
+See the [capture contract](docs/ARCHITECTURE.md#29-git-session-envelope--phase-5-t1).
 
 The reports are deterministic views of one validated analysis result:
 
@@ -87,10 +98,14 @@ The reports are deterministic views of one validated analysis result:
 
 ## Current evidence limits
 
-The Phase 4 package is useful, but it is not yet trusted session provenance:
+The package now preserves Git boundary facts, but analysis and reports do not
+yet consume them for session attribution:
 
 - the final Git diff can include work that existed before the run;
-- untracked content and commits made during the run are not captured completely;
+- untracked bytes are limited to 1 MiB per file / 8 MiB per boundary; symlink
+  content is omitted;
+- commit evidence supports at most 100 commits in a direct single-parent range;
+  merges, rewrites and unborn HEAD ranges carry explicit limitations;
 - a file dirty before and after the run cannot be attributed honestly;
 - the PTY parser requires exactly one supported final-answer marker;
 - a missing or ambiguous marker degrades claim evidence; PatchTrace does not
@@ -114,8 +129,8 @@ Phase 4.1 — Trust Hardening is closed. It addressed three gaps in the Phase 4 
    and surface failed verification even when the agent reports it truthfully.
 
 The active phase is **Phase 5 — Trusted Capture and Session Provenance**.
-Implementation has not started; T1 captures the Git session envelope. The plan
-strengthens capture before broadening analysis:
+T1 captures the Git session envelope; T2 is next. The plan strengthens capture
+before broadening analysis:
 
 1. distinguish session-attributed, pre-existing, and indeterminate Git changes;
 2. separate process, analysis, and package outcomes;

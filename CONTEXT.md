@@ -180,6 +180,14 @@ A final response identified by exactly one supported transcript marker. Missing
 or ambiguous markers degrade evidence; PatchTrace does not guess from the
 transcript tail.
 
+### Git session envelope
+
+The raw before/after Git boundary facts and supported commit-range material in
+`git-session.json`. A boundary is an observation, not proof of agent authorship.
+`linear`, `unchanged`, and `unsupported` describe the captured history shape;
+these are not the attribution labels owned by Phase 5 T2.
+Format and limitations belong to [ARCHITECTURE.md](docs/ARCHITECTURE.md#29-git-session-envelope--phase-5-t1).
+
 ## Status words
 
 ### CURRENT

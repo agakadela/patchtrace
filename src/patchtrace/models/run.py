@@ -17,6 +17,7 @@ class GitEvidenceManifest(BaseModel):
     changed_files_path: str
     patch_path: str
     patch_material_present: bool
+    session_envelope_path: str | None = None
 
 
 class RunManifest(BaseModel):

@@ -10,7 +10,7 @@ Related decisions:
 
 This document records current system truth and the accepted next architecture.
 Product scope is owned by [SPEC.md](SPEC.md). [PLAN.md](PLAN.md) owns active
-Phase 5 tasks; implementation has not started. Phase 4.1 closure evidence lives
+Phase 5 tasks; T1 Git capture is implemented, while T2 attribution is next. Phase 4.1 closure evidence lives
 in [VERIFY_LOG.md](VERIFY_LOG.md).
 
 ## 1. System constraints
@@ -26,7 +26,7 @@ PatchTrace is a local Python CLI. It has:
 The established stack remains Python 3.11+, Typer, Pexpect, Pydantic v2,
 pytest, Ruff, mypy, and `uv`.
 
-## 2. CURRENT — Phase 4 plus Phase 4.1 T1–T3
+## 2. CURRENT — Phase 4, Phase 4.1, and Phase 5 T1
 
 ### 2.1 Implemented package ownership
 
@@ -34,7 +34,7 @@ pytest, Ruff, mypy, and `uv`.
 src/patchtrace/
 ├── cli/          command entry points and run orchestration
 ├── session/      PTY recording and transcript normalization
-├── vcs/          Git command boundary and final-state snapshots
+├── vcs/          Git command boundary, session envelope and final-state snapshots
 ├── analysis/     deterministic claim and command-signal analysis
 ├── models/       validated run and report models
 ├── reports/      shallow Markdown report builders and renderers
@@ -49,10 +49,11 @@ module, database, or public JSON API in the current implementation.
 ```text
 patchtrace run -- <command>
   -> validate that cwd is a Git worktree
-  -> capture pre-run porcelain status
   -> resolve the canonical Git worktree root and create an external run folder
+  -> preserve pre-run HEAD, status, staged/unstaged patch and untracked evidence
   -> run the command through Pexpect and preserve the PTY transcript
-  -> capture post-run status plus final staged and unstaged diff
+  -> preserve post-run Git boundary and straightforward commit-range patches
+  -> save git-session.json and the legacy final-state artifacts
   -> identify exactly one marker-bounded final answer, when available
   -> infer bounded claims and command/test signals from text
   -> build one validated AnalysisResult
@@ -73,6 +74,7 @@ git-before.txt
 git-after.txt
 changed-files.txt
 patch.diff
+git-session.json
 SUMMARY.md
 AGENT_FEEDBACK.md
 VERIFICATION_BRIEF.md
@@ -89,7 +91,8 @@ not persisted as a separate artifact.
 
 - `git-before.txt` is recorded but not used to attribute changes.
 - Final status and diff can contain pre-existing work.
-- Untracked content and commits during the run are incomplete.
+- The envelope captures bounded untracked bytes and linear commits; analysis
+  and reports still consume only the legacy final-state artifacts.
 - Dirty same-path work cannot be separated.
 - The PTY final answer requires exactly one supported marker.
 - Missing or ambiguous markers degrade claim evidence; there is no transcript
@@ -191,7 +194,63 @@ recorded in [VERIFY_LOG.md](VERIFY_LOG.md); active Phase 5 tasks belong in
 Phase 4.1 does not establish session attribution,
 requirement satisfaction, structured execution proof, or final-state freshness.
 
-## 3. ACCEPTED TARGET — Phase 5 architecture (not implemented)
+### 2.9 Git session envelope — Phase 5 T1
+
+`vcs/envelope.py` owns raw capture facts. `git-session.json` schema version 1
+records the canonical repository root, before/after boundaries, history, capture
+status, and limitations. Each boundary preserves HEAD (null on an unborn branch),
+clean/dirty state within the supported path scope, porcelain XY/path entries,
+separate staged/unstaged binary patches, and untracked evidence. Rename detection
+is disabled, so a rename appears as deletion/addition rather than guessed identity.
+NUL-delimited status parsing preserves UTF-8 paths including whitespace and newlines.
+
+Initial facts cover paths visible to Git status and current differences, not a
+copy of all tracked file contents. Regular untracked files retain exact bytes as
+base64 plus SHA-256, up to 1 MiB per file and 8 MiB per boundary. Over-limit files
+and symlinks keep their paths and explicit content omissions. Tracked patches use
+Git's normal content representation; they are not a raw worktree byte archive.
+
+History is `unchanged`, `linear`, or `unsupported`. A supported range is at most
+100 direct single-parent commits linking before HEAD to after HEAD. Each commit
+retains its ID, parent and binary patch, including changes later reverted in the
+same range. Merges, rewrites, backwards movement, truncated ranges and unborn HEAD
+ranges retain an explicit limitation. These are history shapes, not attribution
+labels. Branch switches or concurrent work are not proof of agent authorship.
+
+Capture never stages, refreshes the index, checks out, commits, stashes or updates
+refs. Git uses `--no-optional-locks`, `--no-lazy-fetch`, `--no-replace-objects` and
+an invocation-only `core.fsmonitor=false`; diff disables external drivers and
+textconv, and forces uncolored patches. Active configured clean/process filters on tracked paths are rejected
+before status/diff because Git may execute them while inspecting content. Git
+commands have a 30-second timeout. No user configuration is edited.
+
+The root `.patchtrace/` path is excluded from status, patches, untracked bytes and
+commit patches, including tracked legacy artifacts. Boundaries are sequential,
+not atomic; intermediate/reverted edits are not observable. Dirty same-path byte
+separation, partial-commit reconstruction, sparse checkouts, submodules, nested
+repositories, ignored files, and non-UTF-8 Git output are unsupported. The envelope
+preserves these limits; it does not infer attribution.
+
+CLI persistence records the initial boundary before starting the command and the
+final boundary before history capture. A capture failure after repository
+validation preserves completed boundaries plus `failed_stage`, `error`, and
+`recovery`, prints the partial package path and exits 1. The transcript remains
+when the command ran. No complete `run.json` or reports are claimed on that path.
+An unwritable storage directory can prevent persistence; stderr reports that
+secondary failure. General package/process outcome separation remains T4.
+
+New manifests link `session_envelope_path`; older manifests load it as null.
+Legacy reports continue consuming their existing final-state artifacts until
+T2–T3. They must not be treated as having session attribution yet.
+
+Sources checked with Git 2.54.0: [status](https://git-scm.com/docs/git-status),
+[diff](https://git-scm.com/docs/git-diff),
+[revision traversal](https://git-scm.com/docs/git-rev-list),
+[global options](https://git-scm.com/docs/git),
+[content filters](https://git-scm.com/docs/gitattributes), and
+[fsmonitor configuration](https://git-scm.com/docs/git-config#Documentation/git-config.txt-corefsmonitor).
+
+## 3. ACCEPTED TARGET — Remaining Phase 5 architecture
 
 Phase 5 strengthens capture and provenance. It does not implement requirement
 satisfaction or final-verification freshness.

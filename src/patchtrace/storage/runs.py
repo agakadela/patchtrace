@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import json
 import os
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
 from secrets import token_hex
 
 from patchtrace.models.run import RunManifest
+from patchtrace.vcs.envelope import GitSessionEnvelope
 
 
 @dataclass(frozen=True)
@@ -38,6 +40,10 @@ class RunPaths:
     @property
     def patch_path(self) -> Path:
         return self.run_dir / "patch.diff"
+
+    @property
+    def git_session_path(self) -> Path:
+        return self.run_dir / "git-session.json"
 
     @property
     def summary_path(self) -> Path:
@@ -88,6 +94,12 @@ def write_run_manifest(run_paths: RunPaths, manifest: RunManifest) -> None:
     run_paths.manifest_path.write_text(
         manifest.model_dump_json(indent=2) + "\n",
         encoding="utf-8",
+    )
+
+
+def write_git_session(run_paths: RunPaths, envelope: GitSessionEnvelope) -> None:
+    run_paths.git_session_path.write_text(
+        json.dumps(asdict(envelope), indent=2) + "\n", encoding="utf-8"
     )
 
 

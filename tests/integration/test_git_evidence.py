@@ -50,6 +50,7 @@ def test_run_inside_git_repo_writes_git_evidence_artifacts(
         "git-after.txt",
         "changed-files.txt",
         "patch.diff",
+        "git-session.json",
         "SUMMARY.md",
         "AGENT_FEEDBACK.md",
         "VERIFICATION_BRIEF.md",
@@ -60,7 +61,13 @@ def test_run_inside_git_repo_writes_git_evidence_artifacts(
         "changed_files_path": "changed-files.txt",
         "patch_path": "patch.diff",
         "patch_material_present": True,
+        "session_envelope_path": "git-session.json",
     }
+    envelope = json.loads((run_dir / "git-session.json").read_text())
+    assert envelope["capture_status"] == "complete"
+    assert envelope["before"]["dirty"] is False
+    assert envelope["after"]["dirty"] is True
+    assert envelope["before"]["head"] == envelope["after"]["head"]
 
     assert (run_dir / "git-before.txt").read_text(encoding="utf-8") == ""
     assert " M tracked.txt" in (run_dir / "git-after.txt").read_text(encoding="utf-8")

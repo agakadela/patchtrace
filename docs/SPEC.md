@@ -6,7 +6,7 @@
 
 **Current implementation:** Phase 4.1 complete
 
-**Active phase:** Phase 5 — Trusted Capture and Session Provenance (implementation not started)
+**Active phase:** Phase 5 — Trusted Capture and Session Provenance (T1 capture implemented; T2 attribution next)
 
 **Following phase:** Phase 6 — Task Coverage and Final Verification
 
@@ -202,23 +202,26 @@ The exact V1 model and failure mapping are owned by the architecture and the
 
 ## 8. Current implementation
 
-The Phase 4 CLI currently:
+The CLI currently:
 
 - wraps one command in a PTY;
 - preserves a transcript;
 - captures Git status before and after;
 - captures the final staged and unstaged diff visible after the run;
+- preserves the Git session envelope described in
+  [ARCHITECTURE.md](ARCHITECTURE.md#29-git-session-envelope--phase-5-t1);
 - extracts bounded claims from exactly one marker-identified final answer;
 - infers command and test signals from text;
 - builds one deterministic `AnalysisResult`;
 - renders a summary, agent feedback, and verification brief;
-- stores one nine-artifact local package.
+- stores one ten-artifact local package.
 
 Known current gaps:
 
 - final Git state is not session-scoped provenance;
 - pre-existing changes can be reported as run changes;
-- untracked content and in-run commits are incomplete;
+- bounded untracked content and linear commit facts are captured, but are not
+  yet consumed for attribution or reporting;
 - command results and final messages are not structured in PTY mode;
 - no Task Contract is captured;
 - lifecycle outcomes are conflated;

@@ -44,7 +44,7 @@ scope remain outside this phase.
 
 ## Phase 5 — Trusted Capture and Session Provenance
 
-**Status:** active; implementation not started. Next task: T1 — Capture the Git session envelope.
+**Status:** active; T1 capture implemented. Next task: T2 — Apply honest Git attribution.
 
 **Active tasks:** [PLAN.md](PLAN.md).
 

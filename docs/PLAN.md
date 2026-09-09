@@ -1,11 +1,11 @@
 # Phase 5 — Trusted Capture and Session Provenance
 
-**Status:** active; implementation not started
+**Status:** active; T1 implemented and locally verified; T2 not started
 
 **Baseline:** Phase 4.1 — Trust Hardening closed on 2026-09-08.
 Closure evidence: [VERIFY_LOG.md](VERIFY_LOG.md#2026-09-08---phase-41-close-trust-hardening).
 
-**Next task:** T1 — Capture the Git session envelope.
+**Next task:** T2 — Apply honest Git attribution.
 
 **Roadmap:** [ROADMAP.md](ROADMAP.md)
 
@@ -26,6 +26,10 @@ status material was interpreted as five run changes. T1–T3 repair that false
 positive without waiting for App Server research.
 
 ## T1 — Capture the Git session envelope
+
+**Status:** implemented and locally verified. Capture format and limits:
+[ARCHITECTURE.md](ARCHITECTURE.md#29-git-session-envelope--phase-5-t1).
+Evidence: [VERIFY_LOG.md](VERIFY_LOG.md).
 
 ### Outcome
 
