@@ -18,6 +18,7 @@ DIFF_OPTIONS = (
     "--no-textconv",
     "--no-renames",
     "--no-color",
+    "--default-prefix",
 )
 MAX_UNTRACKED_BYTES = 1024 * 1024
 MAX_UNTRACKED_TOTAL_BYTES = 8 * MAX_UNTRACKED_BYTES
@@ -66,6 +67,7 @@ class GitHistory:
 class GitSessionEnvelope:
     repository_root: str
     schema_version: int = 1
+    patch_prefixes: Literal["a/b"] | None = None
     before: GitBoundary | None = None
     after: GitBoundary | None = None
     history: GitHistory | None = None

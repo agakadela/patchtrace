@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from patchtrace.models.run import RunOutcome, TriggerSource
 
@@ -56,6 +56,30 @@ class ClaimAssessment(BaseModel):
     next_action: str | None
 
 
+GitAttributionClass = Literal["session-attributed", "pre-existing", "indeterminate"]
+GitMaterial = Literal["initial", "final", "commit", "history"]
+
+
+class GitAttributionItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    material: GitMaterial
+    path: str | None
+    commit_head: str | None = None
+    attribution: GitAttributionClass
+    evidence_references: list[EvidenceReference] = Field(min_length=1)
+    limitations: list[str]
+
+
+class GitAttribution(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[GitAttributionItem] = Field(default_factory=list)
+    limitations: list[str] = Field(
+        default_factory=lambda: ["Git session attribution has not been assessed."]
+    )
+
+
 class AnalysisResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -70,6 +94,7 @@ class AnalysisResult(BaseModel):
     diff_material_status: DiffMaterialStatus
     command_test_signals: list[str]
     evidence_gaps: list[str]
+    git_attribution: GitAttribution = Field(default_factory=GitAttribution)
 
 
 class SummaryReport(BaseModel):

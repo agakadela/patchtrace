@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
+from patchtrace.analysis.git_attribution import load_git_attribution
 from patchtrace.analysis.test_evidence import (
     CommandEvidence,
     collect_command_evidence,
@@ -95,6 +96,12 @@ class _CommandClaim:
 
 def analyze_run(manifest: RunManifest, *, run_dir: Path) -> AnalysisResult:
     """Assess bounded explicit final claims against local run evidence."""
+    result = _analyze_claims(manifest, run_dir=run_dir)
+    result.git_attribution = load_git_attribution(manifest, run_dir)
+    return result
+
+
+def _analyze_claims(manifest: RunManifest, *, run_dir: Path) -> AnalysisResult:
     path_evidence = _load_path_evidence(manifest, run_dir)
     transcript_path = _find_artifact_path(
         manifest.artifact_paths,
