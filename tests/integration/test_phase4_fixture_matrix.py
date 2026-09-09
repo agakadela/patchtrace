@@ -167,7 +167,9 @@ def _manifest(case: FixtureCase) -> RunManifest:
             "VERIFICATION_BRIEF.md",
         ],
         wrapped_command_exit_status=exit_status,
-        outcome="completed" if exit_status == 0 else "wrapped_command_failed",
+        process_outcome="completed" if exit_status == 0 else "failed",
+        analysis_outcome="not_run",
+        package_outcome="partial",
         git_evidence=git_evidence,
     )
 

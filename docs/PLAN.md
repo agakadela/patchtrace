@@ -1,11 +1,11 @@
 # Phase 5 — Trusted Capture and Session Provenance
 
-**Status:** active; T1–T3 implemented and locally verified; T4 not started
+**Status:** active; T1–T4 implemented and locally verified; T5 not started
 
 **Baseline:** Phase 4.1 — Trust Hardening closed on 2026-09-08.
 Closure evidence: [VERIFY_LOG.md](VERIFY_LOG.md#2026-09-08---phase-41-close-trust-hardening).
 
-**Next task:** T4 — Separate process, analysis, and package outcomes.
+**Next task:** T5 — Capture Task Contract V1.
 
 **Roadmap:** [ROADMAP.md](ROADMAP.md)
 
@@ -141,6 +141,11 @@ and limitations from one analysis result.
 Requirement coverage, new risk scoring, and general review prioritization.
 
 ## T4 — Separate process, analysis, and package outcomes
+
+**Status:** implemented and locally verified. Lifecycle mapping, CLI exits, and
+Phase 4 compatibility decision:
+[ARCHITECTURE.md](ARCHITECTURE.md#212-lifecycle-outcomes--phase-5-t4).
+Evidence: [VERIFY_LOG.md](VERIFY_LOG.md).
 
 ### Outcome
 

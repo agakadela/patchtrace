@@ -259,7 +259,9 @@ def _manifest() -> RunManifest:
             "VERIFICATION_BRIEF.md",
         ],
         wrapped_command_exit_status=0,
-        outcome="completed",
+        process_outcome="completed",
+        analysis_outcome="not_run",
+        package_outcome="partial",
         git_evidence=GitEvidenceManifest(
             git_before_path="git-before.txt",
             git_after_path="git-after.txt",

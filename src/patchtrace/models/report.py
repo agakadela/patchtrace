@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from patchtrace.models.run import RunOutcome, TriggerSource
+from patchtrace.models.run import AnalysisOutcome, ProcessOutcome, TriggerSource
 
 DiffMaterialStatus = Literal["present", "empty", "missing"]
 TranscriptStatus = Literal["present", "missing"]
@@ -84,6 +84,7 @@ class AnalysisResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     run_id: str
+    analysis_outcome: Literal["completed", "degraded"]
     claim_material_status: ClaimMaterialStatus
     claim_assessments: list[ClaimAssessment]
     verdict: str
@@ -102,8 +103,9 @@ class SummaryReport(BaseModel):
 
     run_id: str
     command: list[str]
-    wrapped_command_exit_status: int
-    outcome: RunOutcome
+    wrapped_command_exit_status: int | None
+    process_outcome: ProcessOutcome
+    analysis_outcome: AnalysisOutcome
     artifact_paths: list[str]
     transcript_status: TranscriptStatus
     git_attribution: GitAttribution
@@ -120,8 +122,9 @@ class AgentFeedbackReport(BaseModel):
 
     run_id: str
     command: list[str]
-    wrapped_command_exit_status: int
-    outcome: RunOutcome
+    wrapped_command_exit_status: int | None
+    process_outcome: ProcessOutcome
+    analysis_outcome: AnalysisOutcome
     artifact_paths: list[str]
     transcript_status: TranscriptStatus
     git_attribution: GitAttribution
@@ -141,9 +144,10 @@ class VerificationBriefReport(BaseModel):
     command: list[str]
     trigger_source: TriggerSource
     started_at: datetime
-    ended_at: datetime
-    wrapped_command_exit_status: int
-    outcome: RunOutcome
+    ended_at: datetime | None
+    wrapped_command_exit_status: int | None
+    process_outcome: ProcessOutcome
+    analysis_outcome: AnalysisOutcome
     artifact_paths: list[str]
     transcript_status: TranscriptStatus
     git_attribution: GitAttribution

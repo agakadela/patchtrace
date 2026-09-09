@@ -199,7 +199,12 @@ def test_cli_preserves_capture_failure_and_partial_material(
     assert "rerun capture" in envelope["recovery"]
     assert str(path.parent) in result.output
     assert "review package written" not in result.output
-    assert not (path.parent / "run.json").exists()
+    manifest = json.loads((path.parent / "run.json").read_text())
+    assert manifest["package_outcome"] == "partial"
+    assert manifest["analysis_outcome"] == "not_run"
+    assert manifest["process_outcome"] == (
+        "not_started" if stage == "before" else "completed"
+    )
     if stage == "before":
         assert not (path.parent / "agent-session.txt").exists()
     else:

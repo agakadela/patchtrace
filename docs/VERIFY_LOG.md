@@ -8,6 +8,44 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-09-09 - Phase 5 T4: Independent lifecycle outcomes
+
+- Authority: Aga requested T4 and a documentation currency check. Candidate:
+  this task commit on `agent/phase5-t4-lifecycle-outcomes`, based on `0545379`.
+  The branch began with incomplete, uncommitted T4 changes; verification covers
+  the combined completed slice, without claiming sole authorship.
+- Result: version-2 manifests separate process, analysis, and package outcomes.
+  Partial checkpoints preserve observed facts; final completion follows all
+  required writes. Reports refer to the manifest for final package status;
+  evidence verdict semantics stay separate. Failure stage/messages and CLI
+  precedence are explicit. Legacy combined outcomes are rejected without
+  changing stored packages or raw Phase 4 fixtures. Contract and compatibility:
+  [ARCHITECTURE.md](ARCHITECTURE.md#212-lifecycle-outcomes--phase-5-t4).
+- Checks: Ruff lint/format, mypy (50 files), full pytest (197 passed), and
+  wheel/sdist build passed on macOS, Python 3.11.15, Git 2.54.0. Before/after
+  snapshot fingerprints match; final documentation clarifications were read
+  back separately. The existing uv/backend-range warning remains non-failing.
+- Runtime proof: the built wheel ran actual commands in temporary repositories:
+  success (`completed/completed/complete`, exit 0), missing final marker
+  (`completed/degraded/complete`, exit 0), command exit 7
+  (`failed/completed/complete`, exit 7), corrupt-index capture failure
+  (`completed/not_run/partial`, exit 1), and blocked report destination
+  (`completed/completed/failed`, exit 1). CLI output, manifests and wheel identity
+  were inspected. Interactive PTY regression also passed in the full suite.
+- Failure proof: model contradictions; absent/ambiguous final output; missing
+  transcript; analysis exceptions; every artifact-write path; prelaunch and
+  final manifest replacement failures (including unavailable failure persistence);
+  missing executable; recorder interruption, unknown status, signal exit, and
+  footer-write failure preserving observed process success; terminal-restoration
+  failure retaining an observed exit; and initial Git read failure correctly
+  classified as capture failure.
+- Documentation: README, SPEC, PLAN, ROADMAP, ARCHITECTURE and CONTEXT updated;
+  local documentation file links resolve. T5 is next. Existing ADRs remain
+  applicable; historical design and verification entries retain their context.
+- Aga verification gate: Standard mode, VERIFIED; code review is a separate gate.
+  No task-blocking cannot-verify item. Local proof does not claim Linux CI,
+  crash durability, post-hoc migration, task coverage, merge, or deployment.
+
 ### 2026-09-08 - Phase 5 T3: Shared report provenance
 
 - Authority: Aga requested Phase 5 T3. Candidate: this task commit on

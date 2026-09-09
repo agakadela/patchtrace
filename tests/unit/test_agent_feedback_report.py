@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from patchtrace.analysis.analyzer import analyze_run
-from patchtrace.models.run import GitEvidenceManifest, RunManifest, RunOutcome
+from patchtrace.models.run import GitEvidenceManifest, ProcessOutcome, RunManifest
 from patchtrace.reports.feedback import (
     build_agent_feedback_report,
     render_agent_feedback_markdown,
@@ -52,7 +52,8 @@ def test_agent_feedback_references_local_evidence_and_followups(
     assert "# PatchTrace Agent Feedback" in markdown
     assert "Paste this back to the agent:" in markdown
     assert "- Exit status: `7`" in markdown
-    assert "- Outcome: `wrapped_command_failed`" in markdown
+    assert "- Process outcome: `failed`" in markdown
+    assert "- Analysis outcome: `degraded`" in markdown
     assert "[session-attributed]" not in markdown
     assert "No T1 Git session envelope is linked" in markdown
     assert "- Diff material: `present`" in markdown
@@ -205,7 +206,7 @@ def _manifest(
     exit_status: int,
     patch_material_present: bool,
 ) -> RunManifest:
-    outcome: RunOutcome = "completed" if exit_status == 0 else "wrapped_command_failed"
+    outcome: ProcessOutcome = "completed" if exit_status == 0 else "failed"
     return RunManifest(
         run_id="run-123",
         command=["python", "tests/fixtures/fake_agent.py"],
@@ -214,7 +215,9 @@ def _manifest(
         ended_at=datetime(2026, 7, 5, 12, 1, tzinfo=UTC),
         artifact_paths=artifact_paths,
         wrapped_command_exit_status=exit_status,
-        outcome=outcome,
+        process_outcome=outcome,
+        analysis_outcome="not_run",
+        package_outcome="partial",
         git_evidence=GitEvidenceManifest(
             git_before_path="git-before.txt",
             git_after_path="git-after.txt",

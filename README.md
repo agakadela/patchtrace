@@ -12,7 +12,7 @@ decision for the developer.
 
 Version `0.1.0` includes the Phase 4 baseline, Phase 4.1 T1 storage hardening,
 T2 file/change claim assessment, T3 command-attempt semantics, and Phase 5 T1
-Git session capture, T2 attribution, and T3 report provenance.
+Git session capture, T2 attribution, T3 report provenance, and T4 lifecycle outcomes.
 The implemented command is:
 
 ```bash
@@ -67,7 +67,7 @@ directory if that occurs. PatchTrace does not edit `.gitignore` or Git settings.
 Existing packages in `.patchtrace` remain where they are.
 See the [storage decision](docs/ARCHITECTURE.md#25-run-storage-decision--phase-41-t1).
 
-Each package contains:
+A complete package contains:
 
 ```text
 <external-state>/patchtrace/repos/<repository-id>/runs/<run-id>/
@@ -89,6 +89,34 @@ unsupported and fail capture without execution. If capture fails after repositor
 validation, the CLI exits 1 and prints the partial run path; `git-session.json`
 preserves the failing stage, error, recovery guidance, and completed boundaries.
 See the [capture contract](docs/ARCHITECTURE.md#29-git-session-envelope--phase-5-t1).
+
+`run.json` schema version 2 records three independent outcomes:
+
+- `process_outcome`: `not_started`, `completed`, `failed`, or `unknown`;
+- `analysis_outcome`: `not_run`, `completed`, `degraded`, or `failed`;
+- `package_outcome`: `partial`, `complete`, or `failed`.
+
+For example, a command can exit 0, have no identifiable final answer, and produce
+`completed` / `degraded` / `complete`. Evidence verdicts remain review guidance.
+A package is marked `complete` only after required artifacts and all reports are
+written and the final manifest is replaced. Reports link to `run.json` for that
+final fact. On failure, inspect its `failures` entries and the printed partial
+package path. If the manifest cannot be saved, the CLI says so; an older partial
+checkpoint may be all that remains, or no manifest may exist.
+
+CLI exit behavior:
+
+| Condition | Exit status |
+| --- | --- |
+| Complete package, including degraded analysis | Wrapped command status (0 or non-zero; signals use 128 + signal) |
+| Capture, analysis execution, package validation, or write failure | 1; the manifest retains any observed command status |
+| Missing command | 2 |
+
+The legacy combined `outcome` field is removed. Existing packages stay unchanged;
+old manifests are not silently upgraded or accepted by the version-2 model.
+Phase 4 raw fixtures still exercise their evidence semantics through explicit
+version-2 test manifests. See the
+[lifecycle contract and compatibility decision](docs/ARCHITECTURE.md#212-lifecycle-outcomes--phase-5-t4).
 
 The reports are deterministic views of one validated analysis result:
 
@@ -133,8 +161,9 @@ Phase 4.1 — Trust Hardening is closed. It addressed three gaps in the Phase 4 
    and surface failed verification even when the agent reports it truthfully.
 
 The active phase is **Phase 5 — Trusted Capture and Session Provenance**.
-T1 captures the Git session envelope; T2 is next. The plan strengthens capture
-before broadening analysis:
+T1–T4 implement Git capture, attribution, report provenance, and independent
+lifecycle outcomes. T5 — Task Contract capture is next; [PLAN.md](docs/PLAN.md)
+owns task status. The phase strengthens capture before broadening analysis:
 
 1. distinguish session-attributed, pre-existing, and indeterminate Git changes;
 2. separate process, analysis, and package outcomes;

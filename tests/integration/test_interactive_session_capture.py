@@ -47,7 +47,7 @@ def test_interactive_run_captures_prompt_response_and_exit_status(
     transcript = (run_dir / "agent-session.txt").read_text(encoding="utf-8")
 
     assert manifest["wrapped_command_exit_status"] == 0
-    assert manifest["outcome"] == "completed"
+    assert manifest["process_outcome"] == "completed"
     assert "fake interactive prompt:" in transcript
     assert "Aga typed proof" in transcript
     assert "fake interactive response: Aga typed proof" in transcript

@@ -91,10 +91,16 @@ def create_run_paths(repository_root: Path) -> RunPaths:
 
 
 def write_run_manifest(run_paths: RunPaths, manifest: RunManifest) -> None:
-    run_paths.manifest_path.write_text(
-        manifest.model_dump_json(indent=2) + "\n",
-        encoding="utf-8",
-    )
+    # Revalidate mutable lifecycle facts and keep the last checkpoint on failure.
+    validated = RunManifest.model_validate(manifest.model_dump())
+    temporary = run_paths.run_dir / ".run.json.tmp"
+    try:
+        temporary.write_text(
+            validated.model_dump_json(indent=2) + "\n", encoding="utf-8"
+        )
+        temporary.replace(run_paths.manifest_path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def write_git_session(run_paths: RunPaths, envelope: GitSessionEnvelope) -> None:

@@ -62,7 +62,7 @@ def test_fake_run_creates_run_folder_manifest_and_transcript(
     assert manifest["command"] == [sys.executable, str(FIXTURE)]
     assert manifest["trigger_source"] == "manual_cli"
     assert manifest["wrapped_command_exit_status"] == 0
-    assert manifest["outcome"] == "completed"
+    assert manifest["process_outcome"] == "completed"
     assert manifest["artifact_paths"] == REQUIRED_ARTIFACTS
     _assert_required_artifacts_exist(run_dir)
     assert manifest["git_evidence"]["patch_material_present"] is False
@@ -136,7 +136,7 @@ def test_nonzero_fake_run_records_exit_without_claiming_success(
     assert f"PatchTrace review package written to {run_dir}" in result.output
     assert "Review the package before deciding next steps." in result.output
     assert manifest["wrapped_command_exit_status"] == 7
-    assert manifest["outcome"] == "wrapped_command_failed"
+    assert manifest["process_outcome"] == "failed"
     assert manifest["artifact_paths"] == REQUIRED_ARTIFACTS
     _assert_required_artifacts_exist(run_dir)
     assert "success" not in manifest
