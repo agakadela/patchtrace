@@ -1,11 +1,11 @@
 # Phase 5 — Trusted Capture and Session Provenance
 
-**Status:** active; T1–T5 implemented and locally verified; T6 not started
+**Status:** active; T1–T6 implemented and locally verified; T6a and T7 not started
 
 **Baseline:** Phase 4.1 — Trust Hardening closed on 2026-09-08.
 Closure evidence: [VERIFY_LOG.md](VERIFY_LOG.md#2026-09-08---phase-41-close-trust-hardening).
 
-**Next task:** T6 — Establish the interactive Codex boundary and deliver the same task.
+**Next task:** T6a — Update the local Codex CLI and close the real-response verification gap.
 
 **Roadmap:** [ROADMAP.md](ROADMAP.md)
 
@@ -231,6 +231,11 @@ and coverage verdicts.
 
 ## T6 — Establish the interactive Codex boundary and deliver the same task
 
+**Status:** implemented and locally verified. Boundary and limits:
+[ARCHITECTURE.md](ARCHITECTURE.md#214-interactive-codex-boundary--phase-5-t6).
+Evidence, including the local CLI/model compatibility limit:
+[VERIFY_LOG.md](VERIFY_LOG.md#2026-09-09---phase-5-t6-interactive-codex-task-delivery).
+
 ### Outcome
 
 The user supplies the task once; the existing interactive Codex workflow uses
@@ -281,6 +286,98 @@ formats, generic agent plugins, and full requirement evaluation.
 `codex exec --json` remains an accepted candidate for a separate slice. It can
 enter Phase 5 only after separate human approval or a concrete dogfood trigger
 and does not depend on the Task 7 App Server result.
+
+## T6a — Update the local Codex CLI and close the real-response verification gap
+
+**Status:** not started; planning only. No CLI update has been executed.
+
+**Type:** local environment maintenance and T6 runtime follow-up, before T7.
+This task does not redefine T6 acceptance or expand the Phase 5 product scope.
+
+### Outcome
+
+The terminal's active Codex CLI can use the configured `gpt-6-astra` model, and
+one task-bound PatchTrace interactive session produces a real model response
+while retaining honest delivery and final-output limitations.
+
+### Starting evidence
+
+- T6 wheel run `20260910T012924798118Z-bf273c37` displayed the task in the TUI,
+  then received a model/CLI compatibility error requiring a newer Codex version.
+- Observed on 2026-09-09: `codex-cli 0.144.1`; shell entry
+  `/Users/coderwoman/.local/bin/codex` resolves through
+  `/Users/coderwoman/.codex/packages/standalone/current/bin/codex`.
+- Installed `codex update --help` exposes standalone self-update. The
+  [official update reference](https://learn.chatgpt.com/docs/developer-commands#codex-update)
+  documents self-update for supported releases.
+- Target version: **UNKNOWN** until checked against the official stable release
+  available at execution time; do not infer it from an old update notification.
+
+### Scope and execution order
+
+1. Recheck the active binary, resolved installation path, installed version,
+   available stable release, and official update instructions. Record the exact
+   original release path and supported way to restore the previous CLI binary
+   if the update breaks startup; do not treat a downgrade as proof that the
+   current model will work.
+2. Update this standalone installation through its supported `codex update`
+   path. Verify the version and resolved path again in a fresh shell so a stale
+   binary elsewhere in PATH cannot impersonate a successful update.
+3. Use an identified PatchTrace commit/wheel in a temporary Git repository.
+   Supply a small Task Contract once through
+   `patchtrace run --codex --task-file task.md -- codex`. Use the configured
+   `gpt-6-astra`, a read-only session, and a text-only task requiring no tools,
+   file changes, browsing, or delegation. Obtain the response and send one short
+   interactive follow-up; then exit and inspect the package.
+4. Record exact CLI version/path, PatchTrace commit and wheel digest, task digest,
+   run ID, observed response/follow-up, lifecycle fields, and remaining limits
+   in `docs/VERIFY_LOG.md`. Update this task's status from the observed result.
+   Close all processes started for the test.
+
+### Acceptance
+
+- The active CLI uses the recorded updated release and `gpt-6-astra` produces a
+  response without the previously observed version-compatibility error. A
+  changed version string alone does not satisfy this criterion.
+- The task-bound interactive session accepts a follow-up, exits, and produces
+  its review package. Raw task and prompt digests agree; delivery confirmation,
+  process outcome, analysis outcome, and package outcome reflect the observations.
+  A missing final marker may still degrade analysis and must remain visible.
+- Evidence is tied to the tested binary and PatchTrace snapshot. No model
+  substitution, weakened check, authentication reset, or change to user
+  configuration/skills/plugins is used to manufacture success. On a new blocker,
+  record its exact boundary and leave this task incomplete.
+
+### Verification and separate gates
+
+- Inspect pre/post `command -v codex`, resolved path, `codex --version`, and
+  relevant `--help`; use current official release/update documentation.
+- Run one bounded real interactive task and follow-up from the identified
+  PatchTrace build. Retain sanitized runtime evidence and inspect all three
+  reports; do not infer authenticated message provenance or understanding from
+  a sensible model response.
+- `aga-verify-agent`: assess these acceptance criteria against the versioned
+  runtime evidence, distinguishing actual observations from agent claims.
+- Code review: **N/A if no executable project code changes**. Review any
+  separately authorized compatibility fix through its own implementation task;
+  a CLI update does not justify a ceremonial second code review of unchanged code.
+- Documentation-only results require readback and evidence/link checks. If a
+  code fix becomes necessary, stop this maintenance scope and specify the fix
+  with a failing reproduction and normal project test/review gates.
+
+### Out of scope
+
+Updating the desktop app or IDE extension, changing model/provider selection,
+editing auth/config/skills/plugins, upgrading project dependencies, changing
+PatchTrace source, introducing `codex exec --json` or App Server, and merge/deploy.
+The current request authorizes writing this task; execution follows a separate
+instruction to perform it.
+
+### Expected change size
+
+One local CLI installation; repository evidence/status updates in
+`docs/VERIFY_LOG.md` and `docs/PLAN.md`. Runtime duration depends on installation
+and provider availability; no estimate is treated as a completion guarantee.
 
 ## T7 — Time-box App Server structured-interactive feasibility
 

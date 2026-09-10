@@ -42,7 +42,8 @@ def test_task_capture_binds_original_bytes_and_lifecycle(
     invalid = name in ("invalid", "duplicate")
     assert result.exit_code == (1 if invalid else 0), result.output
     assert manifest.process_outcome == ("not_started" if invalid else "completed")
-    assert manifest.analysis_outcome == ("failed" if invalid else "completed")
+    # Generic commands have no final-output selector, even when they print a marker.
+    assert manifest.analysis_outcome == ("failed" if invalid else "degraded")
     assert manifest.package_outcome == ("partial" if invalid else "complete")
     assert (tmp_path / "command-ran").exists() is not invalid
     if name is None:

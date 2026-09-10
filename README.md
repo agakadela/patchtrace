@@ -12,7 +12,8 @@ decision for the developer.
 
 Version `0.1.0` includes the Phase 4 baseline, Phase 4.1 T1 storage hardening,
 T2 file/change claim assessment, T3 command-attempt semantics, and Phase 5 T1
-Git session capture, T2 attribution, T3 report provenance, T4 lifecycle outcomes, and T5 task capture.
+Git session capture, T2 attribution, T3 report provenance, T4 lifecycle outcomes,
+T5 task capture, and T6 interactive Codex task delivery.
 The implemented command is:
 
 ```bash
@@ -47,7 +48,7 @@ uv run patchtrace run -- python tests/fixtures/fake_agent.py
 To wrap an installed interactive Codex CLI:
 
 ```bash
-uv run patchtrace run -- codex
+uv run patchtrace run --codex -- codex
 ```
 
 The wrapped command retains its normal terminal interaction. When it exits,
@@ -80,6 +81,30 @@ binding in `run.json`. Invalid input is preserved with a parsing failure and
 stops before the command starts. Omitting the option permits the generic run
 with a visible trust limitation. Task capture does not send a prompt to the
 wrapped command or evaluate requirement satisfaction.
+
+To supply the task once and use it as the interactive Codex initial prompt:
+
+```bash
+uv run patchtrace run --codex --task-file task.md -- codex
+```
+
+PatchTrace reads the saved `task.md`, checks its digest, and supplies its original
+UTF-8 text as one prompt argument. Stdin remains available for normal terminal
+interaction. `run.json` records preparation, launch attempt, process-start
+confirmation, and limitations. Process start does not prove Codex/model receipt
+or understanding. The prompt is visible in process arguments and subject to OS
+argument-size limits.
+
+Use a new local interactive session; do not combine `--task-file` with another
+prompt or a Codex subcommand. Common interactive options such as `--model`,
+`--sandbox`, `--ask-for-approval`, `--config`, and `--no-alt-screen` are preserved.
+Unrecognized option shapes fail explicitly; the supported surface and failure
+mapping are in the [T6 architecture](docs/ARCHITECTURE.md#214-interactive-codex-boundary--phase-5-t6).
+
+Without `--codex`, commands and their arguments pass through unchanged, task
+delivery remains unverified, and final-claim analysis is degraded because generic
+PTY text has no agent-specific final-output selector. Git capture and reports
+still run. With `--codex`, final output retains the marker-based trust ceiling.
 
 ## Run package
 
@@ -189,9 +214,7 @@ Phase 4.1 — Trust Hardening is closed. It addressed three gaps in the Phase 4 
    and surface failed verification even when the agent reports it truthfully.
 
 The active phase is **Phase 5 — Trusted Capture and Session Provenance**.
-T1–T4 implement Git capture, attribution, report provenance, and independent
-lifecycle outcomes. T5 — Task Contract capture is next; [PLAN.md](docs/PLAN.md)
-owns task status. The phase strengthens capture before broadening analysis:
+[PLAN.md](docs/PLAN.md) owns current task status. The phase strengthens capture before broadening analysis:
 
 1. distinguish session-attributed, pre-existing, and indeterminate Git changes;
 2. separate process, analysis, and package outcomes;

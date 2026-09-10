@@ -8,10 +8,11 @@ from typing import Literal
 from patchtrace.analysis.git_attribution import load_git_attribution
 from patchtrace.analysis.test_evidence import (
     CommandEvidence,
-    collect_command_evidence,
     extract_command_test_signals,
     is_verification_command,
 )
+from patchtrace.codex import evidence as codex_evidence
+from patchtrace.codex.transcript import final_output_lines, normalize_transcript
 from patchtrace.models.report import (
     AnalysisResult,
     ClaimAssessment,
@@ -24,7 +25,6 @@ from patchtrace.models.report import (
     GitAttribution,
 )
 from patchtrace.models.run import RunManifest
-from patchtrace.session.transcript import normalize_transcript
 
 _BACKTICKED_TEXT_RE = re.compile(r"`([^`\n]+)`")
 _CHANGE_VERB_RE = re.compile(
@@ -121,6 +121,16 @@ def _analyze_claims(
             command_evidence=[],
         )
 
+    if manifest.capture_mode != "codex_interactive":
+        return _build_analysis_result(
+            manifest,
+            git_attribution=git_attribution,
+            claim_material_status="ambiguous" if transcript_text.strip() else "missing",
+            claim_assessments=[],
+            path_evidence=path_evidence,
+            transcript_text=transcript_text,
+            command_evidence=[],
+        )
     normalized = normalize_transcript(transcript_text)
     status: ClaimMaterialStatus = normalized.final_output_status
     if normalized.final_output is None:
@@ -135,13 +145,12 @@ def _analyze_claims(
         )
 
     transcript_artifact = transcript_path or "agent-session.txt"
-    command_evidence = collect_command_evidence(
+    command_evidence = codex_evidence.collect_command_evidence(
         normalized.normalized_text,
         artifact_path=transcript_artifact,
     )
     assessments = _assess_final_output(
-        normalized.final_output,
-        transcript_artifact,
+        final_output_lines(normalized.final_output, transcript_artifact),
         path_evidence,
         command_evidence,
     )
@@ -193,7 +202,7 @@ def _build_analysis_result(
         changed_files=list(path_evidence.changed_files),
         diff_material_status=_diff_material_status(manifest, path_evidence),
         command_test_signals=(
-            extract_command_test_signals(transcript_text) if transcript_text else []
+            _command_signals(manifest, transcript_text) if transcript_text else []
         ),
         evidence_gaps=_evidence_gaps(
             manifest,
@@ -202,6 +211,12 @@ def _build_analysis_result(
             most_important_gap=most_important_gap,
         ),
     )
+
+
+def _command_signals(manifest: RunManifest, text: str) -> list[str]:
+    if manifest.capture_mode == "codex_interactive":
+        return codex_evidence.extract_command_test_signals(text)
+    return extract_command_test_signals(text)
 
 
 def _diff_material_status(
@@ -237,8 +252,27 @@ def _evidence_gaps(
         gaps.append(
             f"Task capture: `{manifest.task.raw_path}` and `{manifest.task.parsed_path}`; "
             f"SHA-256 `{manifest.task.sha256}`; parse status `{manifest.task.parse_status}`. "
-            "Requirement satisfaction is not evaluated. Task delivery is unverified; "
-            "PatchTrace has not submitted this artifact to the wrapped command."
+            "Requirement satisfaction is not evaluated."
+        )
+        delivery = manifest.task_delivery
+        if delivery is None or delivery.mode == "retained_only":
+            gaps.append(
+                "Task delivery is unverified; PatchTrace has not submitted this artifact to the wrapped command."
+            )
+        else:
+            gaps.append(
+                f"Task delivery: `{delivery.mode}`; boundary `{delivery.boundary}`; "
+                f"attempted `{delivery.attempted}`; confirmation `{delivery.confirmation}`; "
+                f"prompt SHA-256 `{delivery.prompt_sha256}`."
+            )
+            gaps.extend(delivery.limitations)
+    if manifest.capture_mode == "generic_pty":
+        gaps.append(
+            "Generic PTY capture has no agent-specific final-output selector; final claims are unverified."
+        )
+    else:
+        gaps.append(
+            "Codex final-output selection is marker-based compatibility evidence, not authenticated message provenance."
         )
     if transcript_text is None:
         gaps.append("Transcript artifact is missing for this run.")
@@ -251,7 +285,7 @@ def _evidence_gaps(
         gaps.append("The final Git snapshot contains no patch material.")
     elif diff_status == "missing":
         gaps.append("Git patch material is missing for this run.")
-    if not transcript_text or not extract_command_test_signals(transcript_text):
+    if not transcript_text or not _command_signals(manifest, transcript_text):
         gaps.append("No obvious command or test signals were detected.")
     return list(dict.fromkeys(gaps))
 
@@ -378,22 +412,16 @@ def _quick_decision(
 
 
 def _assess_final_output(
-    final_output: str,
-    transcript_path: str,
+    final_lines: list[tuple[str, EvidenceReference]],
     path_evidence: _PathEvidence,
     command_evidence: list[CommandEvidence],
 ) -> list[ClaimAssessment]:
     assessments: list[ClaimAssessment] = []
-    for line_number, raw_line in enumerate(final_output.splitlines(), start=1):
+    for raw_line, source in final_lines:
         claim = _strip_list_marker(raw_line)
         if not claim or _GENERIC_COMPLETION_RE.fullmatch(claim):
             continue
 
-        source = EvidenceReference(
-            artifact_path=transcript_path,
-            locator=f"final response line {line_number}",
-            description="Explicit statement in the identified final response.",
-        )
         if _NO_FILES_CHANGED_RE.fullmatch(claim):
             assessments.append(_assess_no_files_changed(claim, source, path_evidence))
             continue

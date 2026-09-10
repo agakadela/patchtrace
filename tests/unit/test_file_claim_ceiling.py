@@ -210,6 +210,7 @@ def test_file_creation_requires_an_observed_addition(tmp_path: Path, verb: str) 
 
 def _manifest() -> RunManifest:
     return RunManifest(
+        capture_mode="codex_interactive",
         run_id="run-123",
         command=["codex"],
         trigger_source="manual_cli",

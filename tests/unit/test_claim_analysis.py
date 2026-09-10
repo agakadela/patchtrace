@@ -246,6 +246,7 @@ def test_analyze_run_assesses_test_and_verification_command_results(
 
 def _manifest() -> RunManifest:
     return RunManifest(
+        capture_mode="codex_interactive",
         run_id="run-123",
         command=["codex"],
         trigger_source="manual_cli",

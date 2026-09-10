@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TextIO, cast
@@ -40,6 +40,7 @@ def record_command(
     command: Sequence[str],
     transcript_path: Path,
     cwd: Path,
+    on_started: Callable[[], None] | None = None,
 ) -> RecordedSession:
     if not command:
         raise ValueError("command must contain at least one argument")
@@ -63,6 +64,10 @@ def record_command(
             process_outcome = "unknown"
             stage = "session_capture"
             try:
+                if on_started is not None:
+                    stage = "process_checkpoint_write"
+                    on_started()
+                    stage = "session_capture"
                 child.logfile = _TranscriptLog(transcript_file)
                 if _stdio_supports_passthrough():
                     child.interact(escape_character=None)

@@ -10,7 +10,8 @@ Related decisions:
 
 This document records current system truth and the accepted next architecture.
 Product scope is owned by [SPEC.md](SPEC.md). [PLAN.md](PLAN.md) owns active
-Phase 5 tasks; T1–T5 Git provenance, lifecycle outcomes, and task capture are implemented.
+Phase 5 tasks; T1–T6 Git provenance, lifecycle outcomes, task capture, and
+interactive Codex delivery are implemented.
 Phase 4.1 closure evidence lives
 in [VERIFY_LOG.md](VERIFY_LOG.md).
 
@@ -27,7 +28,7 @@ PatchTrace is a local Python CLI. It has:
 The established stack remains Python 3.11+, Typer, Pexpect, Pydantic v2,
 pytest, Ruff, mypy, and `uv`.
 
-## 2. CURRENT — Phase 4, Phase 4.1, and Phase 5 T1–T5
+## 2. CURRENT — Phase 4, Phase 4.1, and Phase 5 T1–T6
 
 ### 2.1 Implemented package ownership
 
@@ -35,7 +36,8 @@ pytest, Ruff, mypy, and `uv`.
 src/patchtrace/
 ├── cli/          command entry points and run orchestration
 ├── task/         Task Contract V1 parser and validated task models
-├── session/      PTY recording and transcript normalization
+├── session/      generic PTY recording and terminal cleanup
+├── codex/        interactive prompt delivery, TUI selection and evidence locators
 ├── vcs/          Git command boundary, session envelope and final-state snapshots
 ├── analysis/     deterministic claim and command-signal analysis
 ├── models/       validated run and report models
@@ -49,16 +51,17 @@ module, database, or public JSON API in the current implementation.
 ### 2.2 Implemented run flow
 
 ```text
-patchtrace run [--task-file PATH] -- <command>
+patchtrace run [--codex] [--task-file PATH] -- <command>
   -> validate that cwd is a Git worktree
   -> resolve the canonical Git worktree root and create an external run folder
   -> write an initial partial manifest and checkpoint lifecycle facts
   -> optionally preserve and parse a task; stop before launch on invalid input
+  -> prepare preserved task argv only when the explicit Codex boundary is selected
   -> preserve pre-run HEAD, status, staged/unstaged patch and untracked evidence
   -> run the command through Pexpect and preserve the PTY transcript
   -> preserve post-run Git boundary and straightforward commit-range patches
   -> save git-session.json and the legacy final-state artifacts
-  -> identify exactly one marker-bounded final answer, when available
+  -> select Codex marker-bounded final output, or leave generic final claims unverified
   -> infer bounded claims and command/test signals from text
   -> build one validated AnalysisResult
   -> render SUMMARY, AGENT_FEEDBACK, and VERIFICATION_BRIEF
@@ -101,12 +104,13 @@ not persisted as a separate artifact.
   untracked bytes and linear commits. File claim assessment still describes
   observed snapshot material and does not establish session attribution.
 - Dirty same-path work cannot be separated.
-- The PTY final answer requires exactly one supported marker.
+- Codex PTY final output requires exactly one supported marker; generic commands
+  have no final-output selector.
 - Missing or ambiguous markers degrade claim evidence; there is no transcript
   tail fallback.
 - Command and test evidence is text inference without structured lifecycle.
-- Task capture preserves raw and parsed material; delivery and requirement
-  satisfaction are not implemented.
+- Task capture preserves raw and parsed material; explicit Codex delivery observes
+  only the local argv/process boundary. Requirement satisfaction is not implemented.
 
 The final Phase 4 dogfood demonstrated the Git false positive: identical
 before/after status material was reported as files changed by the run. Phase 5
@@ -474,13 +478,89 @@ agent receipt. The source is not re-read after the wrapped command runs.
 | `task_artifact_write` | Not started / not run | Failed, exit 1; preserve manifest and any written material |
 
 The first parsing diagnostic is retained; input is never repaired into a valid
-contract. Invalid supplied tasks prevent launch. No-task runs retain generic
-claim analysis and its previous lifecycle behavior. One shared `AnalysisResult`
+contract. Invalid supplied tasks prevent launch. No-task runs remain permitted; T6 makes the final-output selector explicit through capture mode. One shared `AnalysisResult`
 adds the explicit missing-task trust limitation to all reports. Captured tasks
 add raw/parsed paths, digest, parse status, and limitations to that same result:
-requirement satisfaction is not evaluated, and task delivery is unverified.
-No parsed requirement changes claim support or the evidence verdict. T6 owns
-actual task delivery; Phase 6 owns requirement satisfaction.
+requirement satisfaction is not evaluated. Generic task delivery remains unverified;
+T6 delivery evidence is described below. No parsed requirement changes claim support
+or the evidence verdict. Phase 6 owns requirement satisfaction.
+
+### 2.14 Interactive Codex boundary — Phase 5 T6
+
+`patchtrace run --codex [--task-file PATH] -- codex [OPTIONS]` explicitly selects
+`capture_mode=codex_interactive`. Without the flag the mode is `generic_pty`:
+commands retain their exact arguments, tasks are retained only, and final-claim
+analysis is degraded. The executable is chosen by the user; the flag does not
+authenticate it or discover its implementation from its filename.
+
+`codex/interactive.py` validates a new local interactive invocation and prepares
+task delivery. After T5 writes the raw artifact, T6 re-reads **that saved file**,
+checks SHA-256, decodes strict UTF-8 without BOM stripping or newline conversion,
+and appends `--` followed by one prompt argument. No shell, parse re-rendering,
+stdin paste, terminal keystroke injection, permission override, retry, or
+replacement UI is introduced. The existing Pexpect 4.9.0 PTY remains responsible
+for user interaction and transcript capture.
+
+The verified transport is the official positional `PROMPT` in `codex-cli
+0.144.1 --help`, corroborated by the
+[official interactive CLI reference](https://learn.chatgpt.com/docs/developer-commands?surface=cli).
+The boundary supports separate option/value pairs and `--option=value` for
+`config`, `enable`, `disable`, `image`, `model`, `local-provider`, `profile`,
+`sandbox`, `cd`, `add-dir`, and `ask-for-approval`, including their documented
+short names. Supported switches are `oss`, `search`, `no-alt-screen`, and
+`strict-config`. Image options take one value each; repeat the option for
+multiple images. Unsupported option shapes, help/version invocations, remote
+transport, resume/fork and other subcommands are rejected. Without a task one
+ordinary positional prompt is allowed; with a task any extra prompt is rejected.
+Generic wrapping remains available for other invocations.
+
+The version-2 manifest adds `capture_mode` and nullable `task_delivery`:
+
+| Field | Meaning |
+| --- | --- |
+| `mode` | `retained_only` or `codex_interactive_argv` |
+| `artifact_sha256` | Digest of the captured raw task, bound to `task.sha256` |
+| `prompt_sha256` | Digest of prepared UTF-8 argv material, or null before preparation |
+| `boundary` | `none` or `argv` |
+| `attempted` | Launch attempt checkpoint entered; an interruption can leave actual spawn unknown |
+| `confirmation` | `unverified`, `process_started`, or `failed` |
+| `limitations` | Explicit transport and identity limits |
+
+`command` retains the user-supplied command. The effective task-bound invocation
+is that list plus `--` and the content of `task.md`, identified by digest; prompt
+text is not duplicated into the manifest. A prelaunch checkpoint records intent;
+the generic recorder's optional `on_started` callback records successful spawn
+inside the child cleanup guard. Later nonzero exit or capture failure does not
+erase an observed launch. Receipt by Codex or the model and understanding remain
+unobservable; even exit 0 does not promote that claim. Prompt arguments are
+visible to local process inspection and subject to OS size limits. NUL is
+rejected rather than rewritten. There are no new provider calls, cost policies,
+automatic retries, or tool-permission changes; the user operates the Codex session.
+
+| New failure stage | Process / analysis | Package / CLI |
+| --- | --- | --- |
+| `codex_invocation` (without task) | Not started / not run | Partial, exit 1; unsupported interactive shape |
+| `task_delivery_prepare` | Not started / not run | Partial, exit 1; failed delivery, no attempt; raw task retained |
+| `task_delivery_start` | Not started / not run | Partial, exit 1; prepared argv attempt failed (including OS launch errors) |
+| `process_checkpoint_write` | Unknown unless exit observed / not run | Failed, exit 1; child cleanup, launch confirmation retained if recovery write succeeds |
+
+Other transcript/package failures use T4 stages. Invalid task syntax still takes
+T5's parsing path and prevents delivery. Existing version-2 manifests without
+these fields load as generic with no delivery evidence; stored packages are not
+rewritten and old captures are not silently promoted to Codex provenance.
+Synthetic historical Codex fixtures now explicitly declare their capture mode.
+
+`codex/transcript.py` owns TUI warning/redraw/shutdown rules, final marker
+selection, and final-response references. `codex/evidence.py` owns TUI command
+prefixes and normalized transcript references. Generic `session/transcript.py`
+only removes terminal controls; generic command-result semantics remain in
+`analysis/test_evidence.py`. The analyzer consumes the concrete selection and
+references into the existing single `AnalysisResult`. All reports share delivery
+facts and limitations from that result. There is no registry or adapter base.
+
+The marker compatibility ceiling is unchanged: exactly one supported marker,
+no tail guessing, no authenticated message provenance, and no requirement
+satisfaction inference. App Server and structured execution remain outside T6.
 
 ## 3. ACCEPTED TARGET — Remaining Phase 5 architecture
 
@@ -520,7 +600,7 @@ Existing packages keep their current responsibilities:
 | `reports` | Render only the shared result and evidence references. |
 | `storage` | Preserve raw artifacts, digests, manifests, and package completion facts. |
 
-Task 6 adds one concrete Codex-specific boundary. It owns interactive task
+Task 6 implements one concrete `codex` boundary (section 2.14). It owns interactive task
 delivery, Codex TUI rules, marker-based final-output extraction, Codex-specific
 evidence locators, and any later approved structured events or final-message
 selection. It appears with the concrete T6 implementation, not as an empty
@@ -571,21 +651,8 @@ with rewritten content.
 
 ### 3.6 Task delivery boundary
 
-For a Codex-specific mode, the preserved raw task artifact is the source of the
-initial prompt. The manifest records:
-
-- delivery mode and supported transport;
-- the artifact digest used as the source;
-- the nearest boundary PatchTrace actually submitted or observed;
-- whether delivery was attempted and what that boundary confirmed;
-- any unobservable receipt limitation.
-
-PatchTrace does not claim byte-for-byte receipt if the official transport does
-not expose it, and never claims model understanding.
-
-For a generic wrapped command, PatchTrace preserves the task for analysis but
-marks delivery as unverified. It does not infer how arbitrary commands consume
-arguments or stdin.
+Implemented in T6; section 2.14 owns the concrete contract, failure mapping,
+compatibility decision, and observable limits.
 
 ### 3.7 Capture modes and trust ceilings
 

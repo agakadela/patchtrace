@@ -8,6 +8,48 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-09-09 - Phase 5 T6: Interactive Codex task delivery
+
+- Authority: Aga requested T6 from the existing Phase 5 plan and ADR-0003.
+  Candidate: this task commit on `agent/phase5-t6-interactive-codex`, base
+  `eb46954`; initial worktree clean.
+- Result: explicit `--codex` selects the concrete interactive boundary. The
+  saved raw task supplies one argv prompt with matching digest; generic commands
+  retain their original arguments and record unverified delivery. Codex owns
+  TUI rules, final selection and evidence locators. All reports use the shared
+  analysis result. Contract and compatibility defaults:
+  [ARCHITECTURE.md](ARCHITECTURE.md#214-interactive-codex-boundary--phase-5-t6).
+- Checks: Ruff lint/format, mypy (62 files), full pytest (277 passed), and
+  wheel/sdist build passed on macOS with Python 3.11.15. Source/test fingerprint
+  before and after checks: `7c0c796adca45ee99a286414630edf5b91c95675713b79c8af9258b9b5b9a9f6`.
+  Existing uv/backend-version warning remains non-failing; no dependency change.
+- Runtime proof: built-wheel run `20260910T012924798118Z-bf273c37` launched
+  Codex CLI 0.144.1 and displayed the task in the normal TUI. Preserved raw task,
+  source digest and prompt digest agree (`357c3a42…a53342`). Manifest records
+  `process_started`; after exit, outcomes are `completed/degraded/complete`.
+  Wheel SHA-256: `c501da0801b7232e74329e83954b11d4b38da2660e8f5c38cd29200299af3185`;
+  every packaged Python source compared equal to the verified candidate.
+  Local evidence: `/tmp/patchtrace-t6-runtime-evidence.json` and the referenced
+  package under `/tmp/patchtrace-t6-dogfood-a66mv4m6/state/`.
+- Failure and boundary proof: UTF-8/BOM/CRLF/trailing-space argv equality;
+  inert shell metacharacters; digest/NUL/argument conflicts; retained-only
+  generic runs; success/nonzero lifecycle matrix; failed spawn, transcript-open
+  failure, and failed post-spawn checkpoint with child cleanup; contradictory
+  manifests; TUI markers and locators; empty final marker versus recorder footer;
+  two-level PTY delivery followed by user-typed input. No tests removed or skipped.
+- Aga verification gate: High Risk, VERIFIED for the identified local snapshot;
+  separate code review completed for the same source snapshot with no actionable
+  findings. No model receipt or understanding claim.
+- Cannot verify: a successful model response. The configured `gpt-6-astra`
+  returned a compatibility error requiring newer Codex after the task appeared
+  in the TUI. This does not block the T6 invocation/delivery boundary; no CLI
+  upgrade or model/config change was made. Byte-for-byte model receipt,
+  understanding, requirement satisfaction, structured provenance, and Linux
+  runtime are not established. All test PTY processes were closed.
+- Documentation: README, ARCHITECTURE, CONTEXT and PLAN updated; SPEC and ROADMAP
+  link to canonical current status. T7 remains
+  unstarted; no merge or deployment is authorized by this verification.
+
 ### 2026-09-09 - Phase 5 T4: Independent lifecycle outcomes
 
 - Authority: Aga requested T4 and a documentation currency check. Candidate:

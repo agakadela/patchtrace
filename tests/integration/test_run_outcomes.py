@@ -16,6 +16,7 @@ REPORTS = ("SUMMARY.md", "AGENT_FEEDBACK.md", "VERIFICATION_BRIEF.md")
 
 
 @pytest.mark.parametrize("exit_status", [0, 7])
+@pytest.mark.parametrize("codex", [False, True])
 @pytest.mark.parametrize(
     "final_output",
     [
@@ -30,6 +31,7 @@ def test_command_and_analysis_outcomes_are_independent(
     monkeypatch: pytest.MonkeyPatch,
     exit_status: int,
     final_output: str,
+    codex: bool,
 ) -> None:
     _init_git_repo(tmp_path)
     monkeypatch.chdir(tmp_path)
@@ -37,6 +39,7 @@ def test_command_and_analysis_outcomes_are_independent(
         app,
         [
             "run",
+            *(["--codex"] if codex else []),
             "--",
             sys.executable,
             "-c",
@@ -47,7 +50,9 @@ def test_command_and_analysis_outcomes_are_independent(
     path = next(run_storage.rglob("run.json"))
     manifest = RunManifest.model_validate_json(path.read_text())
     assert manifest.process_outcome == ("completed" if exit_status == 0 else "failed")
-    analysis = "completed" if final_output == "Final answer:\nDone." else "degraded"
+    analysis = (
+        "completed" if codex and final_output == "Final answer:\nDone." else "degraded"
+    )
     assert manifest.analysis_outcome == analysis
     assert manifest.package_outcome == "complete"
     for name in REPORTS:
@@ -209,7 +214,7 @@ def test_final_manifest_replace_failure_keeps_an_incomplete_checkpoint(
     path = next(run_storage.rglob("run.json"))
     manifest = RunManifest.model_validate_json(path.read_text())
     assert manifest.process_outcome == "completed"
-    assert manifest.analysis_outcome == "completed"
+    assert manifest.analysis_outcome == "degraded"
     assert manifest.package_outcome == ("partial" if persistent else "failed")
     assert not (path.parent / ".run.json.tmp").exists()
     assert ("Unable to preserve run manifest" in result.output) == persistent

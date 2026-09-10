@@ -4,9 +4,9 @@
 
 **Product stage:** local CLI, pre-OSS
 
-**Current implementation:** Phase 4.1 complete
+**Current implementation:** see [ARCHITECTURE.md](ARCHITECTURE.md#2-current--phase-4-phase-41-and-phase-5-t1t6).
 
-**Active phase:** Phase 5 — Trusted Capture and Session Provenance (T1–T4 implemented; T5 Task Contract capture next)
+**Active phase:** Phase 5 — Trusted Capture and Session Provenance; [PLAN.md](PLAN.md) owns task status.
 
 **Following phase:** Phase 6 — Task Coverage and Final Verification
 
