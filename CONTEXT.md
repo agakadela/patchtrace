@@ -28,7 +28,7 @@ sections and optional `Acceptance Criteria`, `Required Verification`, and
 ### Raw task artifact
 
 The preserved task source before parsing or semantic normalization. It is bound
-to the run by a digest. T5 captures it; T6 will use it as the source of a
+to the run by a digest. T5 captures it; T6 uses it as the source of a
 Codex-specific initial prompt.
 
 ### Deterministic run-local ID
@@ -193,6 +193,17 @@ actually observes.
 Evidence of how the preserved raw task artifact was submitted at the nearest
 reliable transport boundary. It does not imply model receipt when unobservable
 and never implies model understanding.
+
+### Process-start confirmation
+
+An observation that the selected executable launched with prepared prompt
+arguments. This confirms the local invocation boundary only. It does not confirm
+prompt parsing, Codex/model receipt, task understanding, or successful work.
+
+### Retained-only task
+
+A captured task kept for analysis with a generic command. PatchTrace does not
+submit it to that command; task delivery remains unverified.
 
 ### Marker-based final output
 

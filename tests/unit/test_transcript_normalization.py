@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 from typing import TypedDict, cast
 
-from patchtrace.analysis.test_evidence import extract_command_test_signals
-from patchtrace.session.transcript import normalize_transcript
+from patchtrace.codex.evidence import extract_command_test_signals
+from patchtrace.codex.transcript import normalize_transcript
 
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "codex_transcript_noise.json"
 

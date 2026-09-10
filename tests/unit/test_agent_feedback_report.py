@@ -208,6 +208,7 @@ def _manifest(
 ) -> RunManifest:
     outcome: ProcessOutcome = "completed" if exit_status == 0 else "failed"
     return RunManifest(
+        capture_mode="codex_interactive",
         run_id="run-123",
         command=["python", "tests/fixtures/fake_agent.py"],
         trigger_source="manual_cli",

@@ -38,6 +38,41 @@ class TaskEvidenceManifest(BaseModel):
     parse_status: Literal["valid", "invalid"]
 
 
+class TaskDelivery(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mode: Literal["retained_only", "codex_interactive_argv"]
+    artifact_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    prompt_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    boundary: Literal["none", "argv"]
+    attempted: bool = False
+    confirmation: Literal["unverified", "process_started", "failed"] = "unverified"
+    limitations: list[str] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_delivery(self) -> Self:
+        if self.mode == "retained_only":
+            if (
+                self.boundary != "none"
+                or self.attempted
+                or self.prompt_sha256 is not None
+                or self.confirmation != "unverified"
+            ):
+                raise ValueError("Retained tasks cannot claim delivery")
+        elif self.boundary != "argv":
+            raise ValueError("Interactive task delivery requires the argv boundary")
+        if (
+            self.prompt_sha256 is not None
+            and self.prompt_sha256 != self.artifact_sha256
+        ):
+            raise ValueError("Prompt and artifact digests must agree")
+        if self.attempted and self.prompt_sha256 is None:
+            raise ValueError("Delivery attempts require a prepared prompt digest")
+        if self.confirmation == "process_started" and not self.attempted:
+            raise ValueError("Process confirmation requires an attempt")
+        return self
+
+
 class RunManifest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -56,9 +91,35 @@ class RunManifest(BaseModel):
     git_evidence: GitEvidenceManifest | None = None
     repository_root: str | None = None
     task: TaskEvidenceManifest | None = None
+    capture_mode: Literal["generic_pty", "codex_interactive"] = "generic_pty"
+    task_delivery: TaskDelivery | None = None
 
     @model_validator(mode="after")
     def validate_outcomes(self) -> Self:
+        if self.task_delivery is not None:
+            if (
+                self.task is None
+                or self.task_delivery.artifact_sha256 != self.task.sha256
+            ):
+                raise ValueError("Delivery evidence must bind the captured task")
+            if (self.task_delivery.mode == "codex_interactive_argv") != (
+                self.capture_mode == "codex_interactive"
+            ):
+                raise ValueError("Task delivery mode must match capture mode")
+            if (
+                self.task_delivery.confirmation == "process_started"
+                and self.process_outcome == "not_started"
+            ):
+                raise ValueError(
+                    "Process-start confirmation cannot describe an unstarted process"
+                )
+            if (
+                self.task_delivery.confirmation == "failed"
+                and self.package_outcome == "complete"
+            ):
+                raise ValueError(
+                    "Failed task delivery cannot produce a complete package"
+                )
         if self.task is not None:
             if not {self.task.raw_path, self.task.parsed_path}.issubset(
                 self.artifact_paths

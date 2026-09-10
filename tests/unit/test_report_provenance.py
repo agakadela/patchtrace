@@ -96,6 +96,7 @@ def test_reports_preserve_shared_provenance_without_snapshot_fallback(
     )
     now = datetime.now(UTC)
     manifest = RunManifest(
+        capture_mode="codex_interactive",
         run_id=result.run_id,
         command=["fake"],
         trigger_source="manual_cli",

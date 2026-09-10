@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from patchtrace.analysis.analyzer import analyze_run
-from patchtrace.analysis.test_evidence import collect_command_evidence
+from patchtrace.codex.evidence import collect_command_evidence
 from patchtrace.models.report import ClaimSupport
 from patchtrace.models.run import RunManifest
 
@@ -92,6 +92,7 @@ def test_different_command_does_not_supply_missing_result(tmp_path: Path) -> Non
 
 def _manifest() -> RunManifest:
     return RunManifest(
+        capture_mode="codex_interactive",
         run_id="command-attempts",
         command=["codex"],
         trigger_source="manual_cli",

@@ -1,11 +1,11 @@
 # Phase 5 — Trusted Capture and Session Provenance
 
-**Status:** active; T1–T5 implemented and locally verified; T6 not started
+**Status:** active; T1–T6 implemented and locally verified; T7 not started
 
 **Baseline:** Phase 4.1 — Trust Hardening closed on 2026-09-08.
 Closure evidence: [VERIFY_LOG.md](VERIFY_LOG.md#2026-09-08---phase-41-close-trust-hardening).
 
-**Next task:** T6 — Establish the interactive Codex boundary and deliver the same task.
+**Next task:** T7 — Time-box App Server structured-interactive feasibility.
 
 **Roadmap:** [ROADMAP.md](ROADMAP.md)
 
@@ -230,6 +230,11 @@ Predicate syntax, `all`/`any` expressions, policy evaluation, semantic matching,
 and coverage verdicts.
 
 ## T6 — Establish the interactive Codex boundary and deliver the same task
+
+**Status:** implemented and locally verified. Boundary and limits:
+[ARCHITECTURE.md](ARCHITECTURE.md#214-interactive-codex-boundary--phase-5-t6).
+Evidence, including the local CLI/model compatibility limit:
+[VERIFY_LOG.md](VERIFY_LOG.md#2026-09-09---phase-5-t6-interactive-codex-task-delivery).
 
 ### Outcome
 

@@ -44,7 +44,7 @@ scope remain outside this phase.
 
 ## Phase 5 — Trusted Capture and Session Provenance
 
-**Status:** active; T1–T4 implemented. Next task: T5 — Capture Task Contract V1.
+**Status:** active; [PLAN.md](PLAN.md) owns implementation and next-task status.
 
 **Active tasks:** [PLAN.md](PLAN.md).
 

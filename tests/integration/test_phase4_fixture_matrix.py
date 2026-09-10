@@ -152,6 +152,7 @@ def _manifest(case: FixtureCase) -> RunManifest:
             patch_material_present=case["patch_material_present"],
         )
     return RunManifest(
+        capture_mode="codex_interactive",
         run_id=f"fixture-{case['name']}",
         command=["codex"],
         trigger_source="manual_cli",

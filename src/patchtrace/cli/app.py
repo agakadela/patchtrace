@@ -7,10 +7,16 @@ from typing import Annotated, NoReturn
 import typer
 
 from patchtrace.analysis.analyzer import analyze_run
+from patchtrace.codex.interactive import (
+    new_task_delivery,
+    prepare_task_command,
+    validate_interactive_command,
+)
 from patchtrace.models.run import (
     GitEvidenceManifest,
     RunFailure,
     RunManifest,
+    TaskDelivery,
     TaskEvidenceManifest,
 )
 from patchtrace.reports.feedback import (
@@ -58,6 +64,13 @@ def _exit_not_implemented(command_name: str) -> None:
 )
 def run(
     ctx: typer.Context,
+    codex: Annotated[
+        bool,
+        typer.Option(
+            "--codex",
+            help="Use the interactive Codex boundary; submit --task-file as its initial prompt.",
+        ),
+    ] = False,
     task_file: Annotated[
         Path | None,
         typer.Option(
@@ -94,6 +107,7 @@ def run(
         typer.echo(f"Unable to create PatchTrace run storage: {error}", err=True)
         raise typer.Exit(1) from error
     manifest = _new_manifest(run_paths, command, repository_root)
+    manifest.capture_mode = "codex_interactive" if codex else "generic_pty"
     envelope = GitSessionEnvelope(
         repository_root=str(repository_root), patch_prefixes="a/b"
     )
@@ -128,6 +142,29 @@ def run(
                     "; ".join(parsed_task.errors)
                     + ". Correct the supplied task file and rerun; see task.md and task.json."
                 )
+        launch_command = command
+        if manifest.task is not None:
+            manifest.task_delivery = (
+                new_task_delivery(manifest.task.sha256)
+                if codex
+                else TaskDelivery(
+                    mode="retained_only",
+                    artifact_sha256=manifest.task.sha256,
+                    boundary="none",
+                    limitations=[
+                        "Task delivery is unverified; generic commands retain task material for analysis only."
+                    ],
+                )
+            )
+        if codex:
+            stage = "task_delivery_prepare" if manifest.task else "codex_invocation"
+            validate_interactive_command(command, has_task=manifest.task is not None)
+            if manifest.task is not None:
+                launch_command, manifest.task_delivery = prepare_task_command(
+                    command,
+                    run_paths.run_dir / manifest.task.raw_path,
+                    manifest.task.sha256,
+                )
         stage = "capture_before"
         envelope.before = capture_boundary(repository_root)
         before_status = capture_git_status(repository_root)
@@ -137,17 +174,28 @@ def run(
         # A checkpoint before launch cannot promise the command never started
         # if PatchTrace is interrupted before the next checkpoint.
         manifest.process_outcome = "unknown"
+        if codex and manifest.task_delivery:
+            manifest.task_delivery.attempted = True
         stage = "manifest_write"
         try:
             write_run_manifest(run_paths, manifest)
         except (Exception, KeyboardInterrupt):
             manifest.process_outcome = "not_started"
+            if manifest.task_delivery:
+                manifest.task_delivery.attempted = False
             raise
+
+        def on_started() -> None:
+            if codex and manifest.task_delivery:
+                manifest.task_delivery.confirmation = "process_started"
+                write_run_manifest(run_paths, manifest)
+
         stage = "session_capture"
         recorded_session = record_command(
-            command=command,
+            command=launch_command,
             transcript_path=run_paths.transcript_path,
             cwd=workspace,
+            on_started=on_started if codex and manifest.task_delivery else None,
         )
         manifest.wrapped_command_exit_status = recorded_session.exit_status
         manifest.process_outcome = (
@@ -212,8 +260,15 @@ def run(
     except RecordingError as error:
         manifest.process_outcome = error.process_outcome
         manifest.wrapped_command_exit_status = error.exit_status
+        if codex and manifest.task_delivery and error.process_outcome == "not_started":
+            manifest.task_delivery.confirmation = "failed"
+            if error.stage == "process_start":
+                _exit_run_failure(run_paths, manifest, "task_delivery_start", error)
+            manifest.task_delivery.attempted = False
         _exit_run_failure(run_paths, manifest, error.stage, error)
     except (Exception, KeyboardInterrupt) as error:
+        if stage == "task_delivery_prepare" and manifest.task_delivery:
+            manifest.task_delivery.confirmation = "failed"
         if stage.startswith("capture_") or isinstance(error, GitCommandError):
             _preserve_capture_failure(
                 run_paths, envelope, stage.removeprefix("capture_"), error
