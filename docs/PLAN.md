@@ -23,10 +23,12 @@ ceilings to obtain a stronger Phase 6 verdict.
 
 ## Phase goal
 
-Make every preserved Task Contract item visible in the shared analysis, connect
-it conservatively to captured claims and evidence, distinguish missing or
-human-judgment coverage from established facts, and optionally run explicitly
-authorized final verification against an identified final Git state.
+Make every coverage-bearing Task Contract item visible in the shared analysis,
+connect it conservatively to captured claims and evidence, distinguish missing
+or human-judgment coverage from established facts, and optionally run explicitly
+authorized final verification against an identified final Git state. `Outcome`
+and `Out of Scope` remain preserved and referenced as task context, not copied
+into the coverage inventory.
 
 The developer remains the final decision-maker. A PatchTrace verdict describes
 evidence coverage within the task and capture boundaries; it does not certify
@@ -57,8 +59,9 @@ commands; implementation must pause at the ask-first checkpoint below.
 - A claim-to-requirement link is not requirement satisfaction.
 - Path presence or a changed file does not establish semantic behavior.
 - Natural-language criteria requiring judgment are labeled for human review.
-- A missing or invalid Task Contract prevents the strongest task-bounded
-  verdict.
+- A missing Task Contract prevents the strongest task-bounded verdict. An
+  invalid Task Contract remains a pre-analysis lifecycle failure and produces no
+  task-bounded verdict or reports.
 - PTY command results remain transcript-derived until an explicitly authorized
   final-verification command is captured by PatchTrace itself.
 - Final verification never runs implicitly from prose in `task.md` or from
@@ -67,6 +70,37 @@ commands; implementation must pause at the ask-first checkpoint below.
   adapter framework, or new dependency is assumed.
 - Existing process, analysis, and package outcomes remain independent of the
   evidence verdict.
+
+## Coverage vocabulary fixed for T1–T2
+
+These are TARGET terms for the Phase 6 model; they are not implemented Phase 5
+behavior.
+
+- Inventory availability is `available` for a valid parsed Task Contract and
+  `unavailable_no_task` for a completed run without one. An invalid supplied
+  task does not enter analysis: the existing partial package retains `run.json`,
+  `task.md`, and `task.json`, but no `AnalysisResult` or reports are synthesized.
+- Optional section disposition is `present`, `not_supplied` when its heading was
+  omitted and the parsed value is null, or `not_applicable` when the section was
+  explicitly `N/A` and the parsed value is an empty list. These terms do not
+  describe item coverage.
+- Item `coverage_state` is `unassessed`, `missing`, `related`, `conflicted`, or
+  `bounded_covered`. T1 initializes every valid item as `unassessed`. T2 uses
+  `missing` when no bounded relationship exists, `related` when a relationship
+  exists but does not establish the complete item, `conflicted` when bounded
+  captured material conflicts with the item, and `bounded_covered` only when
+  direct evidence establishes the complete non-semantic factual content within
+  the active capture ceiling. `bounded_covered` is not semantic correctness,
+  safety, or developer acceptance, and a related agent claim alone cannot
+  produce it.
+- Item `review_state` is independent: `unassessed`, `bounded`, or
+  `human_required`. T1 uses `unassessed`; T2 uses `human_required` whenever the
+  item's full meaning needs semantic or acceptance judgment, even if its
+  `coverage_state` is `missing`, `related`, or `conflicted`. `bounded` means only
+  that the item can be assessed by the fixed deterministic rules; it does not
+  mean that the item is covered.
+- Product-level omitted-item detection maps to item `coverage_state=missing`.
+  The word `omitted` is not used for an optional section disposition.
 
 ## T1 — Render a complete conservative Task Contract coverage inventory
 
@@ -84,9 +118,14 @@ does not satisfy it.
 - add one validated coverage-assessment model keyed by existing deterministic
   run-local Task Contract IDs;
 - build the inventory from the parsed task artifact already bound to the run;
-- retain original section, order, text, task digest, and evidence references;
-- represent absent task, invalid task, and optional empty sections without
-  inventing items;
+- retain section identity, within-section source order, text, task digest, and
+  evidence references; render sections in the canonical order `Requirements`,
+  `Acceptance Criteria`, then `Required Verification` because `task.json` does
+  not retain the source document's cross-section order;
+- represent a no-task run as `unavailable_no_task`, distinguish optional
+  `not_supplied` and `not_applicable` sections, and invent no items;
+- preserve the existing invalid-task lifecycle without constructing an
+  `AnalysisResult` or reports for material that has no parsed contract;
 - render the same coverage inventory from the shared `AnalysisResult` in
   `SUMMARY.md`, `AGENT_FEEDBACK.md`, and `VERIFICATION_BRIEF.md`;
 - update the architecture and domain glossary with the implemented states and
@@ -94,19 +133,22 @@ does not satisfy it.
 
 **Acceptance**
 
-- every captured `REQ-*`, `AC-*`, and `VER-*` ID appears exactly once and in
-  source order in each report;
-- initial coverage cannot be read as satisfaction and links back to `task.json`
-  plus the task digest;
-- no-task and invalid-task fixtures preserve their existing lifecycle behavior
-  and cannot receive the strongest task-bounded verdict;
+- every captured `REQ-*`, `AC-*`, and `VER-*` ID appears exactly once in each
+  report, in source order within its canonical report section;
+- every valid item starts with `coverage_state=unassessed` and
+  `review_state=unassessed`, links to its exact `task.json` JSON Pointer and task
+  digest, and cannot be read as satisfaction;
+- a no-task complete package renders `unavailable_no_task` with no invented
+  items; an invalid-task fixture remains partial, stops before analysis, and
+  produces no reports;
 - all report renderers consume the same validated coverage list rather than
   reparsing the task.
 
 **Verification**
 
-- focused model/analyzer/report tests with minimal, full, `N/A`, invalid, and
-  no-task fixtures;
+- focused model/analyzer/report tests with minimal, full, `N/A`, and no-task
+  fixtures, plus an invalid-task lifecycle regression proving that no analysis
+  or reports are synthesized;
 - report-parity regression proving identical IDs, states, and evidence
   references;
 - `uv run mypy src tests` and relevant integration tests before commit.
@@ -129,8 +171,9 @@ final Phase 6 verdict.
 
 Each coverage item shows any bounded relationship to agent claims, command
 attempts, Git observations, and task evidence. Items with no relevant captured
-relationship remain explicitly omitted or missing; criteria that need semantic
-judgment remain assigned to the developer.
+relationship use `coverage_state=missing`; criteria that need semantic judgment
+remain independently assigned to the developer with
+`review_state=human_required`.
 
 **Scope**
 
@@ -143,9 +186,10 @@ judgment remain assigned to the developer.
 - allow an agent claim to be related to a task item without treating the claim
   as proof;
 - keep file/path observations at the Phase 4.1 semantic ceiling;
-- derive an explicit omitted/missing state when no relationship is available;
-- mark natural-language behavior or acceptance judgment as human review even
-  when a related claim or path exists;
+- derive `coverage_state` using the fixed vocabulary above and preserve all
+  relationships and unresolved parts separately from that primary state;
+- mark natural-language behavior or acceptance judgment as
+  `review_state=human_required` even when a related claim or path exists;
 - propagate the same relationships, gaps, and next action through all reports.
 
 **Acceptance**
@@ -162,7 +206,8 @@ judgment remain assigned to the developer.
 **Verification**
 
 - focused deterministic matching and negative-regression tests;
-- integration fixture proving an omitted requirement is visible in all reports;
+- integration fixture proving a requirement with `coverage_state=missing` is
+  visible in all reports;
 - `uv run mypy src tests` and the Task Contract/report suites before commit.
 
 **Dependencies:** T1.
@@ -179,7 +224,8 @@ After T1–T2:
 
 - run Ruff lint/format, mypy, full pytest, and build;
 - dogfood one task-bound and one no-task package;
-- confirm every report exposes the same complete inventory and omissions;
+- confirm every report exposes the same complete inventory and missing-coverage
+  items;
 - independently review that no relationship is mislabeled as satisfaction;
 - record the milestone in `VERIFY_LOG.md`.
 
@@ -200,6 +246,10 @@ with `api-and-interface-design`, `security-and-hardening`, and
 - cwd, timeout, output cap, retry cap, and network expectations are visible;
 - no command runs after authorization becomes ambiguous or stale;
 - interruption and partial capture are first-class outcomes;
+- PatchTrace never serializes the inherited environment or claims to scrub
+  arbitrary command output; exact argv and bounded stdout/stderr are local
+  evidence and may contain user-supplied secrets, so the authorization UX must
+  warn against placing secrets there before execution;
 - implementation permission does not authorize installation, spending,
   provider actions, merge, deploy, or destructive cleanup.
 
@@ -236,8 +286,9 @@ termination reason, and limitations independently of the wrapped process.
 - a failed verification remains a complete evidence result when its artifacts
   are written successfully;
 - interruption cannot produce a passing verification state;
-- logs and reports exclude environment secrets and do not claim sandboxing that
-  PatchTrace does not provide.
+- PatchTrace does not enumerate environment values, reports do not inline the
+  captured verification output, and the package does not claim secret redaction
+  or sandboxing that PatchTrace does not provide;
 
 **Verification**
 
@@ -263,8 +314,9 @@ installation, retries, remote providers, and freshness verdicts.
 **Outcome**
 
 Each required verification is classified as fresh, stale, failed, missing, or
-unknown against an inspectable final Git identity. Later repository changes
-cannot leave an earlier pass labeled fresh.
+unknown against an inspectable final Git identity captured in the same run.
+`fresh` is a point-in-time statement about that recorded final boundary, not a
+live guarantee after the package is complete.
 
 **Scope**
 
@@ -273,19 +325,23 @@ cannot leave an earlier pass labeled fresh.
 - bind the authorized verification attempt to before/after identities;
 - mark a pass fresh only when it completed successfully and the analyzed final
   identity still matches its verified identity;
-- mark post-check changes stale, failed exits failed, absent required attempts
-  missing, and unsupported/partial identity unknown;
+- mark changes observed after the check and before the final boundary stale,
+  failed exits failed, absent required attempts missing, and unsupported/partial
+  identity unknown;
 - treat verification commands that mutate the repository conservatively;
 - expose the identity, source locators, and reason in every report.
 
 **Acceptance**
 
-- fixtures cover unchanged pass, later tracked edit, later untracked edit,
-  commit after pass, failed command, timeout, missing command, unsupported Git
-  history, and a verification command that changes the worktree;
+- fixtures cover unchanged pass; a tracked edit, untracked edit, or commit after
+  the check but before the final boundary; failed command; timeout; missing
+  command; unsupported Git history; and a verification command that changes the
+  worktree;
 - no timestamp alone establishes freshness;
 - dirty same-path and unsupported boundaries degrade to unknown rather than
   fresh;
+- every `fresh` label states the captured final identity and that later changes
+  require a new run or future post-hoc analysis;
 - all reports agree on the state and exact Git/evidence references.
 
 **Verification**
@@ -299,8 +355,9 @@ cannot leave an earlier pass labeled fresh.
 **Likely files:** one freshness module, validated evidence models, analyzer
 orchestration, shared rendering, and focused tests.
 
-**Out of scope:** cryptographic attestation, host sandbox guarantees, and
-concurrent filesystem-event tracking.
+**Out of scope:** live invalidation after package completion, post-hoc
+re-analysis, cryptographic attestation, host sandbox guarantees, and concurrent
+filesystem-event tracking.
 
 ## T5 — Produce the deterministic task-bounded verdict
 
@@ -315,9 +372,11 @@ capture-mode ceiling.
 
 **Scope**
 
-- define documented precedence for lifecycle failure, invalid/missing task,
-  conflicting evidence, failed/stale/unknown/missing verification, omissions,
-  human review, and fully covered bounded facts;
+- define documented precedence for lifecycle failure, no-task coverage,
+  conflicting evidence, failed/stale/unknown/missing verification,
+  `coverage_state=missing`, human review, and fully covered bounded facts;
+- keep invalid supplied tasks outside verdict logic because their preserved
+  pre-analysis failure produces no `AnalysisResult` or reports;
 - make the strongest verdict unavailable unless every required gate is met;
 - retain explicit language that the verdict is review guidance rather than
   semantic correctness or automatic acceptance;
@@ -333,6 +392,7 @@ capture-mode ceiling.
 - a no-task run, degraded final output, indeterminate attribution, human-review
   criterion, or non-fresh required verification cannot receive the strongest
   verdict;
+- an invalid-task fixture cannot reach task-bounded decision logic;
 - lower-priority positive evidence cannot mask a process/package failure or
   failed required check;
 - all reports are deterministic and byte-stable for the same validated result.
@@ -370,14 +430,16 @@ After T3–T5:
 **Outcome**
 
 One real local task-bound workflow and the fixture matrix demonstrate that
-coverage, omissions, authorized verification, freshness, verdict precedence,
-and report parity hold together without exceeding the capture-mode ceiling.
+coverage, missing items, authorized verification, freshness, verdict
+precedence, and report parity hold together without exceeding the capture-mode
+ceiling.
 
 **Scope**
 
 - build and run the final wheel in an isolated temporary Git repository;
-- use an explicit Task Contract with at least one covered item, one omitted or
-  human-review item, and one required verification;
+- use an explicit Task Contract with at least one `bounded_covered` item, one
+  item with `coverage_state=missing` or `review_state=human_required`, and one
+  required verification;
 - exercise an authorized final check and a deliberate post-check freshness
   change in separate runs;
 - inspect all manifests, raw artifacts, and all three reports;
@@ -412,8 +474,9 @@ without separate authorization.
 
 - every captured requirement and acceptance criterion has a visible coverage
   state and evidence references;
-- omitted items remain visible;
-- natural-language criteria that need judgment are assigned to human review;
+- items with `coverage_state=missing` remain visible;
+- natural-language criteria that need judgment use
+  `review_state=human_required`;
 - required verification is visibly missing, failed, fresh, stale, or unknown;
 - user-authorized execution is bounded, direct-argv, inspectable, and has an
   explicit failure path;

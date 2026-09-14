@@ -92,6 +92,24 @@ The relationship between one Task Contract item and available evidence.
 Coverage may still require human judgment. It is the active Phase 6 scope and
 is not part of the completed Phase 5 implementation.
 
+The accepted Phase 6 TARGET vocabulary keeps separate facts separate:
+
+- inventory availability is `available` or `unavailable_no_task`; invalid task
+  input remains a pre-analysis lifecycle failure and has no coverage result;
+- optional section disposition is `present`, `not_supplied`, or
+  `not_applicable`;
+- item coverage is `unassessed`, `missing`, `related`, `conflicted`, or
+  `bounded_covered`;
+- item review assignment is independently `unassessed`, `bounded`, or
+  `human_required`.
+
+`missing` is the representation of product-level omitted-item detection.
+`bounded_covered` establishes only the complete non-semantic factual content
+allowed by the active capture ceiling. It is not semantic correctness, safety,
+or developer acceptance. `fresh` verification is likewise point-in-time: it
+describes the final Git identity captured in that run, not repository changes
+made after the package completed.
+
 ### AnalysisResult
 
 The one validated domain result from which all reports are rendered. Report
