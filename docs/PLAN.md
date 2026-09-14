@@ -1,11 +1,11 @@
 # Phase 5 — Trusted Capture and Session Provenance
 
-**Status:** active; T1–T6 implemented and locally verified; T6a partially executed (runtime blocked); T7 not started
+**Status:** active; T1–T6 implemented and locally verified; T6a completed and locally verified; T7 not started
 
 **Baseline:** Phase 4.1 — Trust Hardening closed on 2026-09-08.
 Closure evidence: [VERIFY_LOG.md](VERIFY_LOG.md#2026-09-08---phase-41-close-trust-hardening).
 
-**Next task:** T6a — Resolve the temporary-repository trust boundary and complete the real-response verification.
+**Next task:** T7 — Time-box App Server structured-interactive feasibility.
 
 **Roadmap:** [ROADMAP.md](ROADMAP.md)
 
@@ -289,10 +289,10 @@ and does not depend on the Task 7 App Server result.
 
 ## T6a — Update the local Codex CLI and close the real-response verification gap
 
-**Status:** partially executed on 2026-09-09; CLI updated to 0.154.0.
-Real-response verification is blocked at the temporary-repository trust prompt.
-No trust/configuration change was made; no model response or follow-up was observed.
-Evidence: [VERIFY_LOG.md](VERIFY_LOG.md#2026-09-09---phase-5-t6a-cli-update-and-runtime-trust-blocker).
+**Status:** completed and locally verified on 2026-09-09.
+CLI 0.154.0 produced a `gpt-6-astra` response and one interactive follow-up;
+the package records `completed/degraded/complete` with final-output limits intact.
+Evidence: [VERIFY_LOG.md](VERIFY_LOG.md#2026-09-09---phase-5-t6a-real-response-and-follow-up).
 
 **Type:** local environment maintenance and T6 runtime follow-up, before T7.
 This task does not redefine T6 acceptance or expand the Phase 5 product scope.
@@ -374,7 +374,10 @@ Updating the desktop app or IDE extension, changing model/provider selection,
 editing auth/config/skills/plugins, upgrading project dependencies, changing
 PatchTrace source, introducing `codex exec --json` or App Server, and merge/deploy.
 Aga separately authorized execution with “wykonaj t6a” on 2026-09-09.
-The restriction on user configuration changes remains in force.
+Aga subsequently answered “tak” to narrowly authorize persisting trust for
+`/private/tmp/patchtrace-t6a-evidence/repo` and repeating the bounded test.
+All other configuration restrictions remain in force; CLI-generated onboarding
+metadata is disclosed in the verification log.
 
 ### Expected change size
 

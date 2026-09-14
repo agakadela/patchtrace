@@ -8,6 +8,75 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-09-09 - Phase 5 T6a: Real response and follow-up
+
+- Authority: after the blocked attempt below, Aga answered “tak” to the explicit
+  request to persist trust only for `/private/tmp/patchtrace-t6a-evidence/repo`
+  and repeat the read-only response/follow-up test. This amends the original
+  no-config-change restriction only for that fixture. Candidate base:
+  `6988eb0b57bd59114096e50d7d0f5d5165457b45`; clean checkout on `main`.
+- Binary: fresh shell still selects `/Users/coderwoman/.local/bin/codex`, resolving
+  to `/Users/coderwoman/.codex/packages/standalone/releases/0.154.0-aarch64-apple-darwin/bin/codex`;
+  version `codex-cli 0.154.0`, SHA-256
+  `4f85982624b3898c8991cb80c0981b2aa71070e3537046c9a95950318a95afcc`.
+  The prior update/release/recovery evidence remains applicable. Tested wheel:
+  `dae181840695cdd09c350a5f080ed780e9a8ffb5f73fe6d460cb65be2567efd5`;
+  all 31 Python files still compare byte-equal to this base's source.
+- Invocation: wheel-backed `python -m patchtrace run --codex --task-file task.md
+  -- codex --no-alt-screen --sandbox read-only -a never`, in the same temporary
+  Git repository. The unchanged raw task was supplied once in this new session.
+  Input bytes, preserved task, manifest digest and prompt digest agree:
+  `98aad225fc4a4b2e957ea9eddb1966928616e76aa1d3d6a1d7d5055bbb816ccf`.
+- Observed runtime `20260910T020441073430Z-54decadd`, 02:04 UTC September 10
+  (September 9 in Los Angeles): confirmed the authorized trust prompt; TUI
+  displayed `gpt-6-astra high`, showed the task asking for 137 + 286, and replied
+  `423`. One interactive follow-up asked to add 9 to the previous result and
+  reply only with the decimal result, without tools. TUI replied `432`.
+  `/exit` ended the session and PatchTrace returned **0**. The earlier
+  model/CLI compatibility error did not recur. No task tools, browsing,
+  delegation, or repository edits were observed. Configured MCP servers did
+  start as part of ordinary CLI startup; no connector/tool invocation was
+  observed in the task flow.
+- Package: `process_outcome=completed`, `analysis_outcome=degraded`,
+  `package_outcome=complete`, `failures=[]`; task parse `valid`, argv delivery
+  attempted, confirmation `process_started`. All required artifacts exist.
+  All three reports were read: they agree on lifecycle and delivery fields,
+  record zero Git changes, and retain the marker-based provenance limitation.
+  The verification brief has no extracted final claims and marks claim material
+  ambiguous. The real TUI replies do not supply an authenticated final marker;
+  analysis remains degraded as permitted by T6a acceptance. The reports do not
+  infer task understanding or requirement satisfaction.
+- Configuration proof: the CLI added the authorized project `trust_level=trusted`
+  table and automatically added `gpt-6-astra = 1` under
+  `[tui.model_availability_nux]` while displaying its model introduction.
+  An initial check requiring only the trust addition correctly returned false.
+  Removing those two exact additions **in memory only** reproduces the complete
+  pre-session config's byte hash, proving no other config delta. No config
+  rollback/rewrite, model substitution, auth reset, or skills/plugin edit was
+  performed. This UI bookkeeping is disclosed; it was not an agent-selected
+  setting used to obtain a model response.
+- Raw local evidence: `/tmp/patchtrace-t6a-response-evidence/` contains binary/
+  wheel identity, invocation, raw/normalized PTY, runtime events, config-delta
+  proof and the complete package under `state/`. `evidence-index.json` binds
+  artifacts and the documentation candidate by SHA-256. This log retains key
+  versioned observations; temporary raw evidence is not a portable archive.
+- Checks: exact task/digest and artifact assertions passed. Owned PTY/helper/
+  Codex processes exited; the post-run process check found none remaining.
+  Targeted Codex/PTY tests: **29 passed**; mypy: **62 files** passed. The prior
+  full-suite result (277 passed), Ruff checks and build remain bound to
+  unchanged executable code. Documentation readback, local file links and
+  `git diff --check` passed.
+- Aga verification gate: independent High-Risk assessment **VERIFIED** for T6a's
+  amended scope. Report: `/tmp/patchtrace-t6a-response-evidence/verification.md`.
+  The verifier directly inspected the recorded user approval and runtime;
+  exact session coverage, truncation and selective-inspection limits are in the
+  report. Exhaustive untruncated full-session access is not claimed. The
+  automatic NUX addition is disclosed as a nonblocking UI bookkeeping side
+  effect, not proof that only the trust entry changed.
+  Code review: N/A under T6a because no executable project code changed.
+  T6a is complete with the existing delivery/final-output trust ceiling;
+  T7 is next but remains unstarted. No merge or deployment was performed.
+
 ### 2026-09-09 - Phase 5 T6a: CLI update and runtime trust blocker
 
 - Authority: Aga requested “wykonaj t6a” against PLAN at
