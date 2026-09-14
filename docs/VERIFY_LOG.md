@@ -8,6 +8,78 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-09-09 - Phase 5 T6a: CLI update and runtime trust blocker
+
+- Authority: Aga requested “wykonaj t6a” against PLAN at
+  `da1510afba514770bf8376eb73f73be4d8cca588`; initial checkout clean on `main`.
+  Scope: local standalone update and bounded read-only runtime follow-up;
+  no executable project code, dependencies, model selection, auth, skills,
+  plugins, or user configuration edited by the agent.
+- Sources checked at execution: [official self-update reference](https://learn.chatgpt.com/docs/developer-commands#codex-update),
+  [standalone installation reference](https://learn.chatgpt.com/docs/codex/cli#getting-started),
+  [stable 0.154.0 release](https://github.com/openai/codex/releases/tag/rust-v0.154.0),
+  and `https://releases.openai.com/codex/channels/latest` (0.154.0).
+  Saved official installer exposes `--release VERSION`; recovery command is
+  `sh /tmp/patchtrace-t6a-evidence/install.sh --release 0.144.1`.
+  Recovery was not needed or executed and would not prove model compatibility.
+- Original entry: `/Users/coderwoman/.local/bin/codex`, through standalone
+  `current/bin/codex`, resolved to
+  `/Users/coderwoman/.codex/packages/standalone/releases/0.144.1-aarch64-apple-darwin/bin/codex`.
+  Original version: `codex-cli 0.144.1`.
+  `codex update` reported successful installation of 0.154.0. A fresh login
+  shell resolved the same entry to
+  `/Users/coderwoman/.codex/packages/standalone/releases/0.154.0-aarch64-apple-darwin/bin/codex`
+  and printed `codex-cli 0.154.0`; updated help was inspected.
+  Binary SHA-256: `4f85982624b3898c8991cb80c0981b2aa71070e3537046c9a95950318a95afcc`.
+- Tested PatchTrace source: the base commit above. Wheel SHA-256:
+  `dae181840695cdd09c350a5f080ed780e9a8ffb5f73fe6d460cb65be2567efd5`.
+  All 31 packaged Python source files compared byte-equal to the checkout.
+  The temporary repository ran the wheel via `python -m patchtrace run --codex
+  --task-file task.md -- codex --no-alt-screen --sandbox read-only -a never`.
+  Model remained the configured `gpt-6-astra`; the TUI never progressed beyond
+  `model: loading`, so the effective model response is **not verified**.
+- Runtime: `20260910T015500792975Z-2311dfac` (01:55 UTC, September 10;
+  September 9 in Los Angeles). The raw task requested the sum of 137 and 286,
+  without tools, files, browsing, or delegation; it was supplied once.
+  Raw input bytes equal preserved task bytes. Raw/prompt/manifest SHA-256:
+  `98aad225fc4a4b2e957ea9eddb1966928616e76aa1d3d6a1d7d5055bbb816ccf`.
+  Observed TUI boundary: `Do you trust the contents of this directory?`,
+  with choices `Yes, continue` and `No, quit` for
+  `/private/tmp/patchtrace-t6a-evidence/repo`.
+  No trust confirmation, model response, or interactive follow-up occurred.
+  The agent sent SIGINT to its Codex PID 11743; PatchTrace exited 130.
+- Manifest: `process_outcome=failed`, `analysis_outcome=degraded`,
+  `package_outcome=complete`, task parse `valid`, argv delivery attempted,
+  confirmation `process_started`. All three reports were inspected: they
+  retain the failed process, degraded analysis, task/delivery digests, and
+  marker-based provenance ceiling. The brief has no bounded final claims and
+  marks claim material ambiguous. No Git changes were captured.
+- Local raw evidence: `/tmp/patchtrace-t6a-evidence/` contains pre/post binary
+  identity, installer/release metadata, update output, invocation, PTY output,
+  runtime status, check output, and the complete package under `state/`.
+  `evidence-index.json` binds raw artifacts by SHA-256. These are local temporary
+  artifacts, not a portable committed archive; this entry preserves the key
+  versioned observations and identities.
+- Checks: full pytest **277 passed**, mypy **62 files** passed, wheel/sdist build
+  passed with the existing non-failing uv/backend-range warning. No checks or
+  tests weakened. User `config.toml` SHA-256 was unchanged before/after update
+  and runtime. The owned helper, PTY, and Codex processes were stopped.
+- Cannot verify: successful `gpt-6-astra` response, absence of the earlier
+  compatibility error after a model request, or follow-up handling. Startup
+  trust requires an additional configuration decision; T6a explicitly forbids
+  user configuration changes and requires an incomplete result on a new blocker.
+  A version string alone does not close the acceptance gap. Next: obtain Aga's
+  decision on narrowly allowing trust for this fixture, then repeat the bounded
+  response/follow-up session. No compatibility source fix is justified here.
+- Aga verification gate: independent Standard assessment **PARTIALLY_VERIFIED**;
+  **HOLD** T6a completion. Report: `/tmp/patchtrace-t6a-evidence/verification.md`.
+  The verifier directly accessed the recorded session through 203 records
+  (02:00:30 UTC), including original tool-result truncation; inspection was
+  selective, not an exhaustive full-session review. Update/package evidence
+  is supported; response/follow-up proof is missing. Code review: N/A under
+  T6a, no executable project code changed. Documentation readback and local
+  link/evidence checks passed. T6a stays incomplete; T7 remains unstarted.
+
 ### 2026-09-09 - Phase 5 T6: Interactive Codex task delivery
 
 - Authority: Aga requested T6 from the existing Phase 5 plan and ADR-0003.
