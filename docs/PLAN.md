@@ -1,461 +1,445 @@
-# Phase 5 — Trusted Capture and Session Provenance
+# Phase 6 — Task Coverage and Final Verification
 
-**Status:** active; T1–T6 implemented and locally verified; T6a completed and locally verified; T7 not started
+**Status:** active; proposed incremental plan; T1 not started
 
-**Baseline:** Phase 4.1 — Trust Hardening closed on 2026-09-08.
-Closure evidence: [VERIFY_LOG.md](VERIFY_LOG.md#2026-09-08---phase-41-close-trust-hardening).
+**Baseline:** Phase 5 — Trusted Capture and Session Provenance closed on
+2026-09-14. Closure evidence:
+[VERIFY_LOG.md](VERIFY_LOG.md#2026-09-14---phase-5-close-app-server-decision-and-trust-ceiling-dogfood).
 
-**Next task:** T7 — Time-box App Server structured-interactive feasibility.
+**Next task:** T1 — Render a complete conservative Task Contract coverage
+inventory.
 
 **Roadmap:** [ROADMAP.md](ROADMAP.md)
 
-The previously accepted Phase 5 task scope is unchanged. This file is the
-single owner of active tasks; Phase 4.1 completion is recorded in the verification log.
+This file is the single owner of active tasks. Historical Phase 5 details live
+in Git history, the architecture, its ADRs, and the verification log. No
+parallel `tasks/` plan or duplicate checklist is created.
 
-Work on one task at a time. Each task must end in a user-visible, fixture-backed
-slice and a commit. Do not implement Phase 6 requirement satisfaction in this
-phase.
+Work on one task at a time. Each standard task ends in a user-visible,
+fixture-backed slice, targeted verification, an Aga verification result, code
+review, and a commit. Use a short-lived `agent/...` branch and draft PR for
+substantial slices. Do not weaken the Phase 5 provenance or capture-mode
+ceilings to obtain a stronger Phase 6 verdict.
 
 ## Phase goal
 
-Make the local run package honest about task, Git, lifecycle, and capture
-provenance before expanding what PatchTrace evaluates.
+Make every preserved Task Contract item visible in the shared analysis, connect
+it conservatively to captured claims and evidence, distinguish missing or
+human-judgment coverage from established facts, and optionally run explicitly
+authorized final verification against an identified final Git state.
 
-Phase 4 dogfooding confirmed the first priority: identical before/after Git
-status material was interpreted as five run changes. T1–T3 repair that false
-positive without waiting for App Server research.
+The developer remains the final decision-maker. A PatchTrace verdict describes
+evidence coverage within the task and capture boundaries; it does not certify
+semantic correctness, safety, or acceptance.
 
-## T1 — Capture the Git session envelope
+## Dependency order
 
-**Status:** implemented and locally verified. Capture format and limits:
-[ARCHITECTURE.md](ARCHITECTURE.md#29-git-session-envelope--phase-5-t1).
-Evidence: [VERIFY_LOG.md](VERIFY_LOG.md).
+```text
+T1 complete task inventory and coverage model
+  -> T2 conservative requirement/claim/evidence relationships
+      -> checkpoint A
+          -> T3 explicit final-verification authorization and capture
+              -> T4 verification freshness against final Git identity
+                  -> T5 deterministic task-bounded verdict and report parity
+                      -> T6 Phase 6 dogfood and closure
+```
 
-### Outcome
+T1–T2 do not execute user commands and can proceed independently of the T3
+interface decision. T3 is high-risk because it executes user-authorized local
+commands; implementation must pause at the ask-first checkpoint below.
 
-The run package preserves enough non-mutating Git facts to distinguish a
-session boundary from a final worktree snapshot.
+## Phase constraints
 
-### Scope
+- Task Contract V1 remains simple Markdown. Do not add a predicate DSL,
+  expression trees, or a policy engine.
+- Every requirement and acceptance criterion remains visible even when no
+  claim or evidence refers to it.
+- A claim-to-requirement link is not requirement satisfaction.
+- Path presence or a changed file does not establish semantic behavior.
+- Natural-language criteria requiring judgment are labeled for human review.
+- A missing or invalid Task Contract prevents the strongest task-bounded
+  verdict.
+- PTY command results remain transcript-derived until an explicitly authorized
+  final-verification command is captured by PatchTrace itself.
+- Final verification never runs implicitly from prose in `task.md` or from
+  agent output.
+- No shell evaluation, network service, LLM, database, event bus, generic
+  adapter framework, or new dependency is assumed.
+- Existing process, analysis, and package outcomes remain independent of the
+  evidence verdict.
 
-- capture `HEAD` before and after;
-- record initial and final clean/dirty state;
-- retain bounded initial facts needed to recognize pre-existing paths;
-- capture previously clean tracked files changed during the run;
-- capture new untracked files and their evidence;
-- capture commits made in a straightforward before/after history range;
-- record explicit limitations for non-linear or unsupported cases.
+## T1 — Render a complete conservative Task Contract coverage inventory
 
-### Acceptance
+**Status:** not started
 
-- clean-to-modified, new-untracked, pre-existing-dirty, and in-run-commit
-  fixtures preserve the expected raw facts;
-- capture never mutates the worktree, index, branch, or history;
-- `.patchtrace/` artifacts do not contaminate repository evidence;
-- capture failure has an actionable, preserved failure path.
+**Outcome**
 
-### Verification
+A task-bound run lists every preserved requirement, acceptance criterion, and
+required-verification item in one validated analysis result and all three
+reports. Items begin from an honest unresolved state; merely capturing the task
+does not satisfy it.
 
-- focused `vcs` unit tests;
-- temporary-repository integration matrix;
-- mypy and relevant existing run tests.
+**Scope**
 
-### Out of scope
+- add one validated coverage-assessment model keyed by existing deterministic
+  run-local Task Contract IDs;
+- build the inventory from the parsed task artifact already bound to the run;
+- retain original section, order, text, task digest, and evidence references;
+- represent absent task, invalid task, and optional empty sections without
+  inventing items;
+- render the same coverage inventory from the shared `AnalysisResult` in
+  `SUMMARY.md`, `AGENT_FEEDBACK.md`, and `VERIFICATION_BRIEF.md`;
+- update the architecture and domain glossary with the implemented states and
+  their exact meanings.
 
-Attribution labels, report rendering, dirty same-path byte separation, partial
-commit reconstruction, sparse checkout, submodules, and nested repositories.
+**Acceptance**
 
-## T2 — Apply honest Git attribution
+- every captured `REQ-*`, `AC-*`, and `VER-*` ID appears exactly once and in
+  source order in each report;
+- initial coverage cannot be read as satisfaction and links back to `task.json`
+  plus the task digest;
+- no-task and invalid-task fixtures preserve their existing lifecycle behavior
+  and cannot receive the strongest task-bounded verdict;
+- all report renderers consume the same validated coverage list rather than
+  reparsing the task.
 
-**Status:** implemented and locally verified. Result contract and limits:
-[ARCHITECTURE.md](ARCHITECTURE.md#210-git-attribution--phase-5-t2).
-Evidence: [VERIFY_LOG.md](VERIFY_LOG.md).
+**Verification**
 
-### Outcome
-
-One analysis result classifies captured Git material as
-`session-attributed`, `pre-existing`, or `indeterminate`.
-
-### Scope
-
-- derive attribution only from T1 facts;
-- treat previously clean files changed during the run, new untracked files, and
-  straightforward in-run commits as session-attributed;
-- keep known initial material pre-existing;
-- keep dirty same-path or inseparable history indeterminate;
-- add evidence references and limitations to the validated result.
-
-### Acceptance
-
-- the Phase 4 false-positive regression reports identical before/after dirty
-  material as pre-existing, not session-attributed;
-- no class implies byte-level agent authorship;
-- unsupported history shapes degrade to `indeterminate` rather than guessing;
-- the existing single `AnalysisResult` seam remains intact.
-
-### Verification
-
-- fixture matrix for all three classes;
-- clean, dirty-same-path, unchanged-dirty, untracked, and committed integration
-  cases;
-- focused analyzer tests.
-
-### Out of scope
-
-Hunk authorship, stashing, temporary commits, reflog forensics, and advanced
-reconstruction.
-
-## T3 — Propagate provenance across reports
-
-**Status:** implemented and locally verified. Report contract and limits:
-[ARCHITECTURE.md](ARCHITECTURE.md#211-report-provenance--phase-5-t3).
-Evidence: [VERIFY_LOG.md](VERIFY_LOG.md).
-
-### Outcome
-
-Summary, agent feedback, and verification brief present the same Git attribution
-and limitations from one analysis result.
-
-### Scope
-
-- add shallow report views for attribution and source references;
-- remove independent changed-file interpretations from renderers;
-- update review-first input to use shared provenance;
-- make pre-existing and indeterminate material visible and actionable.
-
-### Acceptance
-
-- all three reports agree on attribution counts, paths, and limitations;
-- no report calls pre-existing work a run change;
-- renderers do not read raw Git artifacts or recompute attribution;
-- the existing report purpose and concise next-action behavior remain.
-
-### Verification
-
-- golden or structured report assertions from the same fixtures;
-- cross-report consistency test;
-- real local dogfood with a dirty starting worktree.
-
-### Out of scope
-
-Requirement coverage, new risk scoring, and general review prioritization.
-
-## T4 — Separate process, analysis, and package outcomes
-
-**Status:** implemented and locally verified. Lifecycle mapping, CLI exits, and
-Phase 4 compatibility decision:
-[ARCHITECTURE.md](ARCHITECTURE.md#212-lifecycle-outcomes--phase-5-t4).
-Evidence: [VERIFY_LOG.md](VERIFY_LOG.md).
-
-### Outcome
-
-A developer can tell independently what happened to the command, whether
-analysis was usable, and whether the package was written.
-
-### Scope
-
-- replace the combined lifecycle meaning with process, analysis, and package
-  outcomes;
-- preserve evidence verdict as a separate concern;
-- define the smallest explicit failure mapping for current capture, analysis,
-  and write paths;
-- keep CLI exit behavior documented and testable.
-
-### Acceptance
-
-- successful process plus degraded analysis is representable;
-- partial or failed package writes cannot be reported as a complete package;
-- reports and manifest do not confuse lifecycle facts with verdict;
-- the model can be extended by later tasks without T4 inventing task-parsing or
-  task-delivery reason catalogs;
-- no workflow state machine is introduced.
-
-### Verification
-
-- model validation tests;
-- fake-command success and non-zero exit cases;
-- current missing/ambiguous transcript-analysis and injected package failure
-  cases;
-- backwards-compatibility decision for Phase 4 fixtures recorded in the task
-  commit.
-
-### Out of scope
-
-Retries, queues, resumable workflows, or orchestration state machines.
-
-## T5 — Capture Task Contract V1
-
-**Status:** implemented and locally verified. Syntax, artifacts, and failure mapping:
-[ARCHITECTURE.md](ARCHITECTURE.md#213-task-contract-v1-capture--phase-5-t5).
-Evidence: [VERIFY_LOG.md](VERIFY_LOG.md).
-
-### Outcome
-
-PatchTrace preserves and binds the developer's task to the run without yet
-claiming requirement satisfaction.
-
-### Scope
-
-- add the smallest discoverable CLI task-file input;
-- preserve the raw Markdown artifact unchanged;
-- compute and store its digest in the manifest;
-- require `Outcome` and `Requirements`;
-- allow omitted or explicit `N/A` for `Acceptance Criteria`,
-  `Required Verification`, and `Out of Scope`;
-- parse simple ordered items with deterministic run-local IDs;
-- link raw and parsed task material to the run;
-- add only the task-parsing reason mappings required by these new paths;
-- allow a run without a task with an explicit trust limitation.
-
-### Acceptance
-
-- the stored raw artifact matches the supplied artifact exactly;
-- generated IDs are stable for that artifact and are not documented as stable
-  across edits;
-- invalid provided task material produces an explicit parsing and lifecycle
-  result rather than silent rewriting;
-- a missing task still permits the existing generic run;
-- no requirement-satisfaction inference occurs.
-
-### Verification
-
-- valid, optional-section, explicit-`N/A`, invalid, duplicate-heading, and
+- focused model/analyzer/report tests with minimal, full, `N/A`, invalid, and
   no-task fixtures;
-- digest and exact-preservation tests;
-- CLI integration test for generic task capture.
+- report-parity regression proving identical IDs, states, and evidence
+  references;
+- `uv run mypy src tests` and relevant integration tests before commit.
 
-### Out of scope
+**Dependencies:** completed Phase 5 Task Contract capture and shared
+`AnalysisResult` seam.
 
-Predicate syntax, `all`/`any` expressions, policy evaluation, semantic matching,
-and coverage verdicts.
+**Likely files:** `src/patchtrace/models/report.py`, one focused analysis module,
+the three shallow report renderers/provenance helper, and focused tests. Keep
+the slice medium by centralizing rendering in the existing shared helper.
 
-## T6 — Establish the interactive Codex boundary and deliver the same task
+**Out of scope:** relationship inference, command execution, freshness, and the
+final Phase 6 verdict.
 
-**Status:** implemented and locally verified. Boundary and limits:
-[ARCHITECTURE.md](ARCHITECTURE.md#214-interactive-codex-boundary--phase-5-t6).
-Evidence, including the local CLI/model compatibility limit:
-[VERIFY_LOG.md](VERIFY_LOG.md#2026-09-09---phase-5-t6-interactive-codex-task-delivery).
+## T2 — Add conservative relationships and omitted-item detection
 
-### Outcome
+**Status:** not started
 
-The user supplies the task once; the existing interactive Codex workflow uses
-the preserved raw artifact as its initial prompt source and records honest
-delivery evidence without changing the PTY experience.
+**Outcome**
 
-### Scope
+Each coverage item shows any bounded relationship to agent claims, command
+attempts, Git observations, and task evidence. Items with no relevant captured
+relationship remain explicitly omitted or missing; criteria that need semantic
+judgment remain assigned to the developer.
 
-- add the concrete Codex-specific boundary with the interactive implementation;
-- preserve the current PTY interaction and generic wrapped-command promise;
-- submit prompt material from the preserved artifact rather than a re-rendered
-  parse;
-- record delivery mode, artifact digest, attempted boundary, confirmation, and
-  limitations in the manifest;
-- move Codex TUI rules, marker-based final-output extraction, and
-  Codex-specific evidence locators out of generic session and analysis code;
-- add only the task-delivery reason mappings required by the new interactive
-  path.
+**Scope**
 
-### Acceptance
+- define typed requirement-to-claim and requirement-to-evidence relationships
+  separately from claim support;
+- link only deterministic, inspectable matches with source locators;
+- recognize exact required-verification command references only when the task
+  item contains one unambiguous command and the captured attempt identifies the
+  same command;
+- allow an agent claim to be related to a task item without treating the claim
+  as proof;
+- keep file/path observations at the Phase 4.1 semantic ceiling;
+- derive an explicit omitted/missing state when no relationship is available;
+- mark natural-language behavior or acceptance judgment as human review even
+  when a related claim or path exists;
+- propagate the same relationships, gaps, and next action through all reports.
 
-- the prompt source and preserved task artifact have the same digest;
-- tests assert the nearest reliable invocation or stdin boundary the official
-  interactive transport exposes;
-- no test or report claims byte-for-byte receipt when it is unobservable;
-- no result claims that Codex or the model understood the task;
-- generic session and analysis code contain no Codex-specific final markers or
-  Codex TUI interpretation rules;
-- the concrete boundary owns final-output selection and Codex evidence
-  locators without creating a plugin registry or empty adapter abstraction;
-- generic commands retain task material for analysis and mark delivery
-  unverified;
-- the normal interactive Codex PTY experience remains intact.
+**Acceptance**
 
-### Verification
+- fixtures cover exact command linkage, unrelated commands, one claim related
+  to multiple items, multiple claims related to one item, missing items,
+  conflicts, path-only material, and human-judgment criteria;
+- every relationship includes a local artifact/locator and states what it does
+  and does not establish;
+- partial evidence never hides the unresolved part of an item;
+- changing item wording cannot silently convert a semantic criterion into an
+  established result.
 
-- fake interactive Codex executable tests for argument/stdin boundaries, TUI
-  markers, and delivery failures;
-- ownership tests for Codex final-output extraction and evidence locators;
-- one real interactive Codex task-delivery dogfood where locally supported.
+**Verification**
 
-### Out of scope
+- focused deterministic matching and negative-regression tests;
+- integration fixture proving an omitted requirement is visible in all reports;
+- `uv run mypy src tests` and the Task Contract/report suites before commit.
 
-Production `codex exec --json`, a JSONL parser, structured-task dogfood, App
-Server integration, automatic replacement of interactive UX, private Codex
-formats, generic agent plugins, and full requirement evaluation.
+**Dependencies:** T1.
 
-`codex exec --json` remains an accepted candidate for a separate slice. It can
-enter Phase 5 only after separate human approval or a concrete dogfood trigger
-and does not depend on the Task 7 App Server result.
+**Likely files:** one focused coverage analysis module, report models, shared
+provenance rendering, analyzer orchestration, and focused tests.
 
-## T6a — Update the local Codex CLI and close the real-response verification gap
+**Out of scope:** LLM matching, embeddings, fuzzy semantic scoring, final
+verification execution, and freshness.
 
-**Status:** completed and locally verified on 2026-09-09.
-CLI 0.154.0 produced a `gpt-6-astra` response and one interactive follow-up;
-the package records `completed/degraded/complete` with final-output limits intact.
-Evidence: [VERIFY_LOG.md](VERIFY_LOG.md#2026-09-09---phase-5-t6a-real-response-and-follow-up).
+## Checkpoint A — Coverage foundation
 
-**Type:** local environment maintenance and T6 runtime follow-up, before T7.
-This task does not redefine T6 acceptance or expand the Phase 5 product scope.
+After T1–T2:
 
-### Outcome
+- run Ruff lint/format, mypy, full pytest, and build;
+- dogfood one task-bound and one no-task package;
+- confirm every report exposes the same complete inventory and omissions;
+- independently review that no relationship is mislabeled as satisfaction;
+- record the milestone in `VERIFY_LOG.md`.
 
-The terminal's active Codex CLI can use the configured `gpt-6-astra` model, and
-one task-bound PatchTrace interactive session produces a real model response
-while retaining honest delivery and final-output limitations.
+## Ask-first checkpoint — Final verification interface
 
-### Starting evidence
+Before T3 implementation, pause and show the proposed CLI/task interface,
+manifest shape, execution limits, failure mapping, and diff. Obtain Aga's
+explicit approval because this slice executes local commands and establishes
+cost/risk boundaries.
 
-- T6 wheel run `20260910T012924798118Z-bf273c37` displayed the task in the TUI,
-  then received a model/CLI compatibility error requiring a newer Codex version.
-- Observed on 2026-09-09: `codex-cli 0.144.1`; shell entry
-  `/Users/coderwoman/.local/bin/codex` resolves through
-  `/Users/coderwoman/.codex/packages/standalone/current/bin/codex`.
-- Installed `codex update --help` exposes standalone self-update. The
-  [official update reference](https://learn.chatgpt.com/docs/developer-commands#codex-update)
-  documents self-update for supported releases.
-- Target version: **UNKNOWN** until checked against the official stable release
-  available at execution time; do not infer it from an old update notification.
+The exact command-input syntax is currently **UNKNOWN**. It must be designed
+with `api-and-interface-design`, `security-and-hardening`, and
+`doubt-driven-development` against these non-negotiable rules:
 
-### Scope and execution order
+- prose in `task.md` and agent output is never executable authority;
+- each command is explicitly supplied/confirmed by the user as argv and runs
+  without a shell;
+- cwd, timeout, output cap, retry cap, and network expectations are visible;
+- no command runs after authorization becomes ambiguous or stale;
+- interruption and partial capture are first-class outcomes;
+- implementation permission does not authorize installation, spending,
+  provider actions, merge, deploy, or destructive cleanup.
 
-1. Recheck the active binary, resolved installation path, installed version,
-   available stable release, and official update instructions. Record the exact
-   original release path and supported way to restore the previous CLI binary
-   if the update breaks startup; do not treat a downgrade as proof that the
-   current model will work.
-2. Update this standalone installation through its supported `codex update`
-   path. Verify the version and resolved path again in a fresh shell so a stale
-   binary elsewhere in PATH cannot impersonate a successful update.
-3. Use an identified PatchTrace commit/wheel in a temporary Git repository.
-   Supply a small Task Contract once through
-   `patchtrace run --codex --task-file task.md -- codex`. Use the configured
-   `gpt-6-astra`, a read-only session, and a text-only task requiring no tools,
-   file changes, browsing, or delegation. Obtain the response and send one short
-   interactive follow-up; then exit and inspect the package.
-4. Record exact CLI version/path, PatchTrace commit and wheel digest, task digest,
-   run ID, observed response/follow-up, lifecycle fields, and remaining limits
-   in `docs/VERIFY_LOG.md`. Update this task's status from the observed result.
-   Close all processes started for the test.
+If no proportionate safe interface is approved, record `CANNOT VERIFY` for the
+execution portion and continue only with the T1–T2 coverage capability; do not
+silently downgrade this checkpoint.
 
-### Acceptance
+## T3 — Capture one explicitly authorized final-verification command
 
-- The active CLI uses the recorded updated release and `gpt-6-astra` produces a
-  response without the previously observed version-compatibility error. A
-  changed version string alone does not satisfy this criterion.
-- The task-bound interactive session accepts a follow-up, exits, and produces
-  its review package. Raw task and prompt digests agree; delivery confirmation,
-  process outcome, analysis outcome, and package outcome reflect the observations.
-  A missing final marker may still degrade analysis and must remain visible.
-- Evidence is tied to the tested binary and PatchTrace snapshot. No model
-  substitution, weakened check, authentication reset, or change to user
-  configuration/skills/plugins is used to manufacture success. On a new blocker,
-  record its exact boundary and leave this task incomplete.
+**Status:** blocked on the ask-first checkpoint; not started
 
-### Verification and separate gates
+**Outcome**
 
-- Inspect pre/post `command -v codex`, resolved path, `codex --version`, and
-  relevant `--help`; use current official release/update documentation.
-- Run one bounded real interactive task and follow-up from the identified
-  PatchTrace build. Retain sanitized runtime evidence and inspect all three
-  reports; do not infer authenticated message provenance or understanding from
-  a sensible model response.
-- `aga-verify-agent`: assess these acceptance criteria against the versioned
-  runtime evidence, distinguishing actual observations from agent claims.
-- Code review: **N/A if no executable project code changes**. Review any
-  separately authorized compatibility fix through its own implementation task;
-  a CLI update does not justify a ceremonial second code review of unchanged code.
-- Documentation-only results require readback and evidence/link checks. If a
-  code fix becomes necessary, stop this maintenance scope and specify the fix
-  with a failing reproduction and normal project test/review gates.
+After the wrapped agent process ends, the user can explicitly authorize one
+bounded verification command. PatchTrace executes it without a shell and
+preserves exact argv, cwd, start/end time, exit status, bounded output evidence,
+termination reason, and limitations independently of the wrapped process.
 
-### Out of scope
+**Scope**
 
-Updating the desktop app or IDE extension, changing model/provider selection,
-editing auth/config/skills/plugins, upgrading project dependencies, changing
-PatchTrace source, introducing `codex exec --json` or App Server, and merge/deploy.
-Aga separately authorized execution with “wykonaj t6a” on 2026-09-09.
-Aga subsequently answered “tak” to narrowly authorize persisting trust for
-`/private/tmp/patchtrace-t6a-evidence/repo` and repeating the bounded test.
-All other configuration restrictions remain in force; CLI-generated onboarding
-metadata is disclosed in the verification log.
+- implement only the approved public interface and one-command vertical slice;
+- record explicit authorization and the exact request in the run manifest;
+- execute direct argv with an approved timeout and output cap;
+- preserve truncation, signal, timeout, launch failure, and capture failure;
+- keep the agent process outcome unchanged;
+- make package/report failure behavior explicit and recoverable;
+- never infer or execute a command from Task Contract prose or transcript text.
 
-### Expected change size
+**Acceptance**
 
-One local CLI installation; repository evidence/status updates in
-`docs/VERIFY_LOG.md` and `docs/PLAN.md`. Runtime duration depends on installation
-and provider availability; no estimate is treated as a completion guarantee.
+- success, non-zero, timeout, output-limit, signal, launch-failure, and
+  no-authorization fixtures preserve distinct facts;
+- shell metacharacters are passed as literal argv and never evaluated;
+- a failed verification remains a complete evidence result when its artifacts
+  are written successfully;
+- interruption cannot produce a passing verification state;
+- logs and reports exclude environment secrets and do not claim sandboxing that
+  PatchTrace does not provide.
 
-## T7 — Time-box App Server structured-interactive feasibility
+**Verification**
 
-### Outcome
+- focused runner tests using harmless temporary commands;
+- temporary-repository integration tests for lifecycle independence and bounded
+  artifacts;
+- manual command-line proof of the approved UX;
+- high-risk Aga verification before review/commit.
 
-A small prototype records `GO`, `NO-GO`, or `CANNOT VERIFY` for using official
-App Server evidence with the same interactive session.
+**Dependencies:** T2 and explicit approval at the ask-first checkpoint.
 
-### Time box
+**Likely files:** a domain-owned verification runner/model module, CLI
+orchestration, run/storage model, one report provenance helper, and focused
+tests. Split the slice if it exceeds five primary files.
 
-One focused engineering day. Stop sooner on a conclusive `NO-GO`.
+**Out of scope:** implicit execution, multiple commands, shell scripts,
+installation, retries, remote providers, and freshness verdicts.
 
-### Questions
+## T4 — Classify verification freshness against final Git identity
 
-1. Do typed final-message, command-result, file-change, and lifecycle events
-   exist?
-2. Are they emitted for the same session the user operates interactively?
-3. Can PatchTrace obtain them officially without building its own client?
-4. Are the required transport and fields stable for production use?
-5. What minimum integration code and maintenance burden would be required?
+**Status:** not started
 
-### Acceptance
+**Outcome**
 
-- evidence uses current official documentation, CLI help/schema, or official
-  source for the detected version;
-- each question has an observed answer, limitation, and source;
-- `GO` requires the same interactive session, required typed events, a stable
-  official surface, and proportionate integration cost;
-- needing a custom TUI, large protocol proxy, or private format is `NO-GO`;
-- unknown access or stability after the time box is `CANNOT VERIFY`;
-- prototype code is clearly throwaway and is not presented as a production
-  adapter;
-- ADR-0003 and the architecture are updated only with the confirmed result.
+Each required verification is classified as fresh, stale, failed, missing, or
+unknown against an inspectable final Git identity. Later repository changes
+cannot leave an earlier pass labeled fresh.
 
-### Verification
+**Scope**
 
-- minimal end-to-end observation if the official surface permits it;
-- captured schema/event examples with sensitive data excluded;
-- written cost estimate and decision against the five questions.
+- define a deterministic final-state identity from supported captured Git facts
+  without mutating the repository;
+- bind the authorized verification attempt to before/after identities;
+- mark a pass fresh only when it completed successfully and the analyzed final
+  identity still matches its verified identity;
+- mark post-check changes stale, failed exits failed, absent required attempts
+  missing, and unsupported/partial identity unknown;
+- treat verification commands that mutate the repository conservatively;
+- expose the identity, source locators, and reason in every report.
 
-### Out of scope
+**Acceptance**
 
-A production App Server integration, custom terminal UI, full Codex client,
-protocol proxy, private-format parsing, or UX redesign.
+- fixtures cover unchanged pass, later tracked edit, later untracked edit,
+  commit after pass, failed command, timeout, missing command, unsupported Git
+  history, and a verification command that changes the worktree;
+- no timestamp alone establishes freshness;
+- dirty same-path and unsupported boundaries degrade to unknown rather than
+  fresh;
+- all reports agree on the state and exact Git/evidence references.
 
-## Phase 5 closure
+**Verification**
 
-Before closing the phase:
+- focused identity/freshness unit tests;
+- temporary-repository integration matrix;
+- `uv run mypy src tests` and relevant lifecycle/report tests before commit.
 
-- run Ruff lint and format check, mypy, full pytest, and build;
-- dogfood clean, dirty, committed, failed, no-task, and task-bound runs;
-- record the milestone in `VERIFY_LOG.md`;
-- confirm all reports obey the capture mode's trust ceiling.
+**Dependencies:** T3 and Phase 5 Git session envelope.
 
-App Server `NO-GO` or `CANNOT VERIFY` does not block closure. In that case:
+**Likely files:** one freshness module, validated evidence models, analyzer
+orchestration, shared rendering, and focused tests.
 
-- interactive PTY remains marker-based compatibility mode;
-- missing or ambiguous marker degrades final-output evidence;
-- transcript-tail guessing remains prohibited;
-- there is no structured-interactive high-trust final output;
-- reports and verdicts preserve that limitation.
+**Out of scope:** cryptographic attestation, host sandbox guarantees, and
+concurrent filesystem-event tracking.
 
-Phase 5 must not be described as complete final-output provenance unless a
-supported structured-interactive path was actually delivered.
+## T5 — Produce the deterministic task-bounded verdict
+
+**Status:** not started
+
+**Outcome**
+
+The shared `AnalysisResult` produces one deterministic verdict and next action
+that account for task availability, complete coverage, human-review items,
+required verification states, lifecycle outcomes, provenance, and the active
+capture-mode ceiling.
+
+**Scope**
+
+- define documented precedence for lifecycle failure, invalid/missing task,
+  conflicting evidence, failed/stale/unknown/missing verification, omissions,
+  human review, and fully covered bounded facts;
+- make the strongest verdict unavailable unless every required gate is met;
+- retain explicit language that the verdict is review guidance rather than
+  semantic correctness or automatic acceptance;
+- render exactly one shared verdict, priority gap, and next action in all three
+  reports;
+- update specification, architecture, glossary, README, and ADR only with
+  implemented truth.
+
+**Acceptance**
+
+- a table-driven fixture matrix covers every precedence branch and mixed-state
+  case;
+- a no-task run, degraded final output, indeterminate attribution, human-review
+  criterion, or non-fresh required verification cannot receive the strongest
+  verdict;
+- lower-priority positive evidence cannot mask a process/package failure or
+  failed required check;
+- all reports are deterministic and byte-stable for the same validated result.
+
+**Verification**
+
+- table-driven decision tests and report-parity tests;
+- integration packages for strongest-eligible and every blocking gate;
+- Ruff, format, mypy, full pytest, and build before commit.
+
+**Dependencies:** T1–T4.
+
+**Likely files:** decision logic, report model, shared summary/provenance
+rendering, integration fixtures, and matching truth documentation.
+
+**Out of scope:** autonomous acceptance/merge, semantic code review, confidence
+scores, policy configuration, and LLM judgments.
+
+## Checkpoint B — Final verification and verdict
+
+After T3–T5:
+
+- rerun the complete quality gate and build from a clean candidate;
+- independently verify the high-risk execution boundary and failure paths;
+- code-review all public interfaces, security boundaries, compatibility, and
+  report semantics;
+- dogfood success, failure, timeout, mutation/staleness, missing task, and
+  human-review cases;
+- pause before any merge, release, or deployment.
+
+## T6 — Close Phase 6 with a real task-bound run
+
+**Status:** not started
+
+**Outcome**
+
+One real local task-bound workflow and the fixture matrix demonstrate that
+coverage, omissions, authorized verification, freshness, verdict precedence,
+and report parity hold together without exceeding the capture-mode ceiling.
+
+**Scope**
+
+- build and run the final wheel in an isolated temporary Git repository;
+- use an explicit Task Contract with at least one covered item, one omitted or
+  human-review item, and one required verification;
+- exercise an authorized final check and a deliberate post-check freshness
+  change in separate runs;
+- inspect all manifests, raw artifacts, and all three reports;
+- update `VERIFY_LOG.md`, close Phase 6 in `ROADMAP.md`, and activate only the
+  next accepted phase in `PLAN.md`.
+
+**Acceptance**
+
+- every Task Contract item has a visible state and evidence links;
+- missing, failed, stale, unknown, and human-review states cannot be mistaken
+  for satisfaction;
+- the final verdict follows the documented precedence and remains review
+  guidance;
+- no agent-started process remains and no test artifact contaminates the target
+  repository;
+- independent Aga verification and code review have no unresolved actionable
+  finding.
+
+**Verification**
+
+- Ruff lint and format check, strict mypy, full pytest, and build;
+- wheel/source identity and clean-install smoke test;
+- runtime dogfood matrix with bounded artifacts and explicit cleanup proof;
+- meaningful closure entry in `VERIFY_LOG.md`.
+
+**Dependencies:** T1–T5 and both checkpoints.
+
+**Out of scope:** merge, release, deployment, hosted execution, or publication
+without separate authorization.
+
+## Phase 6 closure criteria
+
+- every captured requirement and acceptance criterion has a visible coverage
+  state and evidence references;
+- omitted items remain visible;
+- natural-language criteria that need judgment are assigned to human review;
+- required verification is visibly missing, failed, fresh, stale, or unknown;
+- user-authorized execution is bounded, direct-argv, inspectable, and has an
+  explicit failure path;
+- the strongest verdict is unavailable without the required task, provenance,
+  lifecycle, coverage, freshness, and capture-mode gates;
+- all reports render one validated result and do not claim semantic correctness;
+- full quality, runtime, independent verification, and review gates pass.
+
+## Risks and mitigations
+
+| Risk | Impact | Mitigation |
+| --- | --- | --- |
+| Natural-language matching overclaims satisfaction. | High | Separate relationships from satisfaction, use narrow deterministic matches, and route semantic criteria to human review. |
+| Required-verification prose becomes executable input. | High | Never execute task/agent prose; require a separately approved direct-argv interface and explicit authorization. |
+| A passing check becomes stale after later edits. | High | Bind it to supported Git identity and degrade unsupported or changed states. |
+| Report renderers drift. | Medium | Keep one validated result and shared provenance rendering; add byte-level parity fixtures. |
+| Phase 6 expands into a policy engine or sandbox. | Medium | Keep fixed V1 states/precedence and the local CLI boundary; defer configurable policy and host isolation. |
+| Experimental App Server evidence leaks into production trust. | High | Preserve the Phase 5 `NO-GO`; Phase 6 consumes only implemented supported capture facts. |
 
 ## Deferred and rejected for this phase
 
-- requirement satisfaction and final verification: Phase 6;
-- evidence-quality scoring and expanded review-first logic: Phase 7;
-- post-hoc analyze: Phase 8;
-- watch, Windows, second agent integration, GitHub, HTML, LLM, hosted workflows:
-  conditional;
-- custom TUI, large protocol proxy, private Codex formats, advanced Git
-  forensics, predicate DSL, policy engine, event bus, database, and queue:
-  rejected for Phase 5.
+- evidence-quality scoring and expanded review prioritization: Phase 7;
+- post-hoc analyze and compatibility migration: Phase 8;
+- OSS hardening and distribution: Phase 9;
+- watch, Windows, second agent integration, GitHub/PR integration, HTML, LLM,
+  hosted/team workflows: conditional;
+- custom Codex TUI, production App Server client, private-format parsing,
+  comprehensive host sandbox, predicate DSL, policy engine, event bus,
+  database, and queue: rejected for Phase 6.

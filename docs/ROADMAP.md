@@ -1,12 +1,12 @@
 # PatchTrace Roadmap
 
-**Baseline:** Phase 4.1 complete
+**Baseline:** Phase 5 complete
 
-**Active phase:** Phase 5 — Trusted Capture and Session Provenance
+**Active phase:** Phase 6 — Task Coverage and Final Verification
 
 This roadmap orders product capabilities by evidence dependency. [PLAN.md](PLAN.md)
-owns the active phase and its tasks. Phase 4.1 closure evidence is recorded in
-[VERIFY_LOG.md](VERIFY_LOG.md#2026-09-08---phase-41-close-trust-hardening).
+owns the active phase and its tasks. Phase 5 closure evidence is recorded in
+[VERIFY_LOG.md](VERIFY_LOG.md#2026-09-14---phase-5-close-app-server-decision-and-trust-ceiling-dogfood).
 
 ## Phase 4.1 — Trust Hardening
 
@@ -44,16 +44,17 @@ scope remain outside this phase.
 
 ## Phase 5 — Trusted Capture and Session Provenance
 
-**Status:** active; [PLAN.md](PLAN.md) owns implementation and next-task status.
+**Status:** closed on 2026-09-14; closure evidence is in
+[VERIFY_LOG.md](VERIFY_LOG.md).
 
-**Active tasks:** [PLAN.md](PLAN.md).
+**Closure record:** [VERIFY_LOG.md](VERIFY_LOG.md).
 
 ### Problem
 
-The phase began with packages mistaking pre-existing work for run changes and
-conflating lifecycle outcomes. T1–T4 address those gaps. The remaining work has
-no preserved task yet and obtains final-output and command evidence from a
-marker-based PTY transcript.
+The phase began with packages mistaking pre-existing work for run changes,
+conflating lifecycle outcomes, and lacking a preserved task. It closed with
+session-scoped Git attribution, independent lifecycle outcomes, Task Contract
+capture/delivery, and an explicit marker-based PTY trust ceiling.
 
 ### User value
 
@@ -102,6 +103,11 @@ Phase 5 may close with an App Server `NO-GO` or `CANNOT VERIFY`. In that case,
 PTY remains marker-based compatibility mode, there is no structured-interactive
 high-trust final output, and reports and verdicts must respect that ceiling.
 
+T7 returned `NO-GO`: same-thread typed observation was demonstrated, but the
+required WebSocket transport is experimental and PatchTrace would have to own
+an App Server client. The detailed evidence and revisit triggers are in the
+[T7 feasibility record](research/T7_APP_SERVER_FEASIBILITY.md).
+
 ### Out of scope
 
 - full requirement satisfaction;
@@ -114,15 +120,17 @@ high-trust final output, and reports and verdicts must respect that ceiling.
 
 ### Plan-change triggers
 
-Change the plan only if dogfooding disproves the attribution model, an official
-Codex surface changes materially, or the prototype shows that a small supported
-integration can preserve the same interactive session.
+Reopen this scope only if dogfooding disproves the attribution model or an
+official Codex surface changes materially enough to satisfy the recorded T7
+revisit conditions.
 
-`codex exec --json` remains an accepted candidate for a separate slice. It may
-enter Phase 5 only after separate human approval or a concrete dogfood trigger;
-it does not depend on the App Server result.
+`codex exec --json` remains a separately scoped candidate. It requires human
+approval or a concrete dogfood trigger and does not depend on the App Server
+result.
 
 ## Phase 6 — Task Coverage and Final Verification
+
+**Status:** active; [PLAN.md](PLAN.md) owns implementation and next-task status.
 
 ### Problem
 

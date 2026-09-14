@@ -8,6 +8,84 @@ proof, or explicit cannot-verify decisions.
 
 ## Entries
 
+### 2026-09-14 - Phase 5 close: App Server decision and trust-ceiling dogfood
+
+- Authority: Aga asked to complete all remaining repository work after review
+  identified T7 and Phase 5 closure as the active scope. Work ran on
+  `agent/phase5-t7-app-server` from candidate base `6da9d30`, which already
+  contains the two locally completed T6a documentation commits awaiting the
+  protected-branch PR workflow.
+- T7 sources: official current App Server documentation; local
+  `codex-cli 0.154.0` help; version-matched generated TypeScript and JSON Schema;
+  and official source tag `rust-v0.154.0` at commit
+  `6b9826e3aa83b1a5947db50f4332cb9c65f1b340`. Selected generated schema hashes,
+  source links, and the sanitized observation are preserved in
+  [T7_APP_SERVER_FEASIBILITY.md](research/T7_APP_SERVER_FEASIBILITY.md).
+- T7 runtime: an official remote TUI operated a local App Server thread. A
+  second initialized connection resumed the same thread and observed the next
+  turn's `turn/started`, user item, final-answer `agentMessage`, and
+  `turn/completed` events with matching thread/turn identifiers. The controlled
+  remote session also executed a command, created a proof file, returned a
+  controlled response, and accepted a follow-up. The observer retained no
+  message text, command text/output, file paths/diffs, account data, or
+  configuration.
+- T7 decision: **NO-GO** for a production Phase 5 App Server integration. Typed
+  events and same-thread observation exist, but the required WebSocket
+  transport is officially experimental and unsupported for production.
+  PatchTrace would also need to own connection setup, thread
+  discovery/subscription, protocol compatibility, notification correlation,
+  recovery, and privacy filtering because no passive official event export is
+  documented. This fails two independent `GO` requirements. The result does
+  not decide the separately scoped `codex exec --json` candidate.
+- T7 cleanup and side effect: the remote TUI and App Server exited and port
+  `45173` had no listener afterward. The disposable empty runtime repository
+  was trusted through the Codex UI so the test could proceed. After independent
+  inspection identified the retained entry, cleanup removed only that exact
+  temporary-repository trust table from the local Codex configuration. The
+  transient side effect was not treated as PatchTrace product state. No project
+  dependency or production adapter was added.
+- Closure dogfood: six source-backed CLI runs in isolated temporary Git
+  repositories covered clean, dirty same-path, in-run commit, wrapped-command
+  failure, no-task, and task-bound cases. Exit statuses were `0, 0, 0, 7, 0,
+  0`; every run produced a complete package. The dirty run reported the initial
+  path as `pre-existing` and final material as `indeterminate`; the committed
+  run reported the commit path as `session-attributed`; the failed run retained
+  `process_outcome=failed` with exit 7 while analysis remained degraded and the
+  package complete.
+- Report ceiling: all 18 generated reports retained the transcript-derived
+  command/freshness limitation. All three no-task reports named the missing
+  Task Contract. All three task-bound reports linked the preserved task and
+  named generic delivery as unverified. Artifact existence and manifest/report
+  assertions passed for all six runs. The temporary package root was
+  `/private/tmp/patchtrace-phase5-close-pC6bv0/state/`; committed integration
+  fixtures reproduce the durable assertions.
+- Quality gate: Ruff lint passed; Ruff format check passed for 63 files; strict
+  mypy passed for 62 source files; full pytest passed **277 tests** in 58.23s;
+  and `uv build` produced both the 0.1.0 sdist and wheel. Build emitted the
+  existing warning that the active uv CLI 0.12.10 is outside the build
+  requirement's `uv-build>=0.11.23,<0.12.0` range; artifact creation succeeded
+  and no dependency bound was changed in this documentation/research slice.
+- Final-snapshot quality rerun: after documentation corrections, Ruff lint,
+  Ruff format, strict mypy, and build passed again; full pytest passed **277
+  tests** in 65.83s. The build retained the same non-failing uv/backend-range
+  warning.
+- Aga verification gate: the first independent High-Risk assessment returned
+  `PARTIALLY_VERIFIED` and held review because the proposed Phase 6 plan was
+  mislabeled accepted, the roadmap baseline and prototype line count were
+  stale, and the temporary Codex trust entry remained. The candidate corrected
+  all four findings and removed only that exact test-repository entry. Affected
+  claim re-verification returned **VERIFIED** against tracked-diff fingerprint
+  `fc9fff00c730357268c8363a26e20b1f49c42a9ec0b1821909412fa9c900277a`;
+  pre/post fingerprints matched. The verifier had the compacted session rather
+  than the complete original report/tool trace, and disclosed that limit. Code
+  review, committed-snapshot confirmation, protected-branch push, draft PR, and
+  head-bound CI remained separate gates at verification time.
+- Verdict: T7 and the Phase 5 exit criteria are locally verified. Phase 5 closes
+  with marker-based interactive PTY compatibility, no structured-interactive
+  high-trust final output, and explicit degradation when a unique marker is not
+  available. Phase 6 becomes active with a proposed, not accepted, incremental
+  plan. Merge and deployment are not authorized.
+
 ### 2026-09-09 - Phase 5 T6a: Real response and follow-up
 
 - Authority: after the blocked attempt below, Aga answered “tak” to the explicit

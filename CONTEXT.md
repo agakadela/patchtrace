@@ -89,7 +89,8 @@ transcript-derived observations, not independent execution or freshness proof.
 ### Requirement coverage
 
 The relationship between one Task Contract item and available evidence.
-Coverage may still require human judgment and is not implemented in Phase 5.
+Coverage may still require human judgment. It is the active Phase 6 scope and
+is not part of the completed Phase 5 implementation.
 
 ### AnalysisResult
 
@@ -181,7 +182,11 @@ such as `codex exec --json`. It is separate from interactive PTY mode.
 ### Structured-interactive capture
 
 Typed evidence for the same interactive session. It is a desired property, not
-a current capability. Codex App Server remains a candidate pending feasibility.
+a current capability. The Phase 5 App Server prototype proved same-thread typed
+observation but returned `NO-GO` for production because the required WebSocket
+transport is experimental and PatchTrace would have to own an App Server
+client. A future reconsideration requires a supported transport and a
+proportionate official observer boundary.
 
 ### Trust ceiling
 
