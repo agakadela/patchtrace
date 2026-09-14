@@ -1,6 +1,6 @@
 # PatchTrace Architecture
 
-**Last reviewed:** 2026-09-09
+**Last reviewed:** 2026-09-14
 
 Related decisions:
 
@@ -9,11 +9,9 @@ Related decisions:
 - [ADR-0003: Codex Capture Modes and Trust Ceilings](decisions/ADR-0003-codex-capture-modes.md)
 
 This document records current system truth and the accepted next architecture.
-Product scope is owned by [SPEC.md](SPEC.md). [PLAN.md](PLAN.md) owns active
-Phase 5 tasks; T1–T6 Git provenance, lifecycle outcomes, task capture, and
-interactive Codex delivery are implemented.
-Phase 4.1 closure evidence lives
-in [VERIFY_LOG.md](VERIFY_LOG.md).
+Product scope is owned by [SPEC.md](SPEC.md). Phase 5 is implemented and its
+App Server feasibility gate resolved to `NO-GO`; [PLAN.md](PLAN.md) owns active
+Phase 6 tasks. Closure evidence lives in [VERIFY_LOG.md](VERIFY_LOG.md).
 
 ## 1. System constraints
 
@@ -28,7 +26,7 @@ PatchTrace is a local Python CLI. It has:
 The established stack remains Python 3.11+, Typer, Pexpect, Pydantic v2,
 pytest, Ruff, mypy, and `uv`.
 
-## 2. CURRENT — Phase 4, Phase 4.1, and Phase 5 T1–T6
+## 2. CURRENT — Phase 4 through Phase 5
 
 ### 2.1 Implemented package ownership
 
@@ -199,8 +197,8 @@ or absent. Wrapped-process failure retains first priority. All three reports
 consume the shared analysis and explicitly name the transcript/freshness limit.
 
 Phase 4.1 T1–T3 are implemented and the phase is closed. Closure evidence is
-recorded in [VERIFY_LOG.md](VERIFY_LOG.md); active Phase 5 tasks belong in
-[PLAN.md](PLAN.md).
+recorded in [VERIFY_LOG.md](VERIFY_LOG.md). Phase 5 is also closed; active Phase
+6 tasks belong in [PLAN.md](PLAN.md).
 
 Phase 4.1 does not establish session attribution,
 requirement satisfaction, structured execution proof, or final-state freshness.
@@ -562,7 +560,7 @@ The marker compatibility ceiling is unchanged: exactly one supported marker,
 no tail guessing, no authenticated message provenance, and no requirement
 satisfaction inference. App Server and structured execution remain outside T6.
 
-## 3. ACCEPTED TARGET — Remaining Phase 5 architecture
+## 3. ACCEPTED PHASE 5 ARCHITECTURE
 
 Phase 5 strengthens capture and provenance. It does not implement requirement
 satisfaction or final-verification freshness.
@@ -660,7 +658,7 @@ compatibility decision, and observable limits.
 |---|---|---|---|
 | Generic PTY transport | Existing wrapped-command terminal session | Raw transcript, agent-agnostic cleanup, exit status, and Git envelope | No agent-specific final-output claim without a concrete boundary. |
 | Interactive Codex compatibility | Existing interactive Codex session over generic PTY transport plus the concrete Codex boundary | Codex TUI interpretation, exact marker when present, transport-bounded task delivery, and Git envelope | Final output remains marker-based; missing or ambiguous marker degrades analysis. |
-| Structured-interactive candidate | Same interactive session, only if officially observable without a replacement client | App Server typed events to be tested | Not accepted; the prototype must return `GO`, `NO-GO`, or `CANNOT VERIFY`. |
+| Structured-interactive candidate | Same interactive session was demonstrated with the official remote CLI and a second resumed App Server connection | Typed App Server items and lifecycle events | `NO-GO` for production: required WebSocket transport is experimental and an owned client is required. |
 
 No mode may claim evidence above what its transport observes. A production
 `codex exec --json` task mode, JSONL parser, and real structured-task dogfood are
@@ -668,9 +666,9 @@ not part of T6 or the Phase 5 exit criteria. They remain a separate candidate
 slice requiring human approval or a concrete dogfood trigger, independently of
 the App Server result.
 
-### 3.8 App Server feasibility gate
+### 3.8 App Server feasibility result
 
-The time-boxed prototype asks only:
+The time-boxed prototype asked:
 
 1. Do the required typed final-message, command-result, file-change, and
    lifecycle events exist?
@@ -681,12 +679,22 @@ The time-boxed prototype asks only:
    needed fields and transport?
 5. What is the minimum production integration cost?
 
-Needing a custom TUI, a large protocol proxy, or private formats is `NO-GO` for
-Phase 5. The prototype is not a production integration.
+The 2026-09-14 result is `NO-GO` for a production Phase 5 integration. Version
+0.154.0 proved that a second initialized connection can resume the same thread
+operated by `codex --remote` and receive typed events for a later turn. The
+candidate nevertheless fails the gate because the required WebSocket transport
+is officially experimental and unsupported for production, and PatchTrace
+would need to build and maintain an App Server client rather than consume a
+passive official event export.
 
-If the result is `NO-GO` or `CANNOT VERIFY`, Phase 5 can still close. PTY then
-remains marker-based compatibility mode, with no structured-interactive
-high-trust final output, and all verdicts and reports retain that ceiling.
+The full five-question result, version-matched schema identities, sanitized
+runtime event sequence, cost boundary, and revisit triggers are in
+[T7_APP_SERVER_FEASIBILITY.md](research/T7_APP_SERVER_FEASIBILITY.md).
+
+Phase 5 therefore closes with PTY marker-based compatibility mode, no
+structured-interactive high-trust final output, and the existing degradation
+for missing or ambiguous markers. The prototype is research evidence, not a
+production adapter.
 
 ## 4. Trust boundaries
 
@@ -716,7 +724,7 @@ contract belongs to Phase 8.
 ## 6. Verification strategy
 
 Every capability is defined first by fixtures and focused integration tests.
-Phase 5 requires:
+Phase 5 closure verifies:
 
 - temporary Git repositories covering clean, dirty, untracked, and committed
   runs;
@@ -724,17 +732,17 @@ Phase 5 requires:
 - Task Contract fixtures preserving exact source and deterministic parsing;
 - interactive Codex boundary fixtures for task delivery, TUI markers, and
   evidence locators;
-- official App Server schema or event examples only for the Task 7 feasibility
-  result;
+- official, version-matched App Server schema and sanitized runtime examples
+  only for the Task 7 feasibility result;
 - real dogfood before phase closure.
 
 The full quality gate remains Ruff lint and format check, mypy, pytest, and
 build. App Server feasibility evidence is recorded as research/prototype proof,
 not as passing production capability.
 
-## 7. DEFERRED OR CONDITIONAL
+## 7. ACTIVE, DEFERRED, OR CONDITIONAL
 
-- requirement satisfaction and final verification: Phase 6;
+- requirement satisfaction and final verification: active Phase 6;
 - evidence quality and review prioritization: Phase 7;
 - post-hoc analyze: Phase 8;
 - OSS hardening and distribution: Phase 9;

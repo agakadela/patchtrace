@@ -3,9 +3,11 @@
 - Date: 2026-07-27
 - Status: accepted
 - Owner: project maintainer
+- Feasibility outcome: `NO-GO` recorded 2026-09-14
 
-The accepted decision is the capture-mode policy and feasibility gate. App
-Server adoption remains unresolved.
+The accepted decision is the capture-mode policy and feasibility gate. The
+App Server gate has now resolved to `NO-GO` for a production Phase 5
+integration.
 
 ## Context
 
@@ -87,6 +89,25 @@ proxy, private formats, or disproportionate integration is `NO-GO` for Phase 5.
 The prototype is not production capability. A `GO` still requires a later
 reviewable implementation slice.
 
+### Record the T7 App Server result
+
+The version-matched T7 prototype returned `NO-GO` on 2026-09-14. It confirmed
+that the official remote CLI and a second App Server connection can participate
+in the same interactive thread. After `thread/resume`, the observer received
+typed lifecycle and final-answer item events for the next turn.
+
+The result still fails the accepted gate because:
+
+- the required WebSocket transport is officially documented as experimental
+  and unsupported for production; and
+- PatchTrace would need to own an App Server client for connection setup,
+  thread discovery/subscription, notification correlation, compatibility, and
+  failure recovery. There is no documented passive event-export boundary.
+
+The detailed version, schema identities, sanitized event sequence, limitations,
+and revisit conditions are preserved in the
+[T7 feasibility record](../research/T7_APP_SERVER_FEASIBILITY.md).
+
 ### Enforce per-mode trust ceilings
 
 Reports and verdicts cannot exceed the evidence exposed by their capture mode.
@@ -151,9 +172,13 @@ Costs and limits:
 - a feasibility `GO` does not itself deliver production integration;
 - Phase 5 may close without structured-interactive high-trust output.
 
+The confirmed T7 `NO-GO` means Phase 5 closes on the latter path. A future
+reconsideration requires a supported production transport and a proportionate
+official observer boundary; a new CLI version alone is not sufficient.
+
 ## References
 
 - [Codex non-interactive mode](https://developers.openai.com/codex/noninteractive/)
 - [Codex App Server](https://developers.openai.com/codex/app-server/)
 - [PatchTrace architecture](../ARCHITECTURE.md)
-- [Active Phase 5 plan](../PLAN.md)
+- [Active Phase 6 plan](../PLAN.md)

@@ -13,7 +13,8 @@ decision for the developer.
 Version `0.1.0` includes the Phase 4 baseline, Phase 4.1 T1 storage hardening,
 T2 file/change claim assessment, T3 command-attempt semantics, and Phase 5 T1
 Git session capture, T2 attribution, T3 report provenance, T4 lifecycle outcomes,
-T5 task capture, and T6 interactive Codex task delivery.
+T5 task capture, and T6 interactive Codex task delivery. Phase 5's T7 research
+returned `NO-GO` for a production App Server integration.
 The implemented command is:
 
 ```bash
@@ -197,7 +198,8 @@ Current limits:
   guess from the transcript tail;
 - command and test signals are inferred from terminal text, not structured
   command events;
-- there is no preserved task contract or requirement-coverage analysis;
+- a preserved task contract can anchor later analysis, but requirement coverage
+  and omitted-requirement detection are not implemented;
 - a passing check is not proven fresh relative to the final repository state.
 
 Treat current verdicts as review guidance within those limits, not as proof of
@@ -213,26 +215,29 @@ Phase 4.1 — Trust Hardening is closed. It addressed three gaps in the Phase 4 
 3. assess the latest captured command attempt, parse zero failures correctly,
    and surface failed verification even when the agent reports it truthfully.
 
-The active phase is **Phase 5 — Trusted Capture and Session Provenance**.
-[PLAN.md](docs/PLAN.md) owns current task status. The phase strengthens capture before broadening analysis:
+Phase 5 — Trusted Capture and Session Provenance is closed. It:
 
-1. distinguish session-attributed, pre-existing, and indeterminate Git changes;
-2. separate process, analysis, and package outcomes;
-3. preserve a simple Task Contract and bind it to the run;
-4. pass that same preserved task through supported Codex-specific modes;
-5. test whether the official Codex App Server can provide structured evidence
-   for the same interactive session without replacing the current UX.
+1. distinguished session-attributed, pre-existing, and indeterminate Git changes;
+2. separated process, analysis, and package outcomes;
+3. preserved a simple Task Contract and bound it to the run;
+4. passed that same preserved task through supported Codex-specific modes;
+5. tested the official Codex App Server and recorded `NO-GO` for production:
+   same-thread observation works, but the required WebSocket transport is
+   experimental and requires an owned client.
 
 Interactive PTY remains the primary compatibility workflow. Structured Codex
 execution may be offered as a separate higher-evidence task mode. App Server is
-a candidate subject to a small feasibility prototype, not an accepted target
-architecture.
+not accepted production architecture; its revisit conditions are recorded in
+the [T7 feasibility result](docs/research/T7_APP_SERVER_FEASIBILITY.md).
+
+The active phase is **Phase 6 — Task Coverage and Final Verification**.
+[PLAN.md](docs/PLAN.md) owns its ordered implementation tasks.
 
 See:
 
 - [Product specification](docs/SPEC.md)
 - [Roadmap](docs/ROADMAP.md)
-- [Active Phase 5 plan](docs/PLAN.md)
+- [Active Phase 6 plan](docs/PLAN.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Domain language](CONTEXT.md)
 

@@ -4,11 +4,13 @@
 
 **Product stage:** local CLI, pre-OSS
 
-**Current implementation:** see [ARCHITECTURE.md](ARCHITECTURE.md#2-current--phase-4-phase-41-and-phase-5-t1t6).
+**Current implementation:** see
+[ARCHITECTURE.md](ARCHITECTURE.md#2-current--phase-4-through-phase-5).
 
-**Active phase:** Phase 5 — Trusted Capture and Session Provenance; [PLAN.md](PLAN.md) owns task status.
+**Active phase:** Phase 6 — Task Coverage and Final Verification;
+[PLAN.md](PLAN.md) owns task status.
 
-**Following phase:** Phase 6 — Task Coverage and Final Verification
+**Following phase:** Phase 7 — Evidence Quality and Review Prioritization
 
 ## 1. Product definition
 
@@ -174,8 +176,9 @@ transport can actually observe.
 
 - Interactive PTY is a marker-based compatibility mode.
 - Codex structured execution may be a separate, higher-evidence task mode.
-- Codex App Server is a candidate for structured-interactive capture, pending a
-  feasibility result.
+- the Codex App Server Phase 5 prototype returned `NO-GO` for production use:
+  same-thread typed observation works, but the required WebSocket transport is
+  experimental and would require an owned client.
 
 A missing or ambiguous PTY final-answer marker degrades final-output evidence.
 PatchTrace must not infer the final answer from an arbitrary transcript tail.
@@ -198,7 +201,7 @@ An evidence verdict is not the CLI exit status and must not obscure failures in
 another lifecycle concern.
 
 The exact V1 model and failure mapping are owned by the architecture and the
-[active Phase 5 plan](PLAN.md) rather than duplicated here.
+[Phase 5 architecture](ARCHITECTURE.md) rather than duplicated here.
 
 ## 8. Current implementation
 
@@ -216,6 +219,9 @@ The CLI currently:
 - renders a summary, agent feedback, and verification brief with shared Git
   attribution, source references, limitations, and provenance-aware review targets;
 - records independent process, analysis, and package outcomes, with failure details;
+- preserves and validates Task Contract V1, binds it to the run by digest, and
+  optionally delivers the exact preserved task through the Codex-specific
+  interactive boundary;
 - marks a ten-artifact local package complete only after all required writes.
 
 Known current gaps:
@@ -224,8 +230,8 @@ Known current gaps:
 - dirty same-path work and unsupported history remain indeterminate;
 - attribution describes session boundaries, not agent or byte-level authorship;
 - command results and final messages are not structured in PTY mode;
-- no Task Contract is captured;
-- verification freshness and requirement coverage are absent.
+- requirement coverage and omitted-requirement detection are absent;
+- verification freshness is absent.
 
 These are product gaps, not permission to overstate current evidence.
 
@@ -305,5 +311,5 @@ The product is moving in the right direction when:
 - the developer remains the final decision-maker.
 
 Phase-specific exit criteria live in [ROADMAP.md](ROADMAP.md), and detailed work
-for only the active phase lives in [PLAN.md](PLAN.md). Phase 5 is active with
-its previously accepted task scope unchanged.
+for only the active phase lives in [PLAN.md](PLAN.md). Phase 5 is closed; Phase
+6 task coverage and final verification are active.

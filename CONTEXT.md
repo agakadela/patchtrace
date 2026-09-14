@@ -89,7 +89,26 @@ transcript-derived observations, not independent execution or freshness proof.
 ### Requirement coverage
 
 The relationship between one Task Contract item and available evidence.
-Coverage may still require human judgment and is not implemented in Phase 5.
+Coverage may still require human judgment. It is the active Phase 6 scope and
+is not part of the completed Phase 5 implementation.
+
+The accepted Phase 6 TARGET vocabulary keeps separate facts separate:
+
+- inventory availability is `available` or `unavailable_no_task`; invalid task
+  input remains a pre-analysis lifecycle failure and has no coverage result;
+- optional section disposition is `present`, `not_supplied`, or
+  `not_applicable`;
+- item coverage is `unassessed`, `missing`, `related`, `conflicted`, or
+  `bounded_covered`;
+- item review assignment is independently `unassessed`, `bounded`, or
+  `human_required`.
+
+`missing` is the representation of product-level omitted-item detection.
+`bounded_covered` establishes only the complete non-semantic factual content
+allowed by the active capture ceiling. It is not semantic correctness, safety,
+or developer acceptance. `fresh` verification is likewise point-in-time: it
+describes the final Git identity captured in that run, not repository changes
+made after the package completed.
 
 ### AnalysisResult
 
@@ -181,7 +200,11 @@ such as `codex exec --json`. It is separate from interactive PTY mode.
 ### Structured-interactive capture
 
 Typed evidence for the same interactive session. It is a desired property, not
-a current capability. Codex App Server remains a candidate pending feasibility.
+a current capability. The Phase 5 App Server prototype proved same-thread typed
+observation but returned `NO-GO` for production because the required WebSocket
+transport is experimental and PatchTrace would have to own an App Server
+client. A future reconsideration requires a supported transport and a
+proportionate official observer boundary.
 
 ### Trust ceiling
 
